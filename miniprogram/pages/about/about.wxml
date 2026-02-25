@@ -1,0 +1,70 @@
+<view class="about-container">
+  <!-- Logo区域 -->
+  <view class="logo-section">
+    <view class="logo-circle">
+      <text class="logo-text">🚶</text>
+    </view>
+    <text class="app-name">步步出沪 | 徒然好想走</text>
+  </view>
+
+  <!-- 关于我们文案卡片 -->
+  <view class="content-card">
+    <view class="para">
+      <text class="highlight">“步步出沪｜徒然好想走”</text>
+      <text>，是上海wmls专属的户外捞搭子平台！由一群绝对信仰五月天、痴迷徒步的</text>
+      <text class="highlight">“憨人”</text>
+      <text>自发搭建，</text>
+      <text class="highlight">无盈利、无繁琐规则</text>
+      <text>，只为帮你找到合拍老师，一起奔赴山野之约🏃‍♀️。</text>
+    </view>
+
+    <view class="para">
+      <text>我们因相同的音乐信仰结缘，更因对户外的热爱聚力。每一次 </text>
+      <text class="highlight">“步步出沪”</text>
+      <text>，都是线上捞搭子、线下闯山野的精彩旅程！轻徒步、进阶路线、星空露营，总有适合你的行程～在这里，</text>
+      <text class="highlight">你不孤独，朋友满屋，无关速度，只盼同路</text>
+      <text>🖐！</text>
+    </view>
+
+    <view class="para">
+      <text class="highlight">徒然好想走就要立刻行动💙</text>
+      <text> 我们期待和更多wmls一起，把对生活的热爱藏进每一步山野足迹里⛰️</text>
+    </view>
+
+    <!-- 最后一行的特殊样式 - 两行显示，一左一右 -->
+    <!-- 最后一行的特殊样式 - 对话气泡效果，一左一右 -->
+    <view class="final-message left">
+      <view class="message-bubble">
+        <text class="big-text">下一站！一起步步出沪 👉</text>
+      </view>
+    </view>
+
+    <view class="final-message right">
+      <view class="message-bubble">
+        <text class="big-text">人生海海，我们山里见👣！</text>
+      </view>
+    </view>
+
+
+    <!-- 分隔线 -->
+    <view class="divider"></view>
+
+    <!-- 联系方式 -->
+    <view class="contact-section">
+      <text class="contact-title">联系我们</text>
+      <view class="contact-item">
+        <van-icon name="wechat" />
+        <text>公众号：步步出沪</text>
+      </view>
+      <view class="contact-item">
+        <van-icon name="notes-o" />
+        <text>小红书：步步出沪</text>
+      </view>
+    </view>
+
+    <!-- 版本信息 -->
+    <view class="version-info">
+      <text>当前版本 1.0.0</text>
+    </view>
+  </view>
+</view>

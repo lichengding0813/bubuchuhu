@@ -1,0 +1,88 @@
+<view class="settings-container">
+  <form catchsubmit="onSave">
+    <!-- 头像设置卡片 -->
+    <view class="form-card">
+      <view class="card-title">头像设置</view>
+      <view class="avatar-section" bindtap="onAvatarClick">
+        <image 
+          class="avatar-image" 
+          src="{{userInfo.avatar || 'https://636c-cloud1-7gja2kad9d0b0c5d-1331439110.tcb.qcloud.la/default-avatar.png'}}" 
+          mode="aspectFill"
+        ></image>
+        <view class="avatar-edit">
+          <van-icon name="photograph" />
+          <text>点击更换头像</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 基本信息卡片 -->
+    <view class="form-card">
+      <view class="card-title">基本信息</view>
+      
+      <!-- 昵称 -->
+      <view class="form-item">
+        <view class="item-label">
+          <text>昵称</text>
+          <text class="required-star">*</text>
+        </view>
+        <van-field
+          value="{{userInfo.nickName}}"
+          bindchange="onFieldChange"
+          data-field="nickName"
+          placeholder="请输入昵称"
+          maxlength="20"
+          border="{{false}}"
+          required
+        />
+      </view>
+
+      <!-- 手机号 -->
+      <view class="form-item">
+        <view class="item-label">
+          <text>手机号</text>
+          <text class="required-star">*</text>
+        </view>
+        <van-field
+          value="{{userInfo.phone}}"
+          bindchange="onFieldChange"
+          data-field="phone"
+          type="number"
+          placeholder="请输入手机号"
+          maxlength="11"
+          border="{{false}}"
+          required
+        />
+      </view>
+
+      <!-- 微信号 -->
+      <view class="form-item">
+        <view class="item-label">
+          <text>微信号</text>
+          <text class="required-star">*</text>
+        </view>
+        <van-field
+          value="{{userInfo.wechat}}"
+          bindchange="onFieldChange"
+          data-field="wechat"
+          placeholder="请输入微信号"
+          maxlength="20"
+          border="{{false}}"
+          required
+        />
+      </view>
+    </view>
+
+    <!-- 保存按钮 -->
+    <view class="submit-btn">
+      <van-button 
+        type="info" 
+        block 
+        form-type="submit"
+        disabled="{{!canSave}}"
+      >
+        保存修改
+      </van-button>
+    </view>
+  </form>
+</view>

@@ -1,0 +1,272 @@
+/* pages/home/home.wxss */
+/* 页面整体背景 */
+page {
+  background-color: #e6f7ff;
+}
+
+.home-container {
+  background-color: #f0faff;
+  min-height: 100vh;
+  padding-bottom: 20px;
+}
+
+/* 顶部banner区域 */
+.banner-section {
+  padding: 12px 16px 8px 16px;
+  background-color: #f0faff;
+}
+
+.banner-image {
+  width: 100%;
+  height: 140px;
+  background: linear-gradient(145deg, #9ec9ff, #b3dcff);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 10px rgba(0, 140, 233, 0.15);
+  background-size: cover;
+  background-position: center;
+}
+
+.banner-image text {
+  background-color: rgba(255, 255, 255, 0.25);
+  padding: 8px 20px;
+  border-radius: 40px;
+  backdrop-filter: blur(3px);
+  color: white;
+  font-size: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+/* 发布按钮容器 */
+.publish-section {
+  padding: 0 16px 16px 16px;
+}
+
+/* 自定义按钮样式 - 覆盖vant默认 */
+.custom-publish-btn {
+  width: 100% !important;
+  height: 44px !important;
+  line-height: 44px !important;
+  background-color: #96c9ff !important;
+  border: none !important;
+  color: #ffffff !important;
+  font-weight: 500 !important;
+  font-size: 18px !important;
+  border-radius: 30px !important;
+  box-shadow: 0 4px 8px rgba(0, 110, 200, 0.2);
+}
+
+/* 列表区域 */
+.list-section {
+  padding: 0 16px;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding: 0 4px;
+}
+
+.section-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1e4d7c;
+  position: relative;
+  padding-left: 12px;
+}
+
+.section-title::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 4px;
+  bottom: 4px;
+  width: 4px;
+  background-color: #5faee3;
+  border-radius: 4px;
+}
+
+.view-all {
+  color: #5e9ad9;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+}
+
+.view-all van-icon {
+  margin-left: 4px;
+  font-size: 14px;
+}
+
+/* 活动卡片 */
+.activity-card {
+  display: flex;
+  background-color: white;
+  border-radius: 18px;
+  margin-bottom: 14px;
+  padding: 14px;
+  box-shadow: 0 4px 12px rgba(0, 130, 210, 0.08);
+  border: 1px solid rgba(160, 200, 255, 0.4);
+}
+
+.card-left {
+  flex: 0 0 80px;
+  height: 80px;
+  border-radius: 14px;
+  background-color: #b7daf9;
+  background-size: cover;
+  background-position: center;
+  margin-right: 14px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #3a6c9e;
+  font-weight: 500;
+  font-size: 13px;
+}
+
+/* 模拟图片背景 */
+.card-left.img1 {
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="40" height="40"><circle cx="20" cy="20" r="18" fill="%23a3ceff"/><text x="13" y="27" font-size="14" fill="%23336699">🏞️</text></svg>');
+  background-size: cover;
+}
+
+.card-left.img2 {
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="40" height="40"><circle cx="20" cy="20" r="18" fill="%239ac6f0"/><text x="12" y="28" font-size="16" fill="%232b4f77">🏕️</text></svg>');
+  background-size: cover;
+}
+
+.card-left.img3 {
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="40" height="40"><circle cx="20" cy="20" r="18" fill="%238bbae3"/><text x="12" y="28" font-size="16" fill="%231f3e5c">📚</text></svg>');
+  background-size: cover;
+}
+
+.card-right {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.activity-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #134579;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.status-badge {
+  display: inline-block;
+  background-color: #ffe1c6;
+  color: #b45200;
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 30px;
+  font-weight: 500;
+  margin-left: 8px;
+  white-space: nowrap;
+}
+
+.status-badge.ongoing {
+  background-color: #c7e3ff;
+  color: #1f64a5;
+}
+
+.status-badge.closed {
+  background-color: #ffcece;
+  color: #b13e3e;
+}
+
+.info-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  font-size: 12px;
+  color: #5f7fa3;
+  margin-bottom: 6px;
+}
+
+.info-item {
+  display: flex;
+  align-items: center;
+  margin-right: 14px;
+  margin-bottom: 4px;
+}
+
+.info-item van-icon {
+  margin-right: 3px;
+  font-size: 13px;
+  color: #77b0e0;
+}
+
+.tag-difficulty {
+  background-color: #e3f0ff;
+  padding: 2px 10px;
+  border-radius: 30px;
+  font-size: 11px;
+  color: #1e66a0;
+  margin-right: 8px;
+}
+
+.remain-count {
+  font-weight: 500;
+  color: #2580c2;
+}
+
+/* 查看全部入口卡片 */
+.view-all-card {
+  background-color: #ffffffd6;
+  border: 1px dashed #98c5f0;
+  border-radius: 30px;
+  padding: 14px 20px;
+  text-align: center;
+  color: #2e7eb0;
+  font-size: 15px;
+  font-weight: 500;
+  margin: 12px 16px 0 16px;
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.view-all-card van-icon {
+  margin-left: 6px;
+  font-size: 16px;
+}
+
+
+/* 展开/收起按钮 */
+.expand-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 0;
+  margin-top: 5px;
+  margin-bottom: 10px;
+  background-color: #ffffffd6;
+  border: 1px dashed #98c5f0;
+  border-radius: 30px;
+  color: #2e7eb0;
+  font-size: 15px;
+  font-weight: 500;
+  backdrop-filter: blur(2px);
+  cursor: pointer;
+}
+
+.expand-btn text {
+  margin-right: 6px;
+}
+
+.expand-btn van-icon {
+  font-size: 16px;
+  color: #5e9ad9;
+}

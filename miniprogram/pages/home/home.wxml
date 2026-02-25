@@ -1,0 +1,63 @@
+<!-- 顶部介绍的banner (图片形式展现) -->
+<view class="banner-section">
+  <view class="banner-image">
+    <text>介绍banner预留</text>
+  </view>
+</view>
+
+<!-- 发布活动按钮 (使用vant-weapp的van-button) -->
+<view class="publish-section">
+  <van-button type="default" custom-class="custom-publish-btn" bindtap="onPublishClick">
+    + 发布活动
+  </van-button>
+</view>
+
+<!-- 已发布活动列表 + 查看全部入口 -->
+<view class="list-section">
+  <!-- 标题行: 已发布活动 与 “查看全部” 文字入口 -->
+  <view class="section-header">
+    <text class="section-title">最新活动</text>
+  </view>
+
+  <!-- 活动卡片列表 - 使用wx:for渲染，根据showAll控制显示数量 -->
+  <block wx:for="{{activityList}}" wx:key="index">
+  <view 
+    class="activity-card"
+    data-id="{{item.id}}"
+    bindtap="onActivityClick"
+    wx:if="{{showAll || index < 3}}"
+  >
+    <view class="card-left img{{(index % 3) + 1}}"></view>
+    <view class="card-right">
+      <view class="activity-name">
+        {{item.name}}
+        <text class="status-badge {{item.statusClass}}">{{item.statusText}}</text>
+      </view>
+      <view class="info-row">
+        <view class="info-item">
+          <van-icon name="clock-o" />
+          <text>{{item.time}}</text>
+        </view>
+        <view class="info-item">
+          <van-icon name="location-o" />
+          <text>{{item.location}}</text>
+        </view>
+      </view>
+      <view class="info-row">
+        <view class="info-item">
+          <van-icon name="user-o" />
+          <text class="remain-count">{{item.remainCount}}/{{item.totalCount}} 剩余</text>
+        </view>
+        <text class="tag-difficulty">{{item.difficulty}}</text>
+        <text class="status-badge {{item.statusClass}}">{{item.statusBadge}}</text>
+      </view>
+    </view>
+  </view>
+</block>
+
+  <!-- 查看全部/收起按钮 - 放在三个活动下方 -->
+  <view class="expand-btn" bindtap="onToggleExpand">
+    <text>{{showAll ? '收起' : '查看全部'}}</text>
+    <van-icon name="{{showAll ? 'arrow-up' : 'arrow-down'}}" />
+  </view>
+</view>

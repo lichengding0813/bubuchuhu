@@ -1,0 +1,44 @@
+<view class="profile-container">
+  <!-- 用户信息卡片 - 点击登录 -->
+  <view class="user-card" bindtap="onLoginClick">
+    <view class="user-avatar">
+      <open-data type="userAvatarUrl" wx:if="{{!userInfo.avatar}}"></open-data>
+      <image src="{{userInfo.avatar}}" wx:else mode="aspectFill"></image>
+    </view>
+    <view class="user-info">
+      <text class="user-name">{{userInfo.nickName}}</text>
+      <!-- <text class="user-desc" wx:if="{{!userInfo.isLogin}}">点击登录</text>
+      <text class="user-desc" wx:else>已登录</text> -->
+    </view>
+    <van-icon name="arrow" class="arrow-icon" />
+  </view>
+
+  <!-- 统计数据 -->
+  <view class="stats-card">
+    <view class="stat-item">
+      <text class="stat-number">0</text>
+      <text class="stat-label">我发起的</text>
+    </view>
+    <view class="stat-item">
+      <text class="stat-number">0</text>
+      <text class="stat-label">我报名的</text>
+    </view>
+  </view>
+
+  <!-- 菜单列表 -->
+  <view class="menu-list">
+    <view 
+      wx:for="{{menuList}}" 
+      wx:key="index"
+      class="menu-item"
+      data-index="{{index}}"
+      bindtap="onMenuClick"
+    >
+      <view class="menu-left">
+        <van-icon name="{{item.icon}}" class="menu-icon" />
+        <text>{{item.text}}</text>
+      </view>
+      <van-icon name="arrow" class="menu-arrow" />
+    </view>
+  </view>
+</view>

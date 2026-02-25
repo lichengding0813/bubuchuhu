@@ -1,0 +1,301 @@
+/* pages/publish/publish.wxss */
+page {
+  background-color: #f0faff;
+}
+
+
+/* 顶部导航栏 */
+.nav-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 100rpx 16px 12px 16px; /* 上 20px，左右 16px，下 12px */
+  background-color: #f0faff;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+/* 同时调整内容区域的上边距，避免被导航栏遮挡 */
+.publish-container {
+  padding: 0 16px 40px 16px;
+}
+
+.back-btn {
+  display: flex;
+  align-items: center;
+  padding: 8px 0;
+  color: #1e4d7c;
+  font-size: 16px;
+}
+
+.back-btn van-icon {
+  margin-right: 4px;
+  font-size: 18px;
+}
+
+.nav-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1e4d7c;
+}
+
+.placeholder {
+  width: 60px;
+}
+
+
+.publish-container {
+  padding: 16px;
+  padding-bottom: 40px;
+}
+
+.form-card {
+  background-color: white;
+  border-radius: 20px;
+  padding: 20px 16px;
+  margin-bottom: 16px;
+  box-shadow: 0 4px 12px rgba(0, 130, 210, 0.08);
+  border: 1px solid rgba(160, 200, 255, 0.4);
+}
+
+.card-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1e4d7c;
+  margin-bottom: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.required-star {
+  color: #ff6b6b;
+  margin-left: 4px;
+}
+
+.notice-card {
+  background-color: #e3f0ff;
+}
+
+.notice-content {
+  background-color: rgba(255, 255, 255, 0.6);
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
+.notice-content text {
+  display: block;
+  color: #1e4d7c;
+  font-size: 14px;
+  line-height: 1.8;
+}
+
+.agree-checkbox {
+  margin-top: 8px;
+}
+
+.form-item {
+  margin-bottom: 16px;
+}
+
+.form-item:last-child {
+  margin-bottom: 0;
+}
+
+.item-label {
+  font-size: 15px;
+  color: #2e4d73;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.form-row {
+  display: flex;
+  gap: 12px;
+}
+
+.form-item.half {
+  flex: 1;
+}
+
+.checkbox-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.add-btn {
+  display: flex;
+  align-items: center;
+  color: #5faee3;
+  font-size: 14px;
+  padding: 4px 8px;
+  background-color: rgba(95, 174, 227, 0.1);
+  border-radius: 16px;
+}
+
+.meeting-item {
+  background-color: #f8fcff;
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
+.meeting-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  color: #1e4d7c;
+  font-weight: 500;
+}
+
+.upload-area {
+  width: 100px;
+  height: 100px;
+  background-color: #f0f7ff;
+  border: 2px dashed #96c9ff;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #5faee3;
+}
+
+.upload-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.upload-placeholder text {
+  font-size: 12px;
+}
+
+.uploaded-image {
+  width: 100%;
+  height: 100%;
+  border-radius: 10px;
+}
+
+.submit-btn {
+  margin-top: 24px;
+  margin-bottom: 20px;
+}
+
+.submit-btn van-button {
+  --button-primary-background-color: #96c9ff;
+  --button-primary-border-color: #96c9ff;
+  border-radius: 30px !important;
+  height: 48px !important;
+  line-height: 48px !important;
+  font-weight: 500 !important;
+}
+
+
+/* 同意条款和提交按钮区域 */
+.submit-section {
+  background-color: white;
+  border-radius: 20px 20px 0 0;
+  padding: 16px;
+  margin-top: 16px;
+  border: 1px solid rgba(160, 200, 255, 0.4);
+  box-shadow: 0 -4px 12px rgba(0, 130, 210, 0.04);
+}
+
+.agree-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+  padding: 8px 0;
+}
+
+.notice-link {
+  color: #5faee3;
+  text-decoration: underline;
+  margin-left: 4px;
+}
+
+/* 发起者须知卡片样式调整 */
+.notice-card .notice-content {
+  background-color: rgba(95, 174, 227, 0.1);
+  border-radius: 12px;
+  padding: 12px;
+  text-align: center;
+  color: #1e4d7c;
+}
+
+.notice-card .notice-content text {
+  color: #5faee3;
+  font-weight: 500;
+}
+
+/* 弹窗样式 */
+.notice-popup {
+  padding: 20px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 副标题样式 - 用于一、发起者须知等 */
+.subtitle {
+  font-size: 18px !important;  /* 添加 !important 强制生效 */
+  font-weight: 700 !important;
+  color: #1e4d7c !important;
+  margin: 8px 0 16px 0 !important;  /* 增加下方间距到20px */
+  display: block !important;
+  background-color: #e6f7ff !important;
+  padding: 8px 12px !important;
+  border-radius: 8px !important;
+  border-left: 4px solid #96c9ff !important;
+}
+
+/* 弹窗内容样式 - 让text组件内联显示 */
+.popup-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 4px;
+  font-size: 14px;
+  color: #2e4d73;
+  line-height: 1.8;
+}
+
+/* 让所有text组件内联显示，去除换行带来的空格 */
+.popup-content text {
+  display: inline;
+  white-space: normal;
+  word-wrap: break-word;
+}
+
+/* 高亮样式 */
+.highlight {
+  color: #f5222d;
+  font-weight: 700;
+  background-color: transparent;
+}
+
+/* 段落换行处理 */
+.popup-content view {
+  margin-bottom: 12px;
+}
+
+.popup-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1e4d7c;
+  text-align: center;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+}
+
+/* 调整原有提交按钮样式 */
+.submit-btn {
+  margin-top: 0;
+}
