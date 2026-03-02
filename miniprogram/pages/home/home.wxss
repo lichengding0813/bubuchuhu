@@ -270,3 +270,140 @@ page {
   font-size: 16px;
   color: #5e9ad9;
 }
+
+/* ========== 自定义弹窗样式（蓝色主题） ========== */
+.custom-dialog {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dialog-mask {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.dialog-container {
+  position: relative;
+  width: 600rpx;
+  background-color: #ffffff;
+  border-radius: 32rpx;
+  overflow: hidden;
+  box-shadow: 0 8rpx 32rpx rgba(30, 110, 180, 0.3);
+  z-index: 1001;
+}
+
+/* 弹窗顶部图片 */
+.dialog-image {
+  width: 50%;
+  height: auto;
+  display: block;
+  border-radius: 32rpx;
+  margin: 20rpx auto 20rpx auto;
+}
+
+.dialog-title {
+  padding: 24rpx 24rpx 8rpx;
+  font-size: 36rpx;
+  font-weight: 600;
+  color: #1e4d7c;  /* 深蓝色标题 */
+  text-align: center;
+}
+
+.dialog-content {
+  padding: 0 32rpx 24rpx;
+  align-items: center;
+}
+
+.question {
+  font-size: 32rpx;
+  color: #2e5a8a;
+  margin-bottom: 24rpx;
+  text-align: center;
+  font-weight: 500;
+}
+
+.dialog-input {
+  width: 100%;
+  height: 80rpx;
+  background-color: #f0f9ff;  /* 浅蓝色背景 */
+  border-radius: 40rpx;
+  padding: 0 32rpx;
+  font-size: 28rpx;
+  color: #1e3e60;
+  box-sizing: border-box;
+  border: 2rpx solid #c0e0ff;
+  transition: border-color 0.2s;
+}
+
+.dialog-input:focus {
+  border-color: #5faee3;  /* 聚焦时边框变深蓝 */
+  background-color: #ffffff;
+}
+
+.error-tip {
+  color: #ff6b6b;
+  font-size: 26rpx;
+  margin-top: 16rpx;
+  text-align: center;
+  font-weight: 400;
+}
+
+.plain-text {
+  font-size: 28rpx;
+  color: #2e5a8a;
+  text-align: center;
+  padding: 20rpx 0;
+}
+
+.dialog-buttons {
+  display: flex;
+  border-top: 2rpx solid #d9ecff;
+}
+
+.dialog-btn {
+  flex: 1;
+  height: 88rpx;
+  line-height: 88rpx;
+  text-align: center;
+  font-size: 32rpx;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  font-weight: 500;
+}
+
+.dialog-btn-cancel {
+  color: #7f8c8d;
+  border-right: 2rpx solid #d9ecff;
+  background-color: #f9fcff;
+}
+
+.dialog-btn-cancel:active {
+  background-color: #e6f0fa;
+}
+
+.dialog-btn-confirm {
+  color: #ffffff;
+  background-color: #5faee3;  /* 蓝色确认按钮 */
+}
+
+.dialog-btn-confirm:active {
+  background-color: #4a9ad0;
+}
+
+/* 锁定弹窗的确认按钮可复用以上样式，也可单独设置 */
+
+/* 防止蒙层滚动 */
+page {
+  overflow: hidden; /* 弹窗打开时禁止页面滚动，可以在JS中动态控制 */
+}

@@ -1,7 +1,6 @@
 Page({
   data: {
-    showAll: false, // 是否展开全部
-    // 活动列表数据 - 增加到6个以测试展开效果
+    showAll: false,
     activityList: [{
         id: 1,
         name: '周末城市徒步',
@@ -74,113 +73,243 @@ Page({
         statusBadge: '新活动',
         statusClass: 'ongoing'
       }
-    ]
+    ],
+    userInfo: null,
+    isLoading: false,
+    // 验证弹窗相关
+    showVerifyDialog: false,
+    verifyAnswer: '',
+    verifyError: '',
+    autoFocus: false, // 用于控制 input 自动聚焦
+    // 锁定弹窗
+    showLockedDialog: false
   },
 
   onLoad() {
     this.loginAndGetUser();
   },
 
-    // 登录并获取用户信息
-    async loginAndGetUser() {
-      this.setData({ isLoading: true });
-      
-      try {
-        // 1. 先通过微信登录获取code
-        const loginRes = await this.wxPromise('login');
-        if (!loginRes.code) {
-          throw new Error('登录失败');
+  // 登录并获取用户信息
+  async loginAndGetUser() {
+    this.setData({
+      isLoading: true
+    });
+
+    try {
+      const loginRes = await this.wxPromise('login');
+      if (!loginRes.code) throw new Error('登录失败');
+
+      wx.cloud.init();
+      const result = await wx.cloud.callContainer({
+        config: {
+          env: "prod-3gktwx67d1dd1e76"
+        },
+        path: "/login",
+        header: {
+          "X-WX-SERVICE": "flask-mysql-login",
+          "content-type": "application/json"
+        },
+        method: "POST",
+        data: {
+          code: loginRes.code
         }
-        
-        // 2. 调用云托管接口（自动会带上openid等信息）
-        wx.cloud.init()
-        console.log(loginRes.code)
-        const result = await 
-        wx.cloud.callContainer({
-          config: {
-            env: "prod-3gktwx67d1dd1e76"
-          },
-          path: "/login",
-          header: {
-            "X-WX-SERVICE": "flask-mysql-login",
-            "content-type": "application/json"
-          },
-          method: "POST",
-          data: {
-            code: loginRes.code
-          }
-        }) 
-  
-        console.log('云托管返回结果：', result);
-        
-        // result.data 里就是后端返回的业务数据
-        if (result.data && result.data.code === 200) {
-          const userData = result.data.data;
-          
-          // 存储用户信息
-          getApp().globalData.userInfo = userData;
-          wx.setStorageSync('userInfo', userData);
-          
-          this.setData({
-            userInfo: userData,
-            isLoading: false
-          });
-  
-          // 如果是新用户，可以提示一下
-          if (result.data.isNew) {
-            wx.showToast({
-              title: '欢迎新用户',
-              icon: 'none'
-            });
-          }
-        } else {
-          throw new Error(result.data?.msg || '登录失败');
-        }
-        
-      } catch (error) {
-        console.error('登录失败：', error);
-        wx.showToast({
-          title: '登录失败',
-          icon: 'error'
-        });
-        this.setData({ isLoading: false });
-      }
-    },
-  
-    // Promise化微信API
-    wxPromise(method, options = {}) {
-      return new Promise((resolve, reject) => {
-        wx[method]({
-          ...options,
-          success: resolve,
-          fail: reject
-        });
       });
-    },
+
+      if (result.data && result.data.code === 200) {
+        const userData = result.data.data;
+        getApp().globalData.userInfo = userData;
+        wx.setStorageSync('userInfo', userData);
+
+        this.setData({
+          userInfo: userData,
+          isLoading: false
+        });
+
+        if (result.data.isNew) {
+          wx.showToast({
+            title: '欢迎新用户',
+            icon: 'none'
+          });
+        }
+
+        if (userData.needVerify === 1 && userData.isBlacklist === 0) {
+          this.showCustomVerifyDialog();
+        } else if (userData.isBlacklist === 1) {
+          this.setData({
+            showLockedDialog: true
+          });
+        }
+      } else {
+        throw new Error(result.data?.msg || '登录失败');
+      }
+    } catch (error) {
+      console.error('登录失败：', error);
+      wx.showToast({
+        title: '登录失败',
+        icon: 'error'
+      });
+      this.setData({
+        isLoading: false
+      });
+    }
+  },
+
+  // 显示自定义验证弹窗
+  showCustomVerifyDialog() {
+    this.setData({
+      showVerifyDialog: true,
+      verifyAnswer: '',
+      verifyError: '',
+      autoFocus: true // 自动聚焦
+    }, () => {
+      // 由于 input 的 focus 属性在动态渲染时可能不生效，延迟设置一次（可选）
+      setTimeout(() => this.setData({
+        autoFocus: false
+      }), 500);
+    });
+  },
+
+  // 输入框变化
+  onAnswerInput(e) {
+    this.setData({
+      verifyAnswer: e.detail.value
+    });
+  },
+
+  // 点击确认按钮
+  async onVerifyConfirm() {
+    const answer = this.data.verifyAnswer.trim();
+    if (!answer) {
+      this.setData({
+        verifyError: '请输入答案'
+      });
+      return;
+    }
+
+    wx.showLoading({
+      title: '验证中...'
+    });
+    try {
+      const result = await wx.cloud.callContainer({
+        config: {
+          env: "prod-3gktwx67d1dd1e76"
+        },
+        path: "/verify",
+        header: {
+          "X-WX-SERVICE": "flask-mysql-login",
+          "content-type": "application/json"
+        },
+        method: "POST",
+        data: {
+          answer
+        }
+      });
+
+      wx.hideLoading();
+
+      if (result.data && result.data.code === 200) {
+        const userData = result.data.data;
+        getApp().globalData.userInfo = userData;
+        wx.setStorageSync('userInfo', userData);
+        this.setData({
+          userInfo: userData
+        });
+
+        if (userData.isBlacklist === 1) {
+          // 账户被锁定
+          this.setData({
+            showVerifyDialog: false,
+            showLockedDialog: true
+          });
+        } else if (userData.needVerify === 0) {
+          // 验证通过
+          this.setData({
+            showVerifyDialog: false
+          });
+          wx.showToast({
+            title: '验证通过',
+            icon: 'success'
+          });
+        } else {
+          // 答案错误
+          const attempts = userData.verifyAttempts || 0;
+          const left = 3 - attempts;
+          this.setData({
+            verifyError: `答案错误，还剩 ${left} 次机会`,
+            verifyAnswer: '', // 可选：清空输入框
+            autoFocus: true // 继续自动聚焦
+          });
+          // 如果剩余次数为0，弹窗会在下次验证时由后端自动锁定，这里保持打开即可
+        }
+      } else {
+        wx.showToast({
+          title: result.data?.msg || '验证失败',
+          icon: 'none'
+        });
+      }
+    } catch (error) {
+      wx.hideLoading();
+      wx.showToast({
+        title: '网络错误',
+        icon: 'none'
+      });
+    }
+  },
+
+  // 点击取消按钮
+  onVerifyCancel() {
+    wx.showToast({
+      title: '请完成验证',
+      icon: 'none'
+    });
+    // 不关闭弹窗，强制验证
+  },
+
+  // 锁定弹窗确认
+  onLockedConfirm() {
+    this.setData({
+      showLockedDialog: false
+    });
+    // 可根据需要禁用部分操作
+  },
+
+  // 阻止弹窗蒙层滑动
+  preventTouchMove() {
+    return;
+  },
+
+  // Promise化微信API
+  wxPromise(method, options = {}) {
+    return new Promise((resolve, reject) => {
+      wx[method]({
+        ...options,
+        success: resolve,
+        fail: reject
+      });
+    });
+  },
 
   // 点击展开/收起
   onToggleExpand() {
     this.setData({
       showAll: !this.data.showAll
-    })
+    });
   },
 
   // 点击发布活动按钮
   onPublishClick() {
     wx.navigateTo({
       url: '/pages/publish/publish'
-    })
+    });
   },
 
   // 点击单个活动卡片
   onActivityClick(e) {
     const {
       id
-    } = e.currentTarget.dataset
-
-    // 跳转到活动详情页
+    } = e.currentTarget.dataset;
     wx.navigateTo({
       url: `/pages/details/details?id=${id}`
-    })
+    });
   }
-})
+});
