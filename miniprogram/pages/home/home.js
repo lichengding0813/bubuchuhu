@@ -78,8 +78,85 @@ Page({
   },
 
   onLoad() {
-    console.log('首页加载完成')
+    this.loginAndGetUser();
   },
+
+    // 登录并获取用户信息
+    async loginAndGetUser() {
+      this.setData({ isLoading: true });
+      
+      try {
+        // 1. 先通过微信登录获取code
+        const loginRes = await this.wxPromise('login');
+        if (!loginRes.code) {
+          throw new Error('登录失败');
+        }
+        
+        // 2. 调用云托管接口（自动会带上openid等信息）
+        wx.cloud.init()
+        console.log(loginRes.code)
+        const result = await 
+        wx.cloud.callContainer({
+          config: {
+            env: "prod-3gktwx67d1dd1e76"
+          },
+          path: "/login",
+          header: {
+            "X-WX-SERVICE": "flask-mysql-login",
+            "content-type": "application/json"
+          },
+          method: "POST",
+          data: {
+            code: loginRes.code
+          }
+        }) 
+  
+        console.log('云托管返回结果：', result);
+        
+        // result.data 里就是后端返回的业务数据
+        if (result.data && result.data.code === 200) {
+          const userData = result.data.data;
+          
+          // 存储用户信息
+          getApp().globalData.userInfo = userData;
+          wx.setStorageSync('userInfo', userData);
+          
+          this.setData({
+            userInfo: userData,
+            isLoading: false
+          });
+  
+          // 如果是新用户，可以提示一下
+          if (result.data.isNew) {
+            wx.showToast({
+              title: '欢迎新用户',
+              icon: 'none'
+            });
+          }
+        } else {
+          throw new Error(result.data?.msg || '登录失败');
+        }
+        
+      } catch (error) {
+        console.error('登录失败：', error);
+        wx.showToast({
+          title: '登录失败',
+          icon: 'error'
+        });
+        this.setData({ isLoading: false });
+      }
+    },
+  
+    // Promise化微信API
+    wxPromise(method, options = {}) {
+      return new Promise((resolve, reject) => {
+        wx[method]({
+          ...options,
+          success: resolve,
+          fail: reject
+        });
+      });
+    },
 
   // 点击展开/收起
   onToggleExpand() {
