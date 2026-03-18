@@ -1,18 +1,19 @@
-# app.py
-from flask import Flask, request, jsonify
-import pymysql
-import pymysql.cursors
+from flask import Flask, request, jsonify, g
 import requests
 from datetime import datetime
 import os
+
+# 导入路由蓝图
+from routes.activity_routes import activity_bp
+from db_utils import get_db, close_db
 
 app = Flask(__name__)
 
 # ==================== 配置信息 ====================
 # 云数据库配置
-DB_CONFIG = {
-    'host': '10.13.111.246',  # 例如：'sh-cynosdbmysql-grp-xxx.sql.tencentcdb.com'
-    'port': 3306,  # 你的数据库端口
+app.config['DB_CONFIG'] = {
+    'host': '10.13.111.246',
+    'port': 3306,
     'user': 'root',
     'password': 'fNau8XqS',
     'database': 'flask_demo',
@@ -20,46 +21,36 @@ DB_CONFIG = {
 }
 
 # 微信小程序配置
-WX_APPID = 'wxd1a366672ab0f5ef'
-WX_SECRET = ''
+app.config['WX_APPID'] = 'wxd1a366672ab0f5ef'
+app.config['WX_SECRET'] = 'd336268096323dc418d18ad93097db9f'
 
 # 默认头像
-DEFAULT_AVATAR = 'cloud://prod-3gktwx67d1dd1e76.7072-prod-3gktwx67d1dd1e76-1392222183/魔魔胡胡胡蘿蔔.png'
+app.config['DEFAULT_AVATAR'] = 'cloud://prod-3gktwx67d1dd1e76.7072-prod-3gktwx67d1dd1e76-1392222183/魔魔胡胡胡蘿蔔.png'
 
-# ==================== 数据库连接 ====================
-def get_db():
-    """获取数据库连接"""
-    return pymysql.connect(
-        host=DB_CONFIG['host'],
-        port=DB_CONFIG['port'],
-        user=DB_CONFIG['user'],
-        password=DB_CONFIG['password'],
-        database=DB_CONFIG['database'],
-        charset=DB_CONFIG['charset'],
-        cursorclass=pymysql.cursors.DictCursor
-    )
+# ==================== 注册蓝图 ====================
+app.register_blueprint(activity_bp, url_prefix='/api/activity')
 
+# ==================== 数据库连接钩子 ====================
+@app.teardown_appcontext
+def teardown_db(e=None):
+    close_db(e)
 
 # ==================== 唯一接口：登录/注册 ====================
 @app.route('/login', methods=['POST'])
 def login():
-    """
-    用户登录/注册接口
-    请求体: {"code": "微信登录code"}
-    """
-    # 1. 获取请求参数
+    """用户登录/注册接口"""
     data = request.get_json()
     code = data.get('code')
 
     if not code:
         return jsonify({'code': 400, 'msg': '缺少code参数'})
 
-    # 2. 通过code获取openid
+    # 通过code获取openid
     try:
-        url = 'http://api.weixin.qq.com/sns/jscode2session'
+        url = 'https://api.weixin.qq.com/sns/jscode2session'
         params = {
-            'appid': WX_APPID,
-            'secret': WX_SECRET,
+            'appid': app.config['WX_APPID'],
+            'secret': app.config['WX_SECRET'],
             'js_code': code,
             'grant_type': 'authorization_code'
         }
@@ -73,14 +64,13 @@ def login():
     except Exception as e:
         return jsonify({'code': 500, 'msg': f"调用微信接口失败: {str(e)}"})
 
-    # 3. 连接数据库处理用户
     conn = None
     cursor = None
     try:
         conn = get_db()
         cursor = conn.cursor()
 
-        # 4. 查询用户是否存在
+        # 查询用户是否存在
         cursor.execute("SELECT * FROM users WHERE openId = %s", (openid,))
         user = cursor.fetchone()
 
@@ -95,7 +85,6 @@ def login():
             """, (now, openid))
             conn.commit()
 
-            # 重新获取用户信息
             cursor.execute("SELECT * FROM users WHERE openId = %s", (openid,))
             user = cursor.fetchone()
 
@@ -106,7 +95,6 @@ def login():
             })
         else:
             # 用户不存在：创建新用户
-            # 生成昵称：魔魔胡胡胡蘿蔔 + openid后四位
             nickname = f"魔魔胡胡胡蘿蔔{openid[-4:] if len(openid) >= 4 else '0000'}"
 
             cursor.execute("""
@@ -116,12 +104,11 @@ def login():
                     createTime, lastLoginTime
                 ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """, (
-                openid, nickname, DEFAULT_AVATAR, '', 1,
+                openid, nickname, app.config['DEFAULT_AVATAR'], '', 1,
                 0, 0, 1, 0, now, now
             ))
             conn.commit()
 
-            # 获取新用户信息
             cursor.execute("SELECT * FROM users WHERE openId = %s", (openid,))
             user = cursor.fetchone()
 
@@ -138,18 +125,11 @@ def login():
     finally:
         if cursor:
             cursor.close()
-        if conn:
-            conn.close()
 
 # ==================== 验证答案接口 ====================
 @app.route('/verify', methods=['POST'])
 def verify_answer():
-    """
-    验证用户回答的接口
-    请求头应包含 X-Wx-OpenId（云托管自动注入）
-    请求体: {"answer": "用户输入"}
-    """
-    # 从请求头获取 openid
+    """验证用户回答"""
     openid = request.headers.get('X-Wx-OpenId')
     if not openid:
         return jsonify({'code': 401, 'msg': '未获取到用户身份'})
@@ -159,7 +139,7 @@ def verify_answer():
     if not answer:
         return jsonify({'code': 400, 'msg': '缺少answer参数'})
 
-    CORRECT_ANSWER = '大鸡腿'  # 正确答案
+    CORRECT_ANSWER = '大鸡腿'
 
     conn = None
     cursor = None
@@ -167,19 +147,15 @@ def verify_answer():
         conn = get_db()
         cursor = conn.cursor()
 
-        # 查询用户
         cursor.execute("SELECT * FROM users WHERE openId = %s", (openid,))
         user = cursor.fetchone()
         if not user:
             return jsonify({'code': 404, 'msg': '用户不存在'})
 
-        # 如果已经是黑名单，直接返回
         if user['isBlacklist'] == 1:
             return jsonify({'code': 403, 'msg': '账户已被锁定', 'data': user})
 
-        # 验证答案
         if answer == CORRECT_ANSWER:
-            # 答案正确：更新 needVerify=0, verified=1, verifyAttempts=0（重置尝试次数）
             cursor.execute("""
                 UPDATE users 
                 SET needVerify = 0, verified = 1, verifyAttempts = 0
@@ -188,10 +164,8 @@ def verify_answer():
             conn.commit()
             msg = '验证通过'
         else:
-            # 答案错误：增加 verifyAttempts
             new_attempt = user['verifyAttempts'] + 1
             if new_attempt >= 3:
-                # 超过三次，拉黑
                 cursor.execute("""
                     UPDATE users 
                     SET verifyAttempts = %s, isBlacklist = 1
@@ -208,7 +182,6 @@ def verify_answer():
 
             conn.commit()
 
-        # 重新获取用户信息
         cursor.execute("SELECT * FROM users WHERE openId = %s", (openid,))
         user = cursor.fetchone()
 
@@ -225,24 +198,16 @@ def verify_answer():
     finally:
         if cursor:
             cursor.close()
-        if conn:
-            conn.close()
-
 
 # ==================== 更新用户资料接口 ====================
 @app.route('/update_profile', methods=['POST'])
 def update_profile():
-    """
-    更新用户资料（头像、昵称、手机号、微信号）
-    请求头应包含 X-Wx-OpenId
-    请求体: {"nickName": "...", "avatarUrl": "...", "phoneNumber": "...", "wechatId": "..."}
-    """
+    """更新用户资料"""
     openid = request.headers.get('X-Wx-OpenId')
     if not openid:
         return jsonify({'code': 401, 'msg': '未获取到用户身份'})
 
     data = request.get_json()
-    # 只更新提供的字段
     update_fields = []
     params = []
 
@@ -276,7 +241,6 @@ def update_profile():
         if cursor.rowcount == 0:
             return jsonify({'code': 404, 'msg': '用户不存在或没有变化'})
 
-        # 重新获取用户信息
         cursor.execute("SELECT * FROM users WHERE openId = %s", (openid,))
         user = cursor.fetchone()
         return jsonify({
@@ -291,12 +255,8 @@ def update_profile():
     finally:
         if cursor:
             cursor.close()
-        if conn:
-            conn.close()
 
-
-
-# ==================== 健康检查（用于验证服务是否正常） ====================
+# ==================== 健康检查 ====================
 @app.route('/', methods=['GET'])
 def health():
     return jsonify({'code': 200, 'msg': '服务正常运行'})
