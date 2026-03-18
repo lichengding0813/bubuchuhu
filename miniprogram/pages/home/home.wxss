@@ -2,6 +2,9 @@
 /* 页面整体背景 */
 page {
   background-color: #e6f7ff;
+  /* 删除 overflow: hidden，让页面可以滚动 */
+  height: 100%;
+  overflow-y: auto; /* 允许页面滚动 */
 }
 
 .home-container {
@@ -18,26 +21,15 @@ page {
 
 .banner-image {
   width: 100%;
-  height: 140px;
-  background: linear-gradient(145deg, #9ec9ff, #b3dcff);
   border-radius: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 10px rgba(0, 140, 233, 0.15);
-  background-size: cover;
-  background-position: center;
+  overflow: hidden;
 }
 
-.banner-image text {
-  background-color: rgba(255, 255, 255, 0.25);
-  padding: 8px 20px;
-  border-radius: 40px;
-  backdrop-filter: blur(3px);
-  color: white;
-  font-size: 18px;
-  border: 1px solid rgba(255, 255, 255, 0.4);
+.banner-image image {
+  width: 100%;
+  display: block;
 }
+
 
 /* 发布按钮容器 */
 .publish-section {
@@ -399,11 +391,4 @@ page {
 
 .dialog-btn-confirm:active {
   background-color: #4a9ad0;
-}
-
-/* 锁定弹窗的确认按钮可复用以上样式，也可单独设置 */
-
-/* 防止蒙层滚动 */
-page {
-  overflow: hidden; /* 弹窗打开时禁止页面滚动，可以在JS中动态控制 */
 }

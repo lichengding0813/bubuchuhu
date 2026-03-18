@@ -1,7 +1,7 @@
 <!-- 顶部介绍的banner (图片形式展现) -->
 <view class="banner-section">
   <view class="banner-image">
-    <text>介绍banner预留</text>
+    <image src="cloud://prod-3gktwx67d1dd1e76.7072-prod-3gktwx67d1dd1e76-1392222183/banner.jpg" mode="widthFix" />
   </view>
 </view>
 
@@ -21,12 +21,7 @@
 
   <!-- 活动卡片列表 - 使用wx:for渲染，根据showAll控制显示数量 -->
   <block wx:for="{{activityList}}" wx:key="index">
-    <view 
-      class="activity-card"
-      data-id="{{item.id}}"
-      bindtap="onActivityClick"
-      wx:if="{{showAll || index < 3}}"
-    >
+    <view class="activity-card" data-id="{{item.id}}" bindtap="onActivityClick" wx:if="{{showAll || index < 3}}">
       <view class="card-left img{{(index % 3) + 1}}"></view>
       <view class="card-right">
         <view class="activity-name">
@@ -68,24 +63,11 @@
   <view class="dialog-container">
     <!-- 顶部图片 -->
     <view class="dialog-title">验证问题</view>
-    <image 
-      class="dialog-image" 
-      src="cloud://prod-3gktwx67d1dd1e76.7072-prod-3gktwx67d1dd1e76-1392222183/verify.png" 
-      mode="widthFix"
-    />
+    <image class="dialog-image" src="cloud://prod-3gktwx67d1dd1e76.7072-prod-3gktwx67d1dd1e76-1392222183/verify.png" mode="widthFix" />
     <view class="dialog-content">
       <view class="question">兽妈准备宵夜是？</view>
 
-      <input 
-        class="dialog-input"
-        type="text"
-        placeholder="请输入答案"
-        value="{{verifyAnswer}}"
-        bindinput="onAnswerInput"
-        focus="{{autoFocus}}"
-        confirm-type="done"
-        bindconfirm="onVerifyConfirm"
-      />
+      <input class="dialog-input" type="text" placeholder="请输入答案" value="{{verifyAnswer}}" bindinput="onAnswerInput" focus="{{autoFocus}}" confirm-type="done" bindconfirm="onVerifyConfirm" />
       <view class="error-tip" wx:if="{{verifyError}}">{{verifyError}}</view>
     </view>
     <view class="dialog-buttons">

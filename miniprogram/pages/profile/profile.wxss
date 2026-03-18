@@ -1,30 +1,38 @@
 /* pages/profile/profile.wxss */
 page {
-  background-color: #f0faff;
+  background-color: #e6f7ff;
+  height: 100%;
+  overflow-y: auto;
 }
 
 .profile-container {
-  padding: 16px;
+  background-color: #f0faff;
+  min-height: 100vh;
+  padding: 20rpx 30rpx 40rpx;
 }
 
+/* 用户信息卡片 - 渐变蓝色 */
 .user-card {
+  background: linear-gradient(135deg, #96c9ff 0%, #5faee3 100%);
+  border-radius: 24rpx;
+  padding: 40rpx 30rpx;
   display: flex;
   align-items: center;
-  background-color: white;
-  border-radius: 20px;
-  padding: 20px 16px;
-  margin-bottom: 16px;
-  box-shadow: 0 4px 12px rgba(0, 130, 210, 0.08);
-  border: 1px solid rgba(160, 200, 255, 0.4);
+  color: #ffffff;
+  position: relative;
+  margin-bottom: 30rpx;
+  box-shadow: 0 8rpx 20rpx rgba(0, 110, 200, 0.2);
 }
 
 .user-avatar {
-  width: 60px;
-  height: 60px;
-  border-radius: 30px;
+  width: 120rpx;
+  height: 120rpx;
+  border-radius: 60rpx;
   overflow: hidden;
-  margin-right: 16px;
-  background-color: #e3f0ff;
+  margin-right: 30rpx;
+  border: 4rpx solid #ffffff;
+  box-shadow: 0 4rpx 10rpx rgba(0, 50, 100, 0.3);
+  background-color: #b7daf9;
 }
 
 .user-avatar image, .user-avatar open-data {
@@ -34,69 +42,148 @@ page {
 
 .user-info {
   flex: 1;
-  display: flex;
-  flex-direction: column;
 }
 
 .user-name {
-  font-size: 18px;
+  font-size: 36rpx;
   font-weight: 600;
-  color: #134579;
-  margin-bottom: 4px;
+  display: block;
+  margin-bottom: 10rpx;
+  color: #ffffff;
+  text-shadow: 0 2rpx 4rpx rgba(0, 50, 100, 0.3);
 }
 
-.user-desc {
-  font-size: 13px;
-  color: #5f7fa3;
+.user-meta {
+  font-size: 24rpx;
+  opacity: 0.95;
+  margin-bottom: 12rpx;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+}
+
+.user-meta text {
+  background-color: rgba(255, 255, 255, 0.2);
+  padding: 4rpx 16rpx;
+  border-radius: 30rpx;
+  color: #ffffff;
+  font-size: 22rpx;
+}
+
+/* user-badge 样式 - 替换原来的 .user-badge 相关样式 */
+.user-badge {
+  display: flex;
+  gap: 12rpx;
+  flex-wrap: wrap;
+}
+
+.badge-item {
+  display: flex;
+  align-items: center;
+  padding: 4rpx 16rpx;
+  border-radius: 30rpx;
+  font-size: 22rpx;
+  background-color: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+}
+
+.badge-item.verified {
+  background-color: rgba(70, 200, 140, 0.8);
+  border: 2rpx solid rgba(70, 200, 140, 0.2);
+}
+
+.verified-icon {
+  font-size: 28rpx !important;
+  margin-right: 4rpx;
+  color: #ffffff !important;
+}
+
+.badge-item.phone {
+  background-color: rgba(100, 150, 255, 0.8);
+  border: 2rpx solid rgba(100, 150, 255, 0.2);
+}
+
+.phone-icon {
+  font-size: 26rpx !important;
+  margin-right: 4rpx;
+  color: #ffffff !important;
 }
 
 .arrow-icon {
-  color: #96c9ff;
-  font-size: 16px;
+  color: #ffffff;
+  opacity: 0.9;
+  font-size: 40rpx !important;
 }
 
+/* 统计数据卡片 */
 .stats-card {
+  background: #ffffff;
+  border-radius: 24rpx;
+  padding: 30rpx 20rpx;
   display: flex;
-  background-color: white;
-  border-radius: 20px;
-  padding: 20px 0;
-  margin-bottom: 16px;
-  border: 1px solid rgba(160, 200, 255, 0.4);
+  margin-bottom: 30rpx;
+  box-shadow: 0 4rpx 16rpx rgba(0, 130, 210, 0.08);
+  border: 2rpx solid rgba(150, 200, 255, 0.4);
 }
 
 .stat-item {
   flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
   text-align: center;
+  position: relative;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.stat-item:active {
+  transform: scale(0.98);
+}
+
+.stat-item:first-child::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 20%;
+  height: 60%;
+  width: 2rpx;
+  background-color: #d0e8ff;
 }
 
 .stat-number {
-  font-size: 22px;
-  font-weight: 600;
+  display: block;
+  font-size: 52rpx;
+  font-weight: 700;
   color: #1e4d7c;
-  margin-bottom: 4px;
+  margin-bottom: 8rpx;
+  line-height: 1.2;
 }
 
 .stat-label {
-  font-size: 12px;
+  font-size: 28rpx;
   color: #5f7fa3;
+  font-weight: 400;
 }
 
+/* 菜单列表 */
 .menu-list {
-  background-color: white;
-  border-radius: 20px;
-  padding: 8px 0;
-  border: 1px solid rgba(160, 200, 255, 0.4);
+  background: #ffffff;
+  border-radius: 24rpx;
+  overflow: hidden;
+  margin-bottom: 40rpx;
+  box-shadow: 0 4rpx 16rpx rgba(0, 130, 210, 0.08);
+  border: 2rpx solid rgba(150, 200, 255, 0.4);
 }
 
 .menu-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px;
-  border-bottom: 1px solid #e6f0ff;
+  padding: 32rpx 30rpx;
+  border-bottom: 2rpx solid #e6f0ff;
+  transition: background-color 0.2s;
+}
+
+.menu-item:active {
+  background-color: #f0f9ff;
 }
 
 .menu-item:last-child {
@@ -109,17 +196,271 @@ page {
 }
 
 .menu-icon {
-  margin-right: 12px;
-  color: #5faee3;
-  font-size: 18px;
+  margin-right: 24rpx;
+  color: #5faee3 !important;
+  font-size: 40rpx !important;
 }
 
 .menu-left text {
-  font-size: 15px;
-  color: #2e4d73;
+  font-size: 30rpx;
+  color: #1e4d7c;
+  font-weight: 450;
+}
+
+.menu-right {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
 }
 
 .menu-arrow {
-  color: #96c9ff;
-  font-size: 14px;
+  color: #a0c9f0 !important;
+  font-size: 32rpx !important;
+}
+
+/* 红点提示 */
+.menu-right .van-badge {
+  background-color: #ff8a8a !important;
+  border: 2rpx solid #ffffff;
+  box-shadow: 0 2rpx 6rpx rgba(255, 100, 100, 0.4);
+}
+
+/* 退出登录按钮 */
+.logout-btn {
+  width: 100%;
+  height: 88rpx;
+  line-height: 88rpx;
+  background-color: #ffffff !important;
+  border: 2rpx solid #ffb5b5 !important;
+  border-radius: 44rpx !important;
+  color: #ff8080 !important;
+  font-size: 32rpx !important;
+  font-weight: 500 !important;
+  margin-top: 30rpx;
+  box-shadow: 0 4rpx 12rpx rgba(255, 150, 150, 0.2);
+  transition: all 0.2s;
+}
+
+.logout-btn:active {
+  background-color: #fff5f5 !important;
+  transform: scale(0.98);
+}
+
+.logout-btn::after {
+  border: none;
+}
+
+/* 查看全部入口卡片 - 复用home样式 */
+.view-all-card {
+  background-color: #ffffffd6;
+  border: 2rpx dashed #98c5f0;
+  border-radius: 40rpx;
+  padding: 24rpx 30rpx;
+  text-align: center;
+  color: #2e7eb0;
+  font-size: 28rpx;
+  font-weight: 500;
+  margin: 20rpx 0 10rpx;
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+}
+
+.view-all-card:active {
+  background-color: #e8f2ff;
+}
+
+.view-all-card van-icon {
+  margin-left: 8rpx;
+  font-size: 28rpx;
+  color: #5e9ad9;
+}
+
+/* 加载状态 */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60rpx 0;
+}
+
+.loading-text {
+  color: #5f7fa3;
+  font-size: 28rpx;
+  margin-top: 20rpx;
+}
+
+/* 空状态 */
+.empty-state {
+  background-color: #ffffff;
+  border-radius: 24rpx;
+  padding: 80rpx 40rpx;
+  text-align: center;
+  border: 2rpx dashed #c0e0ff;
+  margin: 20rpx 0;
+}
+
+.empty-icon {
+  font-size: 80rpx !important;
+  color: #b7daf9 !important;
+  margin-bottom: 20rpx;
+}
+
+.empty-text {
+  color: #7f9fbf;
+  font-size: 28rpx;
+}
+
+/* 弹窗样式 - 复用home的蓝色主题 */
+.custom-dialog {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dialog-mask {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.dialog-container {
+  position: relative;
+  width: 600rpx;
+  background-color: #ffffff;
+  border-radius: 32rpx;
+  overflow: hidden;
+  box-shadow: 0 8rpx 32rpx rgba(30, 110, 180, 0.3);
+  z-index: 1001;
+}
+
+.dialog-image {
+  width: 50%;
+  height: auto;
+  display: block;
+  border-radius: 32rpx;
+  margin: 20rpx auto 20rpx auto;
+}
+
+.dialog-title {
+  padding: 24rpx 24rpx 8rpx;
+  font-size: 36rpx;
+  font-weight: 600;
+  color: #1e4d7c;
+  text-align: center;
+}
+
+.dialog-content {
+  padding: 0 32rpx 24rpx;
+  align-items: center;
+}
+
+.question {
+  font-size: 32rpx;
+  color: #2e5a8a;
+  margin-bottom: 24rpx;
+  text-align: center;
+  font-weight: 500;
+}
+
+.dialog-input {
+  width: 100%;
+  height: 80rpx;
+  background-color: #f0f9ff;
+  border-radius: 40rpx;
+  padding: 0 32rpx;
+  font-size: 28rpx;
+  color: #1e3e60;
+  box-sizing: border-box;
+  border: 2rpx solid #c0e0ff;
+  transition: border-color 0.2s;
+}
+
+.dialog-input:focus {
+  border-color: #5faee3;
+  background-color: #ffffff;
+}
+
+.error-tip {
+  color: #ff6b6b;
+  font-size: 26rpx;
+  margin-top: 16rpx;
+  text-align: center;
+  font-weight: 400;
+}
+
+.plain-text {
+  font-size: 28rpx;
+  color: #2e5a8a;
+  text-align: center;
+  padding: 20rpx 0;
+}
+
+.dialog-buttons {
+  display: flex;
+  border-top: 2rpx solid #d9ecff;
+}
+
+.dialog-btn {
+  flex: 1;
+  height: 88rpx;
+  line-height: 88rpx;
+  text-align: center;
+  font-size: 32rpx;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  font-weight: 500;
+}
+
+.dialog-btn-cancel {
+  color: #7f8c8d;
+  border-right: 2rpx solid #d9ecff;
+  background-color: #f9fcff;
+}
+
+.dialog-btn-cancel:active {
+  background-color: #e6f0fa;
+}
+
+.dialog-btn-confirm {
+  color: #ffffff;
+  background-color: #5faee3;
+}
+
+.dialog-btn-confirm:active {
+  background-color: #4a9ad0;
+}
+
+/* 小工具类 */
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mt-20 {
+  margin-top: 20rpx;
+}
+
+.mb-20 {
+  margin-bottom: 20rpx;
+}
+
+/* 分割线 */
+.divider {
+  height: 2rpx;
+  background: linear-gradient(90deg, transparent, #c0e0ff, transparent);
+  margin: 30rpx 0;
 }
