@@ -299,3 +299,17 @@ page {
 .submit-btn {
   margin-top: 0;
 }
+
+.date-picker-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 30rpx;
+  border-bottom: 2rpx solid #f5f5f5;
+}
+
+.date-picker-title {
+  font-size: 32rpx;
+  font-weight: 500;
+  color: #333;
+}
