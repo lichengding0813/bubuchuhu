@@ -1,6 +1,7 @@
 import pymysql
 import pymysql.cursors
 from flask import g
+import logging
 
 # 从主配置导入
 DB_CONFIG = {
@@ -11,6 +12,7 @@ DB_CONFIG = {
     'database': 'flask_demo',
     'charset': 'utf8mb4'
 }
+
 
 def get_db():
     """获取数据库连接（支持请求级别的连接复用）"""
@@ -26,20 +28,50 @@ def get_db():
         )
     return g.db
 
+
 def close_db(e=None):
-    """关闭数据库连接"""
+    """安全关闭数据库连接"""
     db = g.pop('db', None)
     if db is not None:
-        db.close()
+        try:
+            # 检查连接是否已经关闭
+            if hasattr(db, 'open') and db.open:
+                db.close()
+            elif hasattr(db, '_closed') and not db._closed:
+                db.close()
+            else:
+                # 尝试关闭，捕获 Already closed 错误
+                try:
+                    db.close()
+                except pymysql.err.Error as e:
+                    if "Already closed" not in str(e):
+                        logging.error(f"关闭数据库连接时出错: {e}")
+        except Exception as e:
+            logging.error(f"关闭数据库连接时未知错误: {e}")
+
 
 def execute_query(sql, params=None, fetch_one=False):
     """执行查询的辅助函数"""
-    conn = get_db()
-    cursor = conn.cursor()
+    conn = None
+    cursor = None
     try:
+        conn = get_db()
+        cursor = conn.cursor()
         cursor.execute(sql, params or ())
-        if fetch_one:
-            return cursor.fetchone()
-        return cursor.fetchall()
+
+        if sql.strip().upper().startswith('SELECT'):
+            if fetch_one:
+                return cursor.fetchone()
+            return cursor.fetchall()
+        else:
+            conn.commit()
+            return cursor.lastrowid
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        logging.error(f"执行查询时出错: {e}, SQL: {sql}, 参数: {params}")
+        raise e
     finally:
-        cursor.close()
+        if cursor:
+            cursor.close()
+        # 注意：不在这里关闭 conn，让 teardown 处理

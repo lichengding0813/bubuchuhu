@@ -47,7 +47,7 @@ def login():
 
     # 通过code获取openid
     try:
-        url = 'https://api.weixin.qq.com/sns/jscode2session'
+        url = 'http://api.weixin.qq.com/sns/jscode2session'
         params = {
             'appid': app.config['WX_APPID'],
             'secret': app.config['WX_SECRET'],

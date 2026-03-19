@@ -36,7 +36,7 @@ def create_activity():
         sql = """
         INSERT INTO activities (
             activity_no, name, description, activity_time, location,
-            routes, distance, climb, difficulty, max_participants,
+            route, distance, climb, difficulty, max_participants,
             deadline, cover_url, group_qr_url, wechat_id, created_by,
             status, created_at
         ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
@@ -48,7 +48,7 @@ def create_activity():
             data.get('description'),
             data.get('activityTime'),
             data.get('location'),
-            data.get('routes'),
+            data.get('route'),
             data.get('distance', 0),
             data.get('climb', 0),
             data.get('difficulty'),
