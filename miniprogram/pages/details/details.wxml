@@ -52,7 +52,9 @@
   <view class="info-card">
     <view class="card-title">发起人信息</view>
     <view class="organizer-info">
-      <view class="organizer-avatar"></view>
+      <view class="organizer-avatar">
+        <image src="{{activityDetail.creatorAvatar}}" mode="aspectFill"></image>
+      </view>
       <view class="organizer-detail">
         <text class="organizer-name">{{activityDetail.organizer}}</text>
         <text class="organizer-wechat">微信号：{{activityDetail.wechat}}</text>
@@ -70,58 +72,91 @@
     </view>
   </view>
 
+
+
   <!-- 活动详情卡片 -->
   <view class="info-card">
     <view class="card-title">活动详情</view>
+    <view class="travel-options">
+      <view class="travel-tag" wx:for="{{activityDetail.travel}}" wx:key="index" wx:for-item="item">
+        <text wx:if="{{item === 'bus'}}">🚌 大巴</text>
+        <text wx:elif="{{item === 'train'}}">🚄 高铁</text>
+        <text wx:elif="{{item === 'self'}}">🚗 自驾</text>
+      </view>
+    </view>
     <view class="detail-content">
       <text class="detail-text">{{activityDetail.description}}</text>
     </view>
   </view>
 
   <!-- 路线信息卡片 -->
-  <view class="info-card"  style="margin-bottom: 200rpx;">
+  <view class="info-card" style="margin-bottom: 200rpx;">
     <view class="card-title">路线信息</view>
     <view class="route-info">
       <text class="route-text">{{activityDetail.route}}</text>
     </view>
+
+    <!-- 集合点列表 - 新增 -->
+    <view class="meeting-points-section" wx:if="{{activityDetail.meetingPoints && activityDetail.meetingPoints.length > 0}}">
+      <view class="section-subtitle">集合点信息</view>
+      <view class="meeting-points-list">
+        <view class="meeting-point-item" wx:for="{{activityDetail.meetingPoints}}" wx:key="index" wx:for-index="idx">
+          <view class="meeting-point-order">集合点 {{idx + 1}}</view>
+          <view class="meeting-point-detail">
+            <view class="meeting-point-time">
+              <van-icon name="clock-o" size="14px" />
+              <text>{{item.meeting_time || item.time}}</text>
+            </view>
+            <view class="meeting-point-location">
+              <van-icon name="location-o" size="14px" />
+              <text>{{item.location}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+
     <view class="route-meta">
-      <text>集合点：{{activityDetail.meetingPoints.length}}个</text>
       <text>报名截止：{{activityDetail.deadline}}</text>
     </view>
   </view>
 
-  <!-- 底部固定区域 - 同意条款和报名按钮 -->
-  <view class="bottom-fixed">
-    <!-- 同意条款区域 -->
-    <view class="agree-section">
-      <view class="agree-item">
-        <van-checkbox value="{{agreeNotice}}" bindchange="onAgreeNoticeChange" shape="square" size="18px">
-          <text class="agree-text">我已阅读并同意</text>
-        </van-checkbox>
-        <text class="notice-link" bindtap="onNoticeClick" data-type="participant">《报名参与者须知》</text>
-      </view>
-      <!-- <view class="agree-item" wx:if="{{activityDetail.travel.includes('bus')}}"> -->
-      <view class="agree-item">
-        <van-checkbox value="{{agreeBus}}" bindchange="onAgreeBusChange" shape="square" size="18px">
-          <text class="agree-text">我已阅读并同意</text>
-        </van-checkbox>
-        <text class="notice-link" bindtap="onNoticeClick" data-type="bus">《大巴行程免责声明》</text>
-      </view>
-      <view class="agree-item">
-        <van-checkbox value="{{agreeBus}}" bindchange="onAgreeBusChange" shape="square" size="18px">
-          <text class="agree-text">我已阅读并同意</text>
-        </van-checkbox>
-        <text class="notice-link" bindtap="onNoticeClick" data-type="self">《自驾/高铁行程免责声明》</text>
-      </view>
+<!-- 底部固定区域 -->
+<view class="bottom-fixed">
+  <!-- 同意条款区域 -->
+  <view class="agree-section">
+    <!-- 报名参与者须知 - 始终显示 -->
+    <view class="agree-item">
+      <van-checkbox value="{{agreeNotice}}" bindchange="onAgreeNoticeChange" shape="square" size="18px">
+        <text class="agree-text">我已阅读并同意</text>
+      </van-checkbox>
+      <text class="notice-link" bindtap="onNoticeClick" data-type="participant">《报名参与者须知》</text>
     </view>
 
-    <!-- 报名按钮 -->
-    <view class="submit-btn">
-      <van-button type="info" block bindtap="onSignUpClick" disabled="{{!canSignUp}}">
-        立即报名
-      </van-button>
-    </view>
+<!-- 大巴免责声明 - 直接用数组判断 -->
+<view class="agree-item" wx:if="{{activityDetail.travel && activityDetail.travel[0] === 'bus'}}">
+  <van-checkbox value="{{agreeBus}}" bindchange="onAgreeBusChange" shape="square" size="18px">
+    <text class="agree-text">我已阅读并同意</text>
+  </van-checkbox>
+  <text class="notice-link" bindtap="onNoticeClick" data-type="bus">《大巴行程免责声明》</text>
+</view>
+
+<!-- 自驾/高铁免责声明 -->
+<view class="agree-item" wx:if="{{activityDetail.travel && (activityDetail.travel[0] === 'train' || activityDetail.travel[0] === 'self')}}">
+  <van-checkbox value="{{agreeSelf}}" bindchange="onAgreeSelfChange" shape="square" size="18px">
+    <text class="agree-text">我已阅读并同意</text>
+  </van-checkbox>
+  <text class="notice-link" bindtap="onNoticeClick" data-type="self">《自驾/高铁行程免责声明》</text>
+</view>
   </view>
+
+  <!-- 报名按钮 -->
+  <view class="submit-btn">
+    <van-button type="info" block bindtap="onSignUpClick" disabled="{{!canSignUp}}">
+      立即报名
+    </van-button>
+  </view>
+</view>
 
   <!-- 须知弹窗 -->
   <van-popup show="{{showNotice}}" bindclose="onNoticeClose" position="bottom" round closeable close-icon="close" custom-style="height: 80%;">

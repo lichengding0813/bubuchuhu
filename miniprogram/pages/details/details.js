@@ -1,99 +1,314 @@
 Page({
   data: {
-    agreeNotice: false,
-    agreeBus: false,
-    canSignUp: false,
-    showNotice: false,
-    noticeTitle: '',
-    noticeType: '',
-    
-    // 活动详情数据
+    activityId: null,
+    creatorInfo: null,
     activityDetail: {
-      id: 1,
-      name: '周末城市徒步',
+      name: '',
+      time: '',
+      location: '',
+      difficulty: '',
+      distance: 0,
+      climb: 0,
+      remainCount: 0,
+      totalCount: 0,
+      organizer: '',
+      wechat: '',
       cover: '',
-      time: '2024-05-20 15:00',
-      location: '市中心公园',
-      remainCount: 8,
-      totalCount: 20,
-      difficulty: '⭐ 简单',
-      distance: 10,
-      climb: 200,
-      status: '报名中',
-      organizer: '徒步爱好者',
-      wechat: 'hiker123',
       groupQR: '',
       busQR: '',
-      description: '周末一起徒步城市公园，感受自然风光，结识新朋友。路线平缓，适合新手。',
-      route: '起点：公园南门 → 途径：湖畔栈道 → 终点：山顶观景台',
-      meetingPoints: [
-        { time: '14:50', location: '公园南门' },
-        { time: '15:10', location: '地铁站A口' }
-      ],
-      deadline: '2024-05-19 14:00',
-      travel: ['bus', 'self'] // 出行方式
-    }
+      description: '',
+      route: '',
+      meetingPoints: [],
+      deadline: '',
+      status: '',
+      travel: [] // 出行方式
+    },
+    agreeNotice: false,
+    agreeBus: false,
+    agreeSelf: false, // 新增
+    canSignUp: false,
+    showNotice: false,
+    noticeType: 'participant',
+    noticeTitle: '报名参与者须知',
+    userInfo: null
   },
 
   onLoad(options) {
-    const { id } = options
-    console.log('活动详情页加载，活动ID:', id)
-    // 这里可以根据id从服务器获取活动详情
-    this.checkCanSignUp()
+    // 获取活动ID
+    const {
+      id
+    } = options
+    if (id) {
+      this.setData({
+        activityId: id
+      })
+      this.getActivityDetail(id)
+    } else {
+      wx.showToast({
+        title: '活动ID不存在',
+        icon: 'error'
+      })
+    }
+
+    // 获取用户信息
+    const userInfo = wx.getStorageSync('userInfo')
+    if (userInfo) {
+      this.setData({
+        userInfo
+      })
+    }
   },
+
+  // 获取活动详情
+  async getActivityDetail(activityId) {
+    wx.showLoading({
+      title: '加载中...'
+    })
+
+    try {
+      const userInfo = this.data.userInfo || wx.getStorageSync('userInfo')
+
+      const result = await wx.cloud.callContainer({
+        config: {
+          env: "prod-3gktwx67d1dd1e76"
+        },
+        path: "/api/activity/detail",
+        header: {
+          "X-WX-SERVICE": "flask-mysql-login",
+          "X-Wx-OpenId": userInfo?.openId,
+          "content-type": "application/json"
+        },
+        method: "GET",
+        data: {
+          id: activityId
+        }
+      })
+
+      wx.hideLoading()
+
+      if (result.data && result.data.code === 200) {
+        const activity = result.data.data
+        this.formatActivityDetail(activity)
+      } else {
+        wx.showToast({
+          title: result.data?.msg || '获取详情失败',
+          icon: 'none'
+        })
+      }
+    } catch (error) {
+      wx.hideLoading()
+      console.error('获取活动详情失败:', error)
+      wx.showToast({
+        title: '网络错误',
+        icon: 'error'
+      })
+    }
+  },
+
+  // 格式化活动详情数据
+  formatActivityDetail(activity) {
+    // 计算剩余名额
+    const participantCount = activity.participant_count || 0
+    const remainCount = activity.max_participants - participantCount
+
+    // 获取出行方式列表
+    const travelOptions = (activity.travel_options || []).map(item => {
+      // travel_type: 1-大巴 2-高铁 3-自驾
+      switch (item.travel_type) {
+        case 1:
+          return 'bus'
+        case 2:
+          return 'train'
+        case 3:
+          return 'self'
+        default:
+          return ''
+      }
+    }).filter(Boolean)
+
+    // 获取大巴二维码（从travel_type=1中获取）
+    const busTravel = (activity.travel_options || []).find(item => item.travel_type === 1)
+    const busQR = busTravel ? busTravel.bus_qr_url : ''
+
+    // 获取自驾二维码（如果有）
+    const selfTravel = (activity.travel_options || []).find(item => item.travel_type === 3)
+    const selfQR = selfTravel ? selfTravel.bus_qr_url : ''
+
+    // 获取发起人信息
+    const creatorInfo = activity.creator_info || {}
+
+    // 状态映射
+    const statusMap = {
+      0: '待审核',
+      1: '报名中',
+      2: '审核拒绝',
+      3: '进行中',
+      4: '已结束',
+      5: '已取消'
+    }
+
+    // 难度映射
+    const difficultyMap = {
+      1: '⭐ 简单',
+      2: '⭐⭐ 中等',
+      3: '⭐⭐⭐ 困难',
+      4: '⭐⭐⭐⭐ 挑战'
+    }
+
+
+
+
+    this.setData({
+      'activityDetail.name': activity.name || '',
+      'activityDetail.time': this.formatTime(activity.activity_time),
+      'activityDetail.location': activity.location || '',
+      'activityDetail.difficulty': difficultyMap[activity.difficulty] || '⭐ 简单',
+      'activityDetail.distance': activity.distance || 0,
+      'activityDetail.climb': activity.climb || 0,
+      'activityDetail.remainCount': remainCount,
+      'activityDetail.totalCount': activity.max_participants || 0,
+      'activityDetail.organizer': creatorInfo.nickName || '未知',
+      'activityDetail.wechat': activity.wechat_id || '',
+      'activityDetail.cover': activity.cover_url || '',
+      'activityDetail.groupQR': activity.group_qr_url || '',
+      'activityDetail.busQR': busQR, // 大巴群二维码
+      'activityDetail.selfQR': selfQR, // 自驾相关二维码（如果需要）
+      'activityDetail.description': activity.description || '',
+      'activityDetail.route': activity.routes || activity.route || '',
+      'activityDetail.meetingPoints': activity.meeting_points || [],
+      'activityDetail.deadline': this.formatDate(activity.deadline),
+      'activityDetail.status': statusMap[activity.status] || '',
+      'activityDetail.travel': travelOptions,
+      'activityDetail.rawStatus': activity.status,
+      'activityDetail.creatorAvatar': creatorInfo.avatarUrl || '',
+      'activityDetail.creatorName': creatorInfo.nickName || '未知'
+    }, () => {
+      this.checkSignUpStatus()
+    })
+  },
+
+  // 格式化时间（月/日 时:分）
+  formatTime(timeStr) {
+    if (!timeStr) return ''
+    const date = new Date(timeStr)
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    const hour = String(date.getHours()).padStart(2, '0')
+    const minute = String(date.getMinutes()).padStart(2, '0')
+    return `${month}/${day} ${hour}:${minute}`
+  },
+
+  // 格式化日期（返回完整格式，包含年份）
+  formatDate(timeStr) {
+    if (!timeStr) return ''
+    const date = new Date(timeStr)
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    const hour = String(date.getHours()).padStart(2, '0')
+    const minute = String(date.getMinutes()).padStart(2, '0')
+    return `${year}-${month}-${day} ${hour}:${minute}` // 2026-03-26 21:38
+  },
+
 
   // 检查是否可以报名
-  checkCanSignUp() {
-    const { agreeNotice, agreeBus, activityDetail } = this.data
-    let canSignUp = agreeNotice
-    
-    // 如果包含大巴出行，需要同意大巴免责声明
+  checkSignUpStatus() {
+    const {
+      activityDetail,
+      agreeNotice,
+      agreeBus,
+      agreeSelf
+    } = this.data
+
+    // 活动必须处于报名中状态
+    const isActive = activityDetail.rawStatus === 1
+    const hasRemain = activityDetail.remainCount > 0
+
+    const now = new Date()
+    const deadline = new Date(activityDetail.deadline)
+    const notExpired = deadline > now
+
+    // 同意条款检查
+    let agreed = agreeNotice
+
+    // 根据出行方式检查对应的同意条款
     if (activityDetail.travel.includes('bus')) {
-      canSignUp = canSignUp && agreeBus
+      agreed = agreed && agreeBus
     }
-    
-    // 还有名额才能报名
-    if (activityDetail.remainCount <= 0) {
-      canSignUp = false
+
+    // 自驾和高铁共用一个声明
+    if (activityDetail.travel.includes('train') || activityDetail.travel.includes('self')) {
+      agreed = agreed && agreeSelf
     }
-    
-    this.setData({ canSignUp })
+
+    const canSignUp = isActive && hasRemain && notExpired && agreed
+
+    // console.log('报名状态检查:', {
+    //   isActive,
+    //   hasRemain,
+    //   notExpired,
+    //   agreeNotice,
+    //   agreeBus,
+    //   agreeSelf,
+    //   agreed,
+    //   canSignUp
+    // })
+
+    this.setData({
+      canSignUp
+    })
   },
 
-  // 同意报名须知
+  // 同意报名须知变化
   onAgreeNoticeChange(e) {
     this.setData({
       agreeNotice: e.detail
     }, () => {
-      this.checkCanSignUp()
+      this.checkSignUpStatus()
     })
   },
 
-  // 同意大巴免责声明
+  // 同意大巴声明变化
   onAgreeBusChange(e) {
     this.setData({
       agreeBus: e.detail
     }, () => {
-      this.checkCanSignUp()
+      this.checkSignUpStatus()
+    })
+  },
+
+  // 同意自驾/高铁声明变化
+  onAgreeSelfChange(e) {
+    this.setData({
+      agreeSelf: e.detail
+    }, () => {
+      this.checkSignUpStatus()
     })
   },
 
   // 点击查看须知
   onNoticeClick(e) {
-    const { type } = e.currentTarget.dataset
+    const {
+      type
+    } = e.currentTarget.dataset
     let title = ''
-    if (type === 'participant') {
-      title = '报名参与者须知'
-    } else if (type === 'bus') {
-      title = '大巴行程免责声明'
-    } else if (type === 'self') {
-      title = '自驾/高铁行程免责声明'
+
+    switch (type) {
+      case 'participant':
+        title = '报名参与者须知'
+        break
+      case 'bus':
+        title = '大巴行程免责声明'
+        break
+      case 'self':
+        title = '自驾/高铁行程免责声明'
+        break
     }
-    
+
     this.setData({
       showNotice: true,
-      noticeTitle: title,
-      noticeType: type
+      noticeType: type,
+      noticeTitle: title
     })
   },
 
@@ -104,11 +319,11 @@ Page({
     })
   },
 
-  // 点击报名
+  // 点击报名按钮
   onSignUpClick() {
     if (!this.data.canSignUp) {
       wx.showToast({
-        title: '请先阅读并同意相关条款',
+        title: '当前不可报名',
         icon: 'none'
       })
       return
@@ -116,32 +331,89 @@ Page({
 
     wx.showModal({
       title: '确认报名',
-      content: '请确认报名信息无误',
+      content: '请确认已仔细阅读所有须知并同意相关条款',
       success: (res) => {
         if (res.confirm) {
-          wx.showLoading({
-            title: '报名中...',
-          })
-          
-          // 模拟报名接口
-          setTimeout(() => {
-            wx.hideLoading()
-            wx.showToast({
-              title: '报名成功',
-              icon: 'success',
-              duration: 2000,
-              success: () => {
-                // 更新剩余名额
-                const newRemain = this.data.activityDetail.remainCount - 1
-                this.setData({
-                  'activityDetail.remainCount': newRemain
-                })
-              }
-            })
-          }, 1500)
+          this.signUpActivity()
         }
       }
     })
+  },
+
+  // 新增对应的方法
+  onAgreeTrainChange(e) {
+    this.setData({
+      agreeTrain: e.detail
+    }, () => {
+      this.checkSignUpStatus()
+    })
+  },
+
+  onAgreeSelfChange(e) {
+    this.setData({
+      agreeSelf: e.detail
+    }, () => {
+      this.checkSignUpStatus()
+    })
+  },
+
+  // 报名活动
+  async signUpActivity() {
+    wx.showLoading({
+      title: '报名中...'
+    })
+
+    try {
+      const userInfo = this.data.userInfo || wx.getStorageSync('userInfo')
+
+      const result = await wx.cloud.callContainer({
+        config: {
+          env: "prod-3gktwx67d1dd1e76"
+        },
+        path: "/api/activity/participate",
+        header: {
+          "X-WX-SERVICE": "flask-mysql-login",
+          "X-Wx-OpenId": userInfo?.openId,
+          "content-type": "application/json"
+        },
+        method: "POST",
+        data: {
+          activity_id: this.data.activityId,
+          nickname: userInfo?.nickName || '',
+          phone: userInfo?.phoneNumber || '',
+          wechat_id: userInfo?.wechatId || '',
+          travel_option: null, // 如果需要选择出行方式
+          remark: ''
+        }
+      })
+
+      wx.hideLoading()
+
+      if (result.data && result.data.code === 200) {
+        wx.showToast({
+          title: '报名成功',
+          icon: 'success',
+          duration: 2000,
+          success: () => {
+            setTimeout(() => {
+              wx.navigateBack()
+            }, 2000)
+          }
+        })
+      } else {
+        wx.showToast({
+          title: result.data?.msg || '报名失败',
+          icon: 'none'
+        })
+      }
+    } catch (error) {
+      wx.hideLoading()
+      console.error('报名失败:', error)
+      wx.showToast({
+        title: '网络错误',
+        icon: 'error'
+      })
+    }
   },
 
   // 返回上一页
@@ -149,5 +421,10 @@ Page({
     wx.navigateBack({
       delta: 1
     })
+  },
+
+  // 阻止弹窗蒙层滑动
+  preventTouchMove() {
+    return
   }
 })

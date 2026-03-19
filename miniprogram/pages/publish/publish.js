@@ -73,11 +73,11 @@ Page({
     wx.cloud.init({
       env: 'prod-3gktwx67d1dd1e76'
     })
-
+  
     // 从 storage 获取用户信息
     const userInfo = wx.getStorageSync('userInfo')
-    // console.log('从storage获取的用户信息：', userInfo)
-
+    console.log('从storage获取的用户信息：', userInfo)
+  
     if (userInfo && userInfo.openId) {
       this.setData({
         userInfo: {
@@ -85,6 +85,16 @@ Page({
         }
       })
       console.log('设置openId成功：', userInfo.openId)
+      
+      // 如果用户有微信号，自动填入
+      if (userInfo.wechatId) {
+        console.log('自动填入微信号：', userInfo.wechatId)
+        this.setData({
+          wechat: userInfo.wechatId
+        })
+      } else {
+        console.warn('用户未设置微信号')
+      }
     } else {
       console.warn('未获取到用户openId')
       wx.showToast({
@@ -92,7 +102,7 @@ Page({
         icon: 'none'
       })
     }
-
+  
     // 设置默认报名截止时间
     const now = new Date()
     const defaultDeadline = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)

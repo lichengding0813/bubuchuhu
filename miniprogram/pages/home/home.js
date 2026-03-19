@@ -1,92 +1,27 @@
 Page({
   data: {
     showAll: false,
-    activityList: [{
-        id: 1,
-        name: '周末城市徒步',
-        time: '05/20 15:00',
-        location: '市中心公园',
-        remainCount: 8,
-        totalCount: 20,
-        difficulty: '⭐ 简单',
-        statusText: '进行中',
-        statusBadge: '可报名',
-        statusClass: 'ongoing'
-      },
-      {
-        id: 2,
-        name: '露营烧烤夜',
-        time: '05/25 18:00',
-        location: '星野营地',
-        remainCount: 0,
-        totalCount: 15,
-        difficulty: '⭐⭐ 中等',
-        statusText: '已满员',
-        statusBadge: '已截止',
-        statusClass: 'closed'
-      },
-      {
-        id: 3,
-        name: '读书分享会',
-        time: '05/28 14:00',
-        location: '静安图书馆',
-        remainCount: 12,
-        totalCount: 30,
-        difficulty: '⭐ 轻松',
-        statusText: '报名中',
-        statusBadge: '新活动',
-        statusClass: 'ongoing'
-      },
-      {
-        id: 4,
-        name: '溯溪探险之旅',
-        time: '06/03 09:00',
-        location: '桐庐峡谷',
-        remainCount: 5,
-        totalCount: 12,
-        difficulty: '⭐⭐⭐ 挑战',
-        statusText: '报名中',
-        statusBadge: '热门',
-        statusClass: 'ongoing'
-      },
-      {
-        id: 5,
-        name: '夜爬西山看日出',
-        time: '06/10 23:00',
-        location: '西山国家森林公园',
-        remainCount: 3,
-        totalCount: 10,
-        difficulty: '⭐⭐ 中等',
-        statusText: '即将开始',
-        statusBadge: '余位少',
-        statusClass: 'ongoing'
-      },
-      {
-        id: 6,
-        name: '摄影采风徒步',
-        time: '06/17 13:00',
-        location: '朱家角古镇',
-        remainCount: 15,
-        totalCount: 20,
-        difficulty: '⭐ 简单',
-        statusText: '报名中',
-        statusBadge: '新活动',
-        statusClass: 'ongoing'
-      }
-    ],
+    activityList: [],
     userInfo: null,
     isLoading: false,
     // 验证弹窗相关
     showVerifyDialog: false,
     verifyAnswer: '',
     verifyError: '',
-    autoFocus: false, // 用于控制 input 自动聚焦
+    autoFocus: false,
     // 锁定弹窗
     showLockedDialog: false
   },
 
   onLoad() {
     this.loginAndGetUser();
+  },
+
+  onShow() {
+    // 每次回到首页时刷新活动列表
+    if (this.data.userInfo) {
+      this.getActivityList();
+    }
   },
 
   // 登录并获取用户信息
@@ -139,6 +74,9 @@ Page({
             showLockedDialog: true
           });
         }
+
+        // 登录成功后获取活动列表
+        this.getActivityList();
       } else {
         throw new Error(result.data?.msg || '登录失败');
       }
@@ -154,15 +92,208 @@ Page({
     }
   },
 
+  // 获取活动列表
+  async getActivityList() {
+    try {
+      const userInfo = this.data.userInfo || wx.getStorageSync('userInfo');
+
+      const result = await wx.cloud.callContainer({
+        config: {
+          env: "prod-3gktwx67d1dd1e76"
+        },
+        path: "/api/activity/list", // 根据蓝图注册的路径
+        header: {
+          "X-WX-SERVICE": "flask-mysql-login",
+          "X-Wx-OpenId": userInfo?.openId,
+          "content-type": "application/json"
+        },
+        method: "GET",
+        data: {
+          page: 1,
+          size: 10,
+        }
+      });
+      // console.log(result.data)
+      if (result.data && result.data.code === 200) {
+        const activities = result.data.data.list || [];
+
+        // 格式化活动数据
+        const formattedList = activities.map(item => {
+          // 计算剩余名额
+          const participantCount = item.participant_count || 0;
+          const remainCount = item.max_participants - participantCount;
+
+          return {
+            id: item.id,
+            name: item.name,
+            time: this.formatActivityTime(item.activity_time),
+            location: item.location,
+            remainCount: remainCount,
+            totalCount: item.max_participants,
+            difficulty: this.getDifficultyText(item.difficulty),
+            statusText: this.getStatusText(item.status),
+            statusBadge: this.getStatusBadge(item.status, remainCount),
+            statusClass: this.getStatusClass(item.status),
+            coverUrl: item.cover_url
+          };
+        });
+
+        this.setData({
+          activityList: formattedList
+        });
+      }
+    } catch (error) {
+      console.error('获取活动列表失败:', error);
+      wx.showToast({
+        title: '加载活动失败',
+        icon: 'none'
+      });
+    }
+  },
+
+  // 格式化活动时间
+  formatActivityTime(timeStr) {
+    if (!timeStr) return '';
+    const date = new Date(timeStr);
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hour = String(date.getHours()).padStart(2, '0');
+    const minute = String(date.getMinutes()).padStart(2, '0');
+    return `${month}/${day} ${hour}:${minute}`;
+  },
+
+  // 获取难度文本
+  getDifficultyText(level) {
+    const map = {
+      1: '⭐ 简单',
+      2: '⭐⭐ 中等',
+      3: '⭐⭐⭐ 困难',
+      4: '⭐⭐⭐⭐ 挑战'
+    };
+    return map[level] || '⭐ 简单';
+  },
+
+  // 获取状态文本
+  getStatusText(status) {
+    const map = {
+      0: '待审核',
+      1: '报名中',
+      2: '审核拒绝',
+      3: '进行中',
+      4: '已结束',
+      5: '已取消'
+    };
+    return map[status] || '未知';
+  },
+
+  // 获取状态徽章
+  getStatusBadge(status, remainCount) {
+    if (status === 1) {
+      if (remainCount <= 0) {
+        return '已满员';
+      } else if (remainCount < 5) {
+        return '余位少';
+      } else {
+        return '可报名';
+      }
+    } else if (status === 3) {
+      return '进行中';
+    } else if (status === 4) {
+      return '已结束';
+    } else if (status === 0) {
+      return '待审核';
+    } else if (status === 2) {
+      return '已拒绝';
+    } else if (status === 5) {
+      return '已取消';
+    }
+    return '已截止';
+  },
+
+  // 获取状态样式类
+  getStatusClass(status) {
+    const map = {
+      0: 'pending', // 待审核
+      1: 'ongoing', // 报名中
+      2: 'rejected', // 拒绝
+      3: 'active', // 进行中
+      4: 'ended', // 已结束
+      5: 'cancelled' // 已取消
+    };
+    return map[status] || 'closed';
+  },
+
+  // 格式化活动时间
+  formatActivityTime(timeStr) {
+    const date = new Date(timeStr);
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hour = String(date.getHours()).padStart(2, '0');
+    const minute = String(date.getMinutes()).padStart(2, '0');
+    return `${month}/${day} ${hour}:${minute}`;
+  },
+
+  // 获取难度文本
+  getDifficultyText(level) {
+    const map = {
+      1: '⭐ 简单',
+      2: '⭐⭐ 中等',
+      3: '⭐⭐⭐ 困难',
+      4: '⭐⭐⭐⭐ 挑战'
+    };
+    return map[level] || '⭐ 简单';
+  },
+
+  // 获取状态文本
+  getStatusText(status) {
+    const map = {
+      0: '待审核',
+      1: '报名中',
+      2: '审核拒绝',
+      3: '进行中',
+      4: '已结束',
+      5: '已取消'
+    };
+    return map[status] || '未知';
+  },
+
+  // 获取状态徽章
+  getStatusBadge(status, remainCount) {
+    if (status === 1 && remainCount > 0) {
+      return remainCount < 5 ? '余位少' : '可报名';
+    } else if (status === 1 && remainCount === 0) {
+      return '已满员';
+    } else if (status === 3) {
+      return '进行中';
+    } else if (status === 4) {
+      return '已结束';
+    } else if (status === 0) {
+      return '待审核';
+    }
+    return '已截止';
+  },
+
+  // 获取状态样式类
+  getStatusClass(status) {
+    const map = {
+      0: 'pending',
+      1: 'ongoing',
+      2: 'rejected',
+      3: 'active',
+      4: 'ended',
+      5: 'cancelled'
+    };
+    return map[status] || 'closed';
+  },
+
   // 显示自定义验证弹窗
   showCustomVerifyDialog() {
     this.setData({
       showVerifyDialog: true,
       verifyAnswer: '',
       verifyError: '',
-      autoFocus: true // 自动聚焦
+      autoFocus: true
     }, () => {
-      // 由于 input 的 focus 属性在动态渲染时可能不生效，延迟设置一次（可选）
       setTimeout(() => this.setData({
         autoFocus: false
       }), 500);
@@ -216,13 +347,11 @@ Page({
         });
 
         if (userData.isBlacklist === 1) {
-          // 账户被锁定
           this.setData({
             showVerifyDialog: false,
             showLockedDialog: true
           });
         } else if (userData.needVerify === 0) {
-          // 验证通过
           this.setData({
             showVerifyDialog: false
           });
@@ -231,15 +360,13 @@ Page({
             icon: 'success'
           });
         } else {
-          // 答案错误
           const attempts = userData.verifyAttempts || 0;
           const left = 3 - attempts;
           this.setData({
             verifyError: `答案错误，还剩 ${left} 次机会`,
-            verifyAnswer: '', // 可选：清空输入框
-            autoFocus: true // 继续自动聚焦
+            verifyAnswer: '',
+            autoFocus: true
           });
-          // 如果剩余次数为0，弹窗会在下次验证时由后端自动锁定，这里保持打开即可
         }
       } else {
         wx.showToast({
@@ -262,7 +389,6 @@ Page({
       title: '请完成验证',
       icon: 'none'
     });
-    // 不关闭弹窗，强制验证
   },
 
   // 锁定弹窗确认
@@ -270,7 +396,6 @@ Page({
     this.setData({
       showLockedDialog: false
     });
-    // 可根据需要禁用部分操作
   },
 
   // 阻止弹窗蒙层滑动
@@ -299,7 +424,10 @@ Page({
   // 点击发布活动按钮
   onPublishClick() {
     wx.navigateTo({
-      url: '/pages/publish/publish'
+      url: '/pages/publish/publish',
+      success: () => {
+        // 可以在发布成功后刷新列表，但需要在发布页面返回时触发
+      }
     });
   },
 

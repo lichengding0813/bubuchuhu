@@ -140,36 +140,46 @@
 }
 
 /* 发起人信息 */
+/* 发起人信息卡片 */
 .organizer-info {
   display: flex;
   align-items: center;
-  margin-bottom: 16px;
+  padding: 30rpx 0;
 }
 
 .organizer-avatar {
-  width: 50px;
-  height: 50px;
-  border-radius: 25px;
-  background-color: #e3f0ff;
-  margin-right: 12px;
+  width: 100rpx;  /* 固定宽度 */
+  height: 100rpx; /* 固定高度 */
+  border-radius: 50%; /* 圆形头像 */
+  overflow: hidden; /* 确保图片不溢出圆角 */
+  margin-right: 20rpx;
+  background-color: #f5f5f5; /* 加载前的背景色 */
+  flex-shrink: 0; /* 防止被压缩 */
+}
+
+.organizer-avatar image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* 保证图片铺满且不变形 */
 }
 
 .organizer-detail {
   flex: 1;
   display: flex;
   flex-direction: column;
+  justify-content: center;
 }
 
 .organizer-name {
-  font-size: 16px;
-  font-weight: 600;
-  color: #134579;
-  margin-bottom: 4px;
+  font-size: 32rpx;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 8rpx;
 }
 
 .organizer-wechat {
-  font-size: 13px;
-  color: #5f7fa3;
+  font-size: 26rpx;
+  color: #666;
 }
 
 .qr-section {
@@ -341,4 +351,115 @@
   color: #f5222d !important;
   font-weight: 700 !important;
   background-color: transparent !important;
+}
+
+
+/* 集合点列表样式 */
+.meeting-points-section {
+  margin-top: 30rpx;
+  padding-top: 20rpx;
+  border-top: 2rpx solid #f5f5f5;
+}
+
+.section-subtitle {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 20rpx;
+}
+
+.meeting-points-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.meeting-point-item {
+  background-color: #f8f8f8;
+  border-radius: 16rpx;
+  padding: 24rpx;
+}
+
+.meeting-point-order {
+  font-size: 26rpx;
+  font-weight: 500;
+  color: #07c160;
+  margin-bottom: 16rpx;
+}
+
+.meeting-point-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+}
+
+.meeting-point-time,
+.meeting-point-location {
+  display: flex;
+  align-items: center;
+  font-size: 26rpx;
+  color: #666;
+}
+
+.meeting-point-time text,
+.meeting-point-location text {
+  margin-left: 8rpx;
+}
+
+/* 出行方式样式 */
+.travel-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20rpx;
+  margin-bottom: 20rpx;
+}
+
+.travel-tag {
+  padding: 12rpx 24rpx;
+  background-color: #e8f7f0;
+  border-radius: 40rpx;
+  font-size: 26rpx;
+  color: #07c160;
+  font-weight: 500;
+}
+
+/* 二维码区域样式 */
+.qr-section {
+  margin-top: 20rpx;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 30rpx;
+}
+
+.qr-item {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 200rpx;
+}
+
+.qr-label {
+  font-size: 26rpx;
+  color: #666;
+  margin-bottom: 10rpx;
+}
+
+.qr-image {
+  width: 160rpx;
+  height: 160rpx;
+  border-radius: 16rpx;
+  background-color: #f5f5f5;
+}
+
+.qr-empty {
+  width: 160rpx;
+  height: 160rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f5f5f5;
+  border-radius: 16rpx;
+  font-size: 24rpx;
+  color: #999;
 }
