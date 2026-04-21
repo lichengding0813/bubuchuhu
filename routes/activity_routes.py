@@ -66,7 +66,7 @@ def create_activity():
         # 2. 插入出行方式
         travel_options = data.get('travelOptions', [])
         for travel_type in travel_options:
-            bus_qr = data.get('busQR') if travel_type == 3 else None
+            bus_qr = data.get('busQR') if travel_type == 1 else None
             cursor.execute(
                 "INSERT INTO activity_travel_options (activity_id, travel_type, bus_qr_url) VALUES (%s, %s, %s)",
                 (activity_id, travel_type, bus_qr)
