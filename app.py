@@ -5,6 +5,7 @@ import os
 
 # 导入路由蓝图
 from routes.activity_routes import activity_bp
+from routes.admin_routes import admin_bp
 from db_utils import get_db, close_db
 
 app = Flask(__name__)
@@ -29,6 +30,7 @@ app.config['DEFAULT_AVATAR'] = 'cloud://prod-3gktwx67d1dd1e76.7072-prod-3gktwx67
 
 # ==================== 注册蓝图 ====================
 app.register_blueprint(activity_bp, url_prefix='/api/activity')
+app.register_blueprint(admin_bp, url_prefix='/api/admin')  # 确保这行存在
 
 # ==================== 数据库连接钩子 ====================
 @app.teardown_appcontext

@@ -1,10 +1,10 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, g
 from datetime import datetime
 import random
 import pymysql
-from db_utils import get_db, execute_query  # 稍后创建的工具函数
+from db_utils import get_db, execute_query
 
-from middleware import check_verified_and_blacklist  # 在文件开头添加
+from middleware import check_verified_and_blacklist
 
 activity_bp = Blueprint('activity', __name__)
 
@@ -128,26 +128,28 @@ def get_activity_list():
         params = []
 
         if status is not None:
-            where_clause += " AND status = %s"
+            where_clause += " AND a.status = %s"
             params.append(status)
 
         if keyword:
-            where_clause += " AND (name LIKE %s OR description LIKE %s OR location LIKE %s)"
+            where_clause += " AND (a.name LIKE %s OR a.description LIKE %s OR a.location LIKE %s)"
             params.extend([f'%{keyword}%', f'%{keyword}%', f'%{keyword}%'])
 
         # 查询总数
-        cursor.execute(f"SELECT COUNT(*) as total FROM activities {where_clause}", params)
+        cursor.execute(f"SELECT COUNT(*) as total FROM activities a {where_clause}", params)
         total = cursor.fetchone()['total']
 
-        # 查询列表
+        # 查询列表 - 添加 reject_reason 和发起人信息
         sql = f"""
         SELECT 
-            id, activity_no, name, description, activity_time, location,
-            difficulty, max_participants, status, cover_url, view_count,
-            created_at, created_by
-        FROM activities 
+            a.id, a.activity_no, a.name, a.description, a.activity_time, a.location,
+            a.difficulty, a.max_participants, a.status, a.cover_url, a.view_count,
+            a.created_at, a.created_by, a.reject_reason,
+            u.nickName as creator_name, u.avatarUrl as creator_avatar
+        FROM activities a
+        LEFT JOIN users u ON a.created_by = u.openId
         {where_clause}
-        ORDER BY created_at DESC
+        ORDER BY a.created_at DESC
         LIMIT %s OFFSET %s
         """
         params.append(size)
@@ -213,8 +215,13 @@ def get_activity_detail():
         conn = get_db()
         cursor = conn.cursor()
 
-        # 获取活动基本信息
-        cursor.execute("SELECT * FROM activities WHERE id = %s", (activity_id,))
+        # 获取活动基本信息 - 添加 reject_reason 字段
+        cursor.execute("""
+            SELECT a.*, u.nickName as creator_name, u.avatarUrl as creator_avatar
+            FROM activities a
+            LEFT JOIN users u ON a.created_by = u.openId
+            WHERE a.id = %s
+        """, (activity_id,))
         activity = cursor.fetchone()
 
         if not activity:
@@ -236,10 +243,6 @@ def get_activity_detail():
         cursor.execute("SELECT COUNT(*) as count FROM activity_participants WHERE activity_id = %s AND status = 1",
                        (activity_id,))
         activity['participant_count'] = cursor.fetchone()['count']
-
-        # 获取发起人信息
-        cursor.execute("SELECT nickName, avatarUrl FROM users WHERE openId = %s", (activity['created_by'],))
-        activity['creator_info'] = cursor.fetchone()
 
         conn.commit()
 
@@ -350,8 +353,10 @@ def get_my_activities():
 
         cursor.execute("""
             SELECT a.*, 
-                   (SELECT COUNT(*) FROM activity_participants WHERE activity_id = a.id AND status = 1) as participant_count
+                   (SELECT COUNT(*) FROM activity_participants WHERE activity_id = a.id AND status = 1) as participant_count,
+                   u.nickName as creator_name, u.avatarUrl as creator_avatar
             FROM activities a
+            LEFT JOIN users u ON a.created_by = u.openId
             WHERE a.created_by = %s 
             ORDER BY a.created_at DESC
         """, (openid,))
@@ -387,9 +392,11 @@ def get_my_participations():
         cursor = conn.cursor()
 
         cursor.execute("""
-            SELECT p.*, a.name, a.activity_time, a.location, a.cover_url, a.status as activity_status
+            SELECT p.*, a.name, a.activity_time, a.location, a.cover_url, a.status as activity_status,
+                   u.nickName as creator_name
             FROM activity_participants p
             JOIN activities a ON p.activity_id = a.id
+            LEFT JOIN users u ON a.created_by = u.openId
             WHERE p.user_openid = %s
             ORDER BY p.created_at DESC
         """, (openid,))
@@ -535,8 +542,10 @@ def get_my_activities_with_audit():
                    (SELECT COUNT(*) FROM activity_participants WHERE activity_id = a.id AND status = 1) as participant_count,
                    (SELECT reason FROM activity_audit_logs 
                     WHERE activity_id = a.id AND action = 3 
-                    ORDER BY created_at DESC LIMIT 1) as last_reject_reason
+                    ORDER BY created_at DESC LIMIT 1) as last_reject_reason,
+                   u.nickName as creator_name, u.avatarUrl as creator_avatar
             FROM activities a
+            LEFT JOIN users u ON a.created_by = u.openId
             WHERE a.created_by = %s 
             ORDER BY a.created_at DESC
         """, (openid,))
@@ -572,9 +581,11 @@ def get_my_participations_grouped():
         # 查询进行中的活动（活动时间 > 当前时间）
         cursor.execute("""
             SELECT p.*, a.name, a.activity_time, a.location, a.cover_url, 
-                   a.status as activity_status, a.id as activity_id
+                   a.status as activity_status, a.id as activity_id,
+                   u.nickName as creator_name
             FROM activity_participants p
             JOIN activities a ON p.activity_id = a.id
+            LEFT JOIN users u ON a.created_by = u.openId
             WHERE p.user_openid = %s AND a.activity_time > %s
             ORDER BY a.activity_time ASC
         """, (openid, now))
@@ -584,9 +595,11 @@ def get_my_participations_grouped():
         # 查询已结束的活动（活动时间 <= 当前时间）
         cursor.execute("""
             SELECT p.*, a.name, a.activity_time, a.location, a.cover_url, 
-                   a.status as activity_status, a.id as activity_id
+                   a.status as activity_status, a.id as activity_id,
+                   u.nickName as creator_name
             FROM activity_participants p
             JOIN activities a ON p.activity_id = a.id
+            LEFT JOIN users u ON a.created_by = u.openId
             WHERE p.user_openid = %s AND a.activity_time <= %s
             ORDER BY a.activity_time DESC
         """, (openid, now))
