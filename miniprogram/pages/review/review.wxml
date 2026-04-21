@@ -1,7 +1,7 @@
 <!--pages/review/review.wxml-->
 <view class="review-container">
   <view class="review-header">
-    <text class="review-title">往期活动精彩回顾</text>
+    <text class="review-title">进行中</text>
   </view>
 
   <view 
@@ -18,7 +18,32 @@
         <text>{{item.time}} · {{item.location}}</text>
       </view>
       <view class="review-stats">
-        <text>{{item.photos}}张照片</text>
+        <text>{{item.participants}}人参与</text>
+      </view>
+    </view>
+  </view>
+</view>
+
+
+<view class="review-container">
+  <view class="review-header">
+    <text class="review-title">已结束</text>
+  </view>
+
+  <view 
+    wx:for="{{reviewList}}" 
+    wx:key="index" 
+    class="review-card"
+    data-id="{{item.id}}"
+    bindtap="onReviewClick"
+  >
+    <view class="review-cover"></view>
+    <view class="review-info">
+      <text class="review-name">{{item.name}}</text>
+      <view class="review-meta">
+        <text>{{item.time}} · {{item.location}}</text>
+      </view>
+      <view class="review-stats">
         <text>{{item.participants}}人参与</text>
       </view>
     </view>
