@@ -4,6 +4,8 @@ import random
 import pymysql
 from db_utils import get_db, execute_query  # 稍后创建的工具函数
 
+from middleware import check_verified_and_blacklist  # 在文件开头添加
+
 activity_bp = Blueprint('activity', __name__)
 
 
@@ -406,3 +408,201 @@ def get_my_participations():
             cursor.close()
         if conn:
             conn.close()
+
+
+@activity_bp.route('/update-rejected', methods=['POST'])
+@check_verified_and_blacklist
+def update_rejected_activity():
+    """修改被驳回的活动并重新提交"""
+    openid = g.openid
+    data = request.get_json()
+    activity_id = data.get('activity_id')
+
+    if not activity_id:
+        return jsonify({'code': 400, 'msg': '缺少活动ID'})
+
+    conn = None
+    cursor = None
+
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+
+        # 检查活动是否存在且是被驳回状态
+        cursor.execute(
+            "SELECT id, status, created_by, reject_reason FROM activities WHERE id = %s",
+            (activity_id,)
+        )
+        activity = cursor.fetchone()
+
+        if not activity:
+            return jsonify({'code': 404, 'msg': '活动不存在'})
+
+        if activity['created_by'] != openid:
+            return jsonify({'code': 403, 'msg': '无权限修改此活动'})
+
+        if activity['status'] != 2:  # 2表示审核拒绝
+            return jsonify({'code': 400, 'msg': '只有被驳回的活动才能修改'})
+
+        # 更新活动信息
+        sql = """
+        UPDATE activities SET
+            name = %s, description = %s, activity_time = %s, location = %s,
+            route = %s, distance = %s, climb = %s, difficulty = %s,
+            max_participants = %s, deadline = %s, cover_url = %s,
+            group_qr_url = %s, wechat_id = %s, status = 0,  -- 重新变为待审核
+            reject_reason = NULL, reject_time = NULL,  -- 清空驳回信息
+            updated_at = NOW()
+        WHERE id = %s
+        """
+
+        cursor.execute(sql, (
+            data.get('name'),
+            data.get('description'),
+            data.get('activityTime'),
+            data.get('location'),
+            data.get('route'),
+            data.get('distance', 0),
+            data.get('climb', 0),
+            data.get('difficulty'),
+            data.get('maxParticipants', 20),
+            data.get('deadline'),
+            data.get('cover'),
+            data.get('groupQR'),
+            data.get('wechat'),
+            activity_id
+        ))
+
+        # 删除旧的出行方式和集合点
+        cursor.execute("DELETE FROM activity_travel_options WHERE activity_id = %s", (activity_id,))
+        cursor.execute("DELETE FROM activity_meeting_points WHERE activity_id = %s", (activity_id,))
+
+        # 重新插入出行方式
+        travel_options = data.get('travelOptions', [])
+        for travel_type in travel_options:
+            bus_qr = data.get('busQR') if travel_type == 1 else None
+            cursor.execute(
+                "INSERT INTO activity_travel_options (activity_id, travel_type, bus_qr_url) VALUES (%s, %s, %s)",
+                (activity_id, travel_type, bus_qr)
+            )
+
+        # 重新插入集合点
+        meeting_points = data.get('meetingPoints', [])
+        for index, point in enumerate(meeting_points):
+            cursor.execute(
+                "INSERT INTO activity_meeting_points (activity_id, point_order, meeting_time, location) VALUES (%s, %s, %s, %s)",
+                (activity_id, index + 1, point.get('time'), point.get('location'))
+            )
+
+        # 记录重新提交日志（action=4表示重新提交）
+        cursor.execute("""
+            INSERT INTO activity_audit_logs (activity_id, action, reason, created_at) 
+            VALUES (%s, %s, %s, NOW())
+        """, (activity_id, 4, '用户修改后重新提交'))
+
+        conn.commit()
+
+        return jsonify({
+            'code': 200,
+            'msg': '修改成功，已重新提交审核',
+            'data': {'activity_id': activity_id}
+        })
+
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        return jsonify({'code': 500, 'msg': f'数据库错误: {str(e)}'})
+    finally:
+        if cursor:
+            cursor.close()
+
+
+@activity_bp.route('/my-activities-with-audit', methods=['GET'])
+@check_verified_and_blacklist
+def get_my_activities_with_audit():
+    """获取我发起的活动（包含审核状态和驳回原因）"""
+    openid = g.openid
+
+    conn = None
+    cursor = None
+
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            SELECT a.*, 
+                   (SELECT COUNT(*) FROM activity_participants WHERE activity_id = a.id AND status = 1) as participant_count,
+                   (SELECT reason FROM activity_audit_logs 
+                    WHERE activity_id = a.id AND action = 3 
+                    ORDER BY created_at DESC LIMIT 1) as last_reject_reason
+            FROM activities a
+            WHERE a.created_by = %s 
+            ORDER BY a.created_at DESC
+        """, (openid,))
+
+        activities = cursor.fetchall()
+
+        return jsonify({
+            'code': 200,
+            'data': activities
+        })
+
+    except Exception as e:
+        return jsonify({'code': 500, 'msg': f'数据库错误: {str(e)}'})
+    finally:
+        if cursor:
+            cursor.close()
+
+
+@activity_bp.route('/my-participations-grouped', methods=['GET'])
+@check_verified_and_blacklist
+def get_my_participations_grouped():
+    """获取我报名的活动（按状态分组：进行中/已结束）"""
+    openid = g.openid
+    now = datetime.now()
+
+    conn = None
+    cursor = None
+
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+
+        # 查询进行中的活动（活动时间 > 当前时间）
+        cursor.execute("""
+            SELECT p.*, a.name, a.activity_time, a.location, a.cover_url, 
+                   a.status as activity_status, a.id as activity_id
+            FROM activity_participants p
+            JOIN activities a ON p.activity_id = a.id
+            WHERE p.user_openid = %s AND a.activity_time > %s
+            ORDER BY a.activity_time ASC
+        """, (openid, now))
+
+        ongoing = cursor.fetchall()
+
+        # 查询已结束的活动（活动时间 <= 当前时间）
+        cursor.execute("""
+            SELECT p.*, a.name, a.activity_time, a.location, a.cover_url, 
+                   a.status as activity_status, a.id as activity_id
+            FROM activity_participants p
+            JOIN activities a ON p.activity_id = a.id
+            WHERE p.user_openid = %s AND a.activity_time <= %s
+            ORDER BY a.activity_time DESC
+        """, (openid, now))
+
+        ended = cursor.fetchall()
+
+        return jsonify({
+            'code': 200,
+            'data': {
+                'ongoing': ongoing,
+                'ended': ended
+            }
+        })
+
+    except Exception as e:
+        return jsonify({'code': 500, 'msg': f'数据库错误: {str(e)}'})
+    finally:
+        if cursor:
+            cursor.close()
