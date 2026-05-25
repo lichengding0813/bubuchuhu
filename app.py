@@ -6,6 +6,7 @@ import os
 # 导入路由蓝图
 from routes.activity_routes import activity_bp
 from routes.admin_routes import admin_bp
+from routes.review_bp import review_bp
 from db_utils import get_db, close_db
 
 app = Flask(__name__)
@@ -28,9 +29,14 @@ app.config['WX_SECRET'] = 'd336268096323dc418d18ad93097db9f'
 # 默认头像
 app.config['DEFAULT_AVATAR'] = 'cloud://prod-3gktwx67d1dd1e76.7072-prod-3gktwx67d1dd1e76-1392222183/魔魔胡胡胡蘿蔔.png'
 
+# 配置静态文件服务（用于访问上传的图片）
+app.config['UPLOAD_FOLDER'] = 'static/uploads'
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 限制16MB
+
 # ==================== 注册蓝图 ====================
 app.register_blueprint(activity_bp, url_prefix='/api/activity')
 app.register_blueprint(admin_bp, url_prefix='/api/admin')  # 确保这行存在
+app.register_blueprint(review_bp)
 
 # ==================== 数据库连接钩子 ====================
 @app.teardown_appcontext

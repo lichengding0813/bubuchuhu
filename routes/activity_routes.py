@@ -284,7 +284,8 @@ def participate_activity():
         if not activity:
             return jsonify({'code': 404, 'msg': '活动不存在'})
 
-        if activity['status'] != 1:
+        allowed_status = [1, 3]  # 审核通过 或 进行中
+        if activity['status'] not in allowed_status:
             return jsonify({'code': 400, 'msg': '活动不可报名'})
 
         # 检查是否已报名
@@ -619,3 +620,86 @@ def get_my_participations_grouped():
     finally:
         if cursor:
             cursor.close()
+
+
+@activity_bp.route('/update-status', methods=['POST'])
+def update_activities_status():
+    """
+    批量更新所有已通过审核的活动状态（进行中/已结束）
+    同时将已满员的活动标记到内存中（或写入数据库）
+    建议前端在首页 onShow 时调用，无需等待结果
+    """
+    conn = None
+    cursor = None
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        now = datetime.now()
+
+        # 1. 更新状态为“进行中”（status=3）：当前时间 >= 活动开始时间，且活动未结束，且原状态为 1（已通过）
+        cursor.execute("""
+            UPDATE activities 
+            SET status = 3 
+            WHERE status = 1 
+              AND activity_time <= %s 
+              AND (deadline IS NULL OR deadline <= %s)  -- 可选：报名截止时间也已过
+        """, (now, now))
+        updated_to_ongoing = cursor.rowcount
+
+        # 2. 更新状态为“已结束”（status=4）：当前时间 > 活动结束时间（这里假设活动时间即为结束时间）
+        # 注意：如果活动开始后几小时结束，需要更精确的结束时间字段。此处简单处理：活动时间 < 当前时间则结束
+        cursor.execute("""
+            UPDATE activities 
+            SET status = 4 
+            WHERE status IN (1, 3) AND activity_time < %s
+        """, (now,))
+        updated_to_ended = cursor.rowcount
+
+        # 3. 满员判断：不需要写库，但可以返回汇总信息，或者记录到日志
+        # 如果需要将 is_full 写入数据库，下面取消注释
+        # cursor.execute("""
+        #     UPDATE activities a
+        #     LEFT JOIN (
+        #         SELECT activity_id, COUNT(*) as cnt
+        #         FROM activity_participants
+        #         WHERE status = 1
+        #         GROUP BY activity_id
+        #     ) p ON a.id = p.activity_id
+        #     SET a.is_full = CASE WHEN p.cnt >= a.max_participants THEN 1 ELSE 0 END
+        #     WHERE a.status IN (1,3)
+        # """)
+        # conn.commit()
+
+        # 获取所有满员的活动ID列表（供前端标记，也可不返回）
+        cursor.execute("""
+            SELECT a.id, a.max_participants, IFNULL(p.cnt, 0) as current_count
+            FROM activities a
+            LEFT JOIN (
+                SELECT activity_id, COUNT(*) as cnt
+                FROM activity_participants
+                WHERE status = 1
+                GROUP BY activity_id
+            ) p ON a.id = p.activity_id
+            WHERE a.status IN (1,3) AND p.cnt >= a.max_participants
+        """)
+        full_activities = cursor.fetchall()
+
+        conn.commit()
+        return jsonify({
+            'code': 200,
+            'msg': '状态更新完成',
+            'data': {
+                'ongoing_updated': updated_to_ongoing,
+                'ended_updated': updated_to_ended,
+                'full_activity_ids': [act['id'] for act in full_activities]
+            }
+        })
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        return jsonify({'code': 500, 'msg': f'更新失败: {str(e)}'})
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
