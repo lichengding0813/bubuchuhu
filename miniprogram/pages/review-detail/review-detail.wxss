@@ -1,406 +1,238 @@
-/* pages/review-detail/review-detail.wxss */
 page {
   background-color: #f0faff;
 }
 
 .detail-container {
-  padding-bottom: 30px;
-  min-height: 100vh;
-  background-color: #f0faff;
+  padding: 0 16px 80px 16px;
 }
 
-/* 顶部导航栏 */
-.nav-bar {
+/* 顶部编辑图标 */
+.detail-header {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 16px;
-  padding-top: calc(12px + constant(safe-area-inset-top));
-  padding-top: calc(12px + env(safe-area-inset-top));
-  background-color: #f0faff;
-  position: sticky;
-  top: 0;
-  z-index: 100;
+  justify-content: flex-end;
+  padding: 12px 0;
+  margin-bottom: 8px;
 }
-
-.back-btn {
-  display: flex;
-  align-items: center;
-  padding: 8px 0;
-  color: #1e4d7c;
-  font-size: 16px;
-}
-
-.back-btn van-icon {
-  margin-right: 4px;
-  font-size: 18px;
-}
-
-.nav-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: #1e4d7c;
-}
-
-.placeholder {
-  width: 60px;
-}
-
-/* 参与标识 */
-.participated-tag {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.detail-header .van-icon--edit {
   padding: 8px;
-  margin: 8px 16px 0 16px;
-  background-color: #e6f7ff;
-  border-radius: 30px;
-  border: 1px solid #96c9ff;
-  color: #1e4d7c;
-  font-size: 14px;
+  background-color: rgba(25, 137, 250, 0.1);
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+.detail-header .van-icon--edit:active {
+  background-color: rgba(25, 137, 250, 0.2);
+  transform: scale(0.95);
 }
 
-.participated-tag van-icon {
-  margin-right: 6px;
-  color: #52c41a;
-}
-
-/* 封面图 */
-.cover-section {
+/* 轮播图 */
+.swiper-section {
+  margin-bottom: 16px;
+  border-radius: 20px;
+  overflow: hidden;
   position: relative;
-  width: 100%;
-  height: 200px;
-  margin-top: 8px;
 }
-
+.cover-swiper {
+  width: 100%;
+  height: 240px;
+  border-radius: 20px;
+}
 .cover-image {
   width: 100%;
   height: 100%;
-  background-color: #b7daf9;
 }
-
 .cover-date {
   position: absolute;
-  bottom: 16px;
-  left: 16px;
-  background-color: rgba(0, 0, 0, 0.6);
+  bottom: 12px;
+  left: 12px;
+  background: rgba(0,0,0,0.6);
   color: white;
   padding: 4px 12px;
   border-radius: 20px;
   font-size: 12px;
 }
+.cover-edit-btn {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  background: rgba(0,0,0,0.6);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  z-index: 10;
+}
 
-/* 信息卡片 */
+/* 卡片通用样式 */
 .info-card {
   background-color: white;
   border-radius: 20px;
   padding: 20px 16px;
-  margin: 16px 16px 0 16px;
-  box-shadow: 0 4px 12px rgba(0, 130, 210, 0.08);
-  border: 1px solid rgba(160, 200, 255, 0.4);
+  margin-bottom: 16px;
+  box-shadow: 0 4px 12px rgba(0,130,210,0.08);
+  border: 1px solid rgba(160,200,255,0.4);
 }
-
 .card-title {
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 600;
   color: #1e4d7c;
   margin-bottom: 16px;
-  padding-left: 8px;
-  border-left: 4px solid #96c9ff;
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
-
-.organizer-badge {
-  font-size: 12px;
-  font-weight: normal;
-  color: #ff6b6b;
-  background-color: #ffe6e6;
-  padding: 2px 8px;
-  border-radius: 20px;
-  margin-left: 8px;
-}
-
 .activity-title {
   font-size: 20px;
   font-weight: 700;
   color: #134579;
   margin-bottom: 12px;
 }
-
 .activity-meta {
   display: flex;
   flex-wrap: wrap;
   gap: 16px;
   margin-bottom: 16px;
+  font-size: 14px;
+  color: #5f7fa3;
 }
-
 .meta-item {
   display: flex;
   align-items: center;
-  color: #5f7fa3;
-  font-size: 14px;
+  gap: 6px;
 }
-
-.meta-item van-icon {
-  margin-right: 4px;
-  color: #96c9ff;
-}
-
 .activity-stats {
   display: flex;
-  justify-content: space-around;
-  padding: 16px 0;
-  border-top: 1px solid #e6f0ff;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #e2edf7;
 }
-
 .stat-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  flex: 1;
+  text-align: center;
 }
-
 .stat-label {
+  display: block;
   font-size: 12px;
-  color: #5f7fa3;
+  color: #8aaec0;
   margin-bottom: 4px;
 }
-
 .stat-value {
   font-size: 16px;
   font-weight: 600;
   color: #1e4d7c;
 }
-
-/* 活动总结 */
 .summary-content {
   font-size: 14px;
   color: #2e4d73;
-  line-height: 1.8;
+  line-height: 1.6;
   margin-bottom: 12px;
 }
-
 .summary-meta {
   font-size: 12px;
-  color: #a0c4e2;
+  color: #8aaec0;
   text-align: right;
+}
+
+/* 编辑模式字段样式 */
+.edit-field {
+  margin-bottom: 16px;
+}
+.edit-label {
+  font-size: 14px;
+  color: #1e4d7c;
+  font-weight: 500;
+  margin-bottom: 6px;
+}
+.edit-input {
+  width: 100%;
+  background: #fafeff;
+  border: 1px solid #e2edf7;
+  border-radius: 12px;
+  padding: 12px;
+  font-size: 14px;
+  color: #134579;
+  box-sizing: border-box;
+}
+.edit-input:focus {
+  border-color: #5faee3;
+}
+.edit-textarea {
+  width: 100%;
+  background: #fafeff;
+  border: 1px solid #e2edf7;
+  border-radius: 12px;
+  padding: 12px;
+  font-size: 14px;
+  color: #134579;
+  min-height: 120px;
+  box-sizing: border-box;
+}
+.edit-row {
+  display: flex;
+  gap: 12px;
+}
+.edit-field.half {
+  flex: 1;
 }
 
 /* 照片墙 */
 .photo-count {
   font-size: 14px;
-  font-weight: normal;
   color: #5f7fa3;
+  font-weight: normal;
 }
-
-.upload-section {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
-  margin-bottom: 16px;
-  background-color: #f8fcff;
-  border-radius: 16px;
-  border: 1px dashed #96c9ff;
-  color: #5faee3;
-  font-size: 14px;
+.add-photo-icon {
+  margin-left: auto;
 }
-
-.upload-section van-icon {
-  margin-right: 8px;
-  font-size: 18px;
-}
-
 .photo-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  display: flex;
+  flex-wrap: wrap;
   gap: 8px;
+  margin-top: 8px;
 }
-
 .photo-item {
   position: relative;
-  aspect-ratio: 1;
+  width: calc(33.33% - 6px);
+  aspect-ratio: 1/1;
   border-radius: 12px;
   overflow: hidden;
+  background: #f0faff;
+  border: 1px solid #e2edf7;
 }
-
 .photo-image {
   width: 100%;
   height: 100%;
-  background-color: #e3f0ff;
 }
-
 .photo-uploader {
   position: absolute;
   bottom: 0;
   left: 0;
   right: 0;
-  background: linear-gradient(to top, rgba(0,0,0,0.6), transparent);
+  background: rgba(0,0,0,0.5);
   color: white;
   font-size: 10px;
-  padding: 4px 6px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  padding: 2px;
+  text-align: center;
 }
-
-.photo-status {
+.photo-delete {
   position: absolute;
-  top: 4px;
-  right: 4px;
-  background-color: rgba(255, 107, 107, 0.9);
-  color: white;
-  font-size: 10px;
-  padding: 2px 6px;
-  border-radius: 10px;
+  top: 6px;
+  right: 6px;
+  background: rgba(0,0,0,0.6);
+  border-radius: 50%;
+  padding: 4px;
 }
 
-.load-more {
-  text-align: center;
-  padding: 16px;
-  color: #5faee3;
-  font-size: 14px;
-}
-
-/* 评论区 */
-.comment-input-wrapper {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 16px;
-  padding: 12px;
-  background-color: #f8fcff;
-  border-radius: 20px;
-  border: 1px solid #e6f0ff;
-
-}
-
-.comment-input {
-  flex: 1;
-  min-height: 40px;
-  max-height: 100px;
-  padding: 10px 12px;
-  background-color: #ffffff;
-  border-radius: 20px;
-  font-size: 14px;
-  color: #2e4d73;
-  border: 1px solid #d9e9ff;
-  line-height: 1.5;
-}
-
-.comment-input:focus {
-  outline: none;
-  border-color: #96c9ff;
-}
-
-.comment-submit-btn {
-  width: 120rpx;
-  height: 40px;
-  line-height: 40px;
-  text-align: center;
-  background-color: #96c9ff;
-  color: #ffffff;
-  font-size: 14px;
-  border-radius: 30px;
-  padding: 0;
-  margin: 0;
-  border: none;
-  flex-shrink: 0;
-}
-
-.comment-submit-btn::after {
-  border: none;
-}
-
-.comment-submit-btn.disabled {
-  background-color: #c0e0ff;
-  color: #f0f8ff;
-  opacity: 0.6;
-}
-
-.comment-submit-btn:not([disabled]):active {
-  opacity: 0.8;
-}
-
-/* 覆盖微信小程序的默认按钮样式 */
-.comment-submit-btn {
-  width: 120rpx !important;
-  min-width: 120rpx !important;
-  max-width: 120rpx !important;
-  margin-left: 0 !important;
-  margin-right: 0 !important;
-}
-
-/* 评论列表样式保持不变 */
-.comment-list {
-  margin-bottom: 16px;
-  max-height: 300px;
-  overflow-y: auto;
-}
-
-.comment-item {
-  display: flex;
-  margin-bottom: 16px;
-}
-
-.comment-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 20px;
-  background-color: #e3f0ff;
-  margin-right: 12px;
-  flex-shrink: 0;
-}
-
-.comment-content {
-  flex: 1;
-}
-
-.comment-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 4px;
-}
-
-.comment-name {
-  font-size: 14px;
-  font-weight: 500;
-  color: #1e4d7c;
-}
-
-.comment-time {
-  font-size: 11px;
-  color: #a0c4e2;
-}
-
-.comment-text {
-  font-size: 13px;
-  color: #2e4d73;
-  line-height: 1.5;
-  word-break: break-word;
-}
-
-/* 照片预览 */
+/* 照片预览弹窗 */
 .photo-preview {
   height: 100%;
-  background: black;
   display: flex;
   flex-direction: column;
+  justify-content: center;
 }
-
-.photo-preview swiper {
-  flex: 1;
-  width: 100%;
-}
-
 .preview-image {
   width: 100%;
-  height: 100%;
-  object-fit: contain;
 }
-
 .preview-info {
   position: absolute;
   bottom: 40px;
@@ -408,6 +240,72 @@ page {
   right: 0;
   text-align: center;
   color: white;
+  background: rgba(0,0,0,0.6);
+  padding: 8px;
   font-size: 14px;
-  text-shadow: 0 0 10px rgba(0,0,0,0.5);
+}
+
+/* 底部固定操作栏 */
+.edit-bottom-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(255,255,255,0.96);
+  backdrop-filter: blur(10px);
+  padding: 12px 16px;
+  padding-bottom: calc(12px + constant(safe-area-inset-bottom));
+  padding-bottom: calc(12px + env(safe-area-inset-bottom));
+  display: flex;
+  gap: 12px;
+  box-shadow: 0 -4px 12px rgba(0,130,210,0.08);
+  border-top: 1px solid rgba(160,200,255,0.4);
+  z-index: 100;
+}
+.edit-bottom-bar .van-button {
+  flex: 1;
+  border-radius: 40px;
+  font-weight: 500;
+  height: 44px;
+}
+.edit-bottom-bar .van-button--primary {
+  background-color: #5faee3;
+  border-color: #5faee3;
+}
+.edit-bottom-bar .van-button--default {
+  background-color: white;
+  border-color: #d9e8f5;
+  color: #5f7fa3;
+}
+
+
+/* 原有样式保持不变，最后添加上以下代码 */
+
+/* 悬浮编辑按钮（模仿列表页新建按钮） */
+.edit-fab {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  width: 56px;
+  height: 56px;
+  background: #1989fa;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  z-index: 100;
+}
+
+.edit-fab van-icon {
+  color: white;
+  font-size: 28px;
+}
+
+/* 针对有底部安全区的机型 */
+@supports (bottom: constant(safe-area-inset-bottom)) or (bottom: env(safe-area-inset-bottom)) {
+  .edit-fab {
+    bottom: calc(30px + constant(safe-area-inset-bottom));
+    bottom: calc(30px + env(safe-area-inset-bottom));
+  }
 }

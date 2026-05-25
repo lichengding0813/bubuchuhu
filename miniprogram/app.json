@@ -12,7 +12,8 @@
     "pages/settings/settings",
     "pages/review-detail/review-detail",
     "pages/admin-review/admin-review",
-    "pages/admin-detail/admin-detail"
+    "pages/admin-detail/admin-detail",
+    "pages/review_add/review_add"
   ],
   "tabBar": {
     "color": "#7f8c8d",
@@ -23,20 +24,20 @@
       {
         "pagePath": "pages/home/home",
         "text": "首页",
-        "iconPath": "images/tabbar/icon-shin.png",
-        "selectedIconPath": "images/tabbar/icon-shin-active.png"
+        "iconPath": "images/tabbar/2.png",
+        "selectedIconPath": "images/tabbar/3.png"
       },
       {
         "pagePath": "pages/review/review",
-        "text": "活动",
-        "iconPath": "images/tabbar/icon-monster.png",
-        "selectedIconPath": "images/tabbar/icon-monster-active.png"
+        "text": "活动回顾",
+        "iconPath": "images/tabbar/1.png",
+        "selectedIconPath": "images/tabbar/6.png"
       },
       {
         "pagePath": "pages/profile/profile",
         "text": "我的",
-        "iconPath": "images/tabbar/icon-masa.png",
-        "selectedIconPath": "images/tabbar/icon-masa-active.png"
+        "iconPath": "images/tabbar/4.png",
+        "selectedIconPath": "images/tabbar/5.png"
       }
     ]
   },

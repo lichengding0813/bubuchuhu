@@ -18,8 +18,34 @@ Page({
   },
 
   onShow() {
-    // 每次回到首页时刷新活动列表
+    // 每次回到首页时，先更新活动状态，再刷新列表
     if (this.data.userInfo) {
+      this.updateActivityStatus();          // 异步更新状态（内部会等待完成）
+    }
+  },
+
+  // 新增：调用后端批量更新活动状态（进行中/已结束）
+  async updateActivityStatus() {
+    try {
+      const userInfo = this.data.userInfo || wx.getStorageSync('userInfo');
+      await wx.cloud.callContainer({
+        config: {
+          env: "prod-3gktwx67d1dd1e76"
+        },
+        path: "/api/activity/update-status",   // 后端新增的接口路径
+        header: {
+          "X-WX-SERVICE": "flask-mysql-login",
+          "X-Wx-OpenId": userInfo?.openId,
+          "content-type": "application/json"
+        },
+        method: "POST",
+        data: {}  // 无需参数
+      });
+      // 更新成功后，刷新活动列表
+      this.getActivityList();
+    } catch (error) {
+      console.error('更新活动状态失败:', error);
+      // 即使更新失败，也尝试正常拉取列表（可能显示旧状态）
       this.getActivityList();
     }
   },

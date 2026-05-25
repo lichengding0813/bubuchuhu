@@ -464,3 +464,13 @@ page {
   background: linear-gradient(90deg, transparent, #c0e0ff, transparent);
   margin: 30rpx 0;
 }
+
+.custom-datetime-picker {
+  padding: 20rpx;
+}
+.picker-buttons {
+  display: flex;
+  justify-content: space-around;
+  margin-top: 20rpx;
+  padding: 20rpx;
+}

@@ -4,7 +4,7 @@ page {
 }
 
 .review-container {
-  padding: 16px;
+  padding: 16px 16px 80px 16px;   /* 底部留出空间给悬浮按钮 */
 }
 
 .review-header {
@@ -73,4 +73,34 @@ page {
   gap: 16px;
   font-size: 12px;
   color: #77b0e0;
+}
+
+/* 管理员新建按钮（悬浮在右下角） */
+.admin-add-btn {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  width: 56px;
+  height: 56px;
+  background: #1989fa;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  z-index: 100;
+}
+
+/* 按钮中的图标（如果使用 van-icon） */
+.admin-add-btn van-icon {
+  color: white;
+  font-size: 28px;
+}
+
+/* 针对有底部安全区的机型（如 iPhone X 及以上） */
+@supports (bottom: constant(safe-area-inset-bottom)) or (bottom: env(safe-area-inset-bottom)) {
+  .admin-add-btn {
+    bottom: calc(30px + constant(safe-area-inset-bottom));
+    bottom: calc(30px + env(safe-area-inset-bottom));
+  }
 }

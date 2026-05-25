@@ -65,19 +65,185 @@ Page({
     meetingPoints: [{
       time: '',
       location: ''
-    }]
+    }],
+
+    // 自定义时间选择器数据
+    pickerValue: [0, 0, 0, 0, 0], // 当前选中的索引 [年,月,日,时,分]
+    years: [],
+    months: [],
+    days: [],
+    hours: [],
+    minutes: ['00', '30'], // 固定分钟选项
+    tempSelectedDateTime: null, // 临时存储用户选择的时间
+  },
+
+  // 初始化时间选择器数据
+  initPickerData() {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const years = [];
+    for (let i = currentYear; i <= currentYear + 1; i++) {
+      years.push(i);
+    }
+    const months = Array.from({
+      length: 12
+    }, (_, i) => i + 1);
+    const hours = Array.from({
+      length: 24
+    }, (_, i) => i.toString().padStart(2, '0'));
+
+    this.setData({
+      years,
+      months,
+      hours,
+    });
+    // 初始化 days（根据当前年月）
+    this.updateDays(currentYear, now.getMonth() + 1);
+
+    // 默认选中当前时间（对齐到最近半小时）
+    let defaultDate = new Date();
+    let minutes = defaultDate.getMinutes();
+    let minuteIndex = minutes < 15 ? 0 : (minutes < 45 ? 1 : 0); // 向下取整到最近的00或30
+    if (minutes >= 45) {
+      defaultDate.setHours(defaultDate.getHours() + 1);
+      minuteIndex = 0;
+    }
+    defaultDate.setMinutes(minuteIndex === 0 ? 0 : 30, 0, 0);
+
+    const yearIndex = years.indexOf(defaultDate.getFullYear());
+    const monthIndex = defaultDate.getMonth();
+    const dayIndex = defaultDate.getDate() - 1;
+    const hourIndex = defaultDate.getHours();
+
+    this.setData({
+      pickerValue: [yearIndex, monthIndex, dayIndex, hourIndex, minuteIndex],
+      tempSelectedDateTime: defaultDate
+    });
+  },
+
+  // 根据年月更新天数
+  updateDays(year, month) {
+    const daysCount = new Date(year, month, 0).getDate();
+    const days = Array.from({
+      length: daysCount
+    }, (_, i) => i + 1);
+    this.setData({
+      days
+    });
+  },
+
+
+  // 时间选择器滚动事件
+  onPickerChange(e) {
+    const val = e.detail.value;
+    const [yearIdx, monthIdx, dayIdx, hourIdx, minuteIdx] = val;
+
+    const year = this.data.years[yearIdx];
+    const month = this.data.months[monthIdx];
+
+    // 动态更新天数（防止2月30日等）
+    const oldDaysCount = this.data.days.length;
+    const newDaysCount = new Date(year, month, 0).getDate();
+    if (oldDaysCount !== newDaysCount) {
+      this.updateDays(year, month);
+      // 修正日索引超出范围
+      let newDayIdx = dayIdx;
+      if (dayIdx >= newDaysCount) newDayIdx = newDaysCount - 1;
+      val[2] = newDayIdx;
+      this.setData({
+        pickerValue: val
+      });
+    } else {
+      this.setData({
+        pickerValue: val
+      });
+    }
+
+    // 构建临时日期对象
+    const day = this.data.days[val[2]];
+    const hour = parseInt(this.data.hours[hourIdx]);
+    const minute = parseInt(this.data.minutes[minuteIdx]);
+    const selectedDate = new Date(year, month - 1, day, hour, minute);
+    this.data.tempSelectedDateTime = selectedDate;
+  },
+
+  // 确认自定义时间
+  onCustomDateTimeConfirm() {
+    const selectedDate = this.data.tempSelectedDateTime;
+    if (!selectedDate) return;
+
+    const dateTimeStr = this.formatTime(selectedDate);
+
+    if (this.data.currentDatePickerField.includes('meetingPoints')) {
+      const matches = this.data.currentDatePickerField.match(/meetingPoints\[(\d+)\]\.time/);
+      if (matches) {
+        const index = parseInt(matches[1]);
+        const {
+          meetingPoints
+        } = this.data;
+        meetingPoints[index].time = dateTimeStr;
+        this.setData({
+          meetingPoints: [...meetingPoints]
+        }, () => {
+          this.checkCanSubmit();
+        });
+      }
+    } else {
+      this.setData({
+        [this.data.currentDatePickerField]: dateTimeStr
+      }, () => {
+        this.checkCanSubmit();
+      });
+    }
+
+    this.setData({
+      showDatePicker: false
+    });
+  },
+
+  // 修改原来的 onMeetingTimePickerClick / onTimePickerClick 中设置 pickerValue 的逻辑
+  onTimePickerClick(e) {
+    const {
+      field
+    } = e.currentTarget.dataset;
+    let defaultDate = this.data[field] ? new Date(this.data[field].replace(/-/g, '/')) : new Date();
+    defaultDate = this.roundToHalfHour(defaultDate.getTime());
+    defaultDate = new Date(defaultDate);
+
+    // 设置 pickerValue
+    const year = defaultDate.getFullYear();
+    const month = defaultDate.getMonth() + 1;
+    const day = defaultDate.getDate();
+    const hour = defaultDate.getHours();
+    const minute = defaultDate.getMinutes();
+    const minuteIndex = minute === 0 ? 0 : 1;
+
+    const yearIdx = this.data.years.indexOf(year);
+    const monthIdx = month - 1;
+    const dayIdx = day - 1;
+    const hourIdx = hour;
+
+    this.setData({
+      showDatePicker: true,
+      currentDatePickerField: field,
+      currentDatePickerTitle: field === 'activityTime' ? '选择活动时间' : '选择报名截止时间',
+      pickerValue: [yearIdx, monthIdx, dayIdx, hourIdx, minuteIndex],
+      tempSelectedDateTime: defaultDate
+    });
   },
 
   onLoad() {
+
+    this.initPickerData();
     // 初始化云环境
     wx.cloud.init({
       env: 'prod-3gktwx67d1dd1e76'
     })
-  
+
     // 从 storage 获取用户信息
     const userInfo = wx.getStorageSync('userInfo')
     console.log('从storage获取的用户信息：', userInfo)
-  
+
     if (userInfo && userInfo.openId) {
       this.setData({
         userInfo: {
@@ -85,7 +251,7 @@ Page({
         }
       })
       console.log('设置openId成功：', userInfo.openId)
-      
+
       // 如果用户有微信号，自动填入
       if (userInfo.wechatId) {
         console.log('自动填入微信号：', userInfo.wechatId)
@@ -102,7 +268,7 @@ Page({
         icon: 'none'
       })
     }
-  
+
     // 设置默认报名截止时间
     const now = new Date()
     const defaultDeadline = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
@@ -127,6 +293,17 @@ Page({
     const hour = String(date.getHours()).padStart(2, '0')
     const minute = String(date.getMinutes()).padStart(2, '0')
     return `${year}-${month}-${day} ${hour}:${minute}`
+  },
+
+  // 对齐到最近半小时（向下取整，例如 10:22 → 10:00，10:38 → 10:30）
+  roundToHalfHour(timestamp) {
+    const date = new Date(timestamp);
+    const minutes = date.getMinutes();
+    const remainder = minutes % 30;
+    if (remainder !== 0) {
+      date.setMinutes(minutes - remainder, 0, 0);
+    }
+    return date.getTime();
   },
 
   // 通用输入处理 - 双向绑定
@@ -266,7 +443,7 @@ Page({
     })
   },
 
-  // 集合点时间选择
+  // 集合点时间选择（已修改：对齐到半小时）
   onMeetingTimePickerClick(e) {
     const {
       index
@@ -280,15 +457,18 @@ Page({
       defaultTime.setHours(10, 0, 0, 0)
     }
 
+    // 对齐到半小时
+    const roundedTime = this.roundToHalfHour(defaultTime.getTime())
+
     this.setData({
       showDatePicker: true,
       currentDatePickerField: `meetingPoints[${index}].time`,
       currentDatePickerTitle: `选择集合点${index + 1}时间`,
-      currentDateTime: defaultTime.getTime()
+      currentDateTime: roundedTime
     })
   },
 
-  // 活动时间选择
+  // 活动时间/截止时间选择（已修改：对齐到半小时）
   onTimePickerClick(e) {
     const {
       field
@@ -301,11 +481,14 @@ Page({
       defaultTime.setHours(10, 0, 0, 0)
     }
 
+    // 对齐到半小时
+    const roundedTime = this.roundToHalfHour(defaultTime.getTime())
+
     this.setData({
       showDatePicker: true,
       currentDatePickerField: field,
       currentDatePickerTitle: field === 'activityTime' ? '选择活动时间' : '选择报名截止时间',
-      currentDateTime: defaultTime.getTime()
+      currentDateTime: roundedTime
     })
   },
 
@@ -340,6 +523,15 @@ Page({
       showDatePicker: false
     })
   },
+
+  // 时间选择器过滤器：分钟仅保留 0 和 30
+  filterTime(type, options) {
+    if (type === 'minute') {
+      return options.filter(option => option % 30 === 0);
+    }
+    return options;
+  },
+
 
   // 日期时间选择取消
   onDateTimeCancel() {
@@ -572,16 +764,16 @@ Page({
           }
 
           // 出行方式映射
-        const travelTypeMap = {
-          'bus': 1,     // 大巴
-          'train': 2,   // 高铁
-          'self': 3,    // 自驾
-        }
+          const travelTypeMap = {
+            'bus': 1, // 大巴
+            'train': 2, // 高铁
+            'self': 3, // 自驾
+          }
 
-        // 转换出行方式数组
-        const travelOptionsNumbers = (this.data.travel || [])
-          .map(item => travelTypeMap[item])
-          .filter(value => value !== undefined)  // 过滤掉无效值
+          // 转换出行方式数组
+          const travelOptionsNumbers = (this.data.travel || [])
+            .map(item => travelTypeMap[item])
+            .filter(value => value !== undefined) // 过滤掉无效值
 
           // 收集所有表单数据 - 与后端字段对应
           const formData = {
@@ -592,13 +784,13 @@ Page({
             route: this.data.route || '', // 前端route → 后端routes
             distance: parseInt(this.data.distance) || 0,
             climb: parseInt(this.data.climb) || 0,
-            difficulty: difficultyMap[this.data.difficulty] || 1, 
+            difficulty: difficultyMap[this.data.difficulty] || 1,
             maxParticipants: this.data.maxParticipants || 2,
             deadline: this.data.deadline || '',
             cover: this.data.cover || '',
             groupQR: this.data.groupQR || '',
             wechat: this.data.wechat || '',
-            travelOptions: travelOptionsNumbers, 
+            travelOptions: travelOptionsNumbers,
             busQR: this.data.busQR || '',
             meetingPoints: this.data.meetingPoints || []
           }

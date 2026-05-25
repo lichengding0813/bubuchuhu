@@ -1,167 +1,69 @@
 <view class="detail-container">
-  <!-- 参与标识 -->
-  <!-- <view class="participated-tag" wx:if="{{userParticipated}}"> -->
-  <view class="participated-tag">
-    <van-icon name="success" />
-    <text>你参加了此活动</text>
-  </view>
+  <!-- 不再有顶部的编辑栏 -->
 
-  <!-- 活动封面图 -->
-  <view class="cover-section">
-    <image class="cover-image" src="{{reviewData.cover}}" mode="aspectFill"></image>
-    <view class="cover-date">{{reviewData.date}}</view>
+  <!-- 轮播图 -->
+  <view class="swiper-section">
+    <swiper class="cover-swiper" indicator-dots="{{true}}" autoplay="{{false}}" circular="{{true}}">
+      <swiper-item>
+        <image class="cover-image" src="{{reviewData.cover}}" mode="aspectFill"></image>
+        <view class="cover-date">活动合照</view>
+      </swiper-item>
+      <swiper-item>
+        <image class="cover-image" src="{{reviewData.cover2}}" mode="aspectFill"></image>
+        <view class="cover-date">卜卜合照</view>
+      </swiper-item>
+    </swiper>
   </view>
 
   <!-- 基础信息卡片 -->
   <view class="info-card">
     <view class="activity-title">{{reviewData.name}}</view>
     <view class="activity-meta">
-      <view class="meta-item">
-        <van-icon name="clock-o" />
-        <text>{{reviewData.time}}</text>
-      </view>
-      <view class="meta-item">
-        <van-icon name="location-o" />
-        <text>{{reviewData.location}}</text>
-      </view>
+      <view class="meta-item"><van-icon name="clock-o" /><text>{{reviewData.time}}</text></view>
+      <view class="meta-item"><van-icon name="location-o" /><text>{{reviewData.location}}</text></view>
     </view>
     <view class="activity-stats">
-      <view class="stat-item">
-        <text class="stat-label">难度</text>
-        <text class="stat-value">{{reviewData.difficulty}}</text>
-      </view>
-      <view class="stat-item">
-        <text class="stat-label">里程</text>
-        <text class="stat-value">{{reviewData.distance}}km</text>
-      </view>
-      <view class="stat-item">
-        <text class="stat-label">爬升</text>
-        <text class="stat-value">{{reviewData.climb}}m</text>
-      </view>
-      <view class="stat-item">
-        <text class="stat-label">参与人数</text>
-        <text class="stat-value">{{reviewData.participants}}人</text>
-      </view>
+      <view class="stat-item"><text class="stat-label">难度</text><text class="stat-value">{{reviewData.difficulty}}</text></view>
+      <view class="stat-item"><text class="stat-label">里程</text><text class="stat-value">{{reviewData.distance}}km</text></view>
+      <view class="stat-item"><text class="stat-label">爬升</text><text class="stat-value">{{reviewData.climb}}m</text></view>
+      <view class="stat-item"><text class="stat-label">参与人数</text><text class="stat-value">{{reviewData.participants}}人</text></view>
     </view>
   </view>
 
   <!-- 活动总结卡片 -->
   <view class="info-card">
-    <view class="card-title">
-      活动总结
-      <text class="organizer-badge" wx:if="{{isOrganizer}}">发起人</text>
-    </view>
-    <view class="summary-content">
-      <rich-text nodes="{{reviewData.summary}}"></rich-text>
-    </view>
-    <view class="summary-meta">
-      <text>编辑于 {{reviewData.summaryTime}}</text>
-    </view>
+    <view class="card-title">活动总结</view>
+    <view class="summary-content"><rich-text nodes="{{reviewData.summary}}"></rich-text></view>
+    <view class="summary-meta">编辑于 {{reviewData.summaryTime}}</view>
   </view>
 
   <!-- 照片墙卡片 -->
   <view class="info-card">
-    <view class="card-title">
-      照片墙
-      <view class="photo-count">{{reviewData.photos.length}}张照片</view>
-    </view>
-    
-    <!-- 上传按钮（参与者可见） -->
-    <view class="upload-section" wx:if="{{userParticipated}}" bindtap="onUploadPhoto">
-      <van-icon name="plus" />
-      <text>上传活动照片</text>
-    </view>
-
-    <!-- 照片网格 -->
+    <view class="card-title">照片墙</view>
     <view class="photo-grid">
-      <view 
-        wx:for="{{reviewData.photos}}" 
-        wx:key="index"
-        class="photo-item"
-        bindtap="onPhotoClick"
-        data-index="{{index}}"
-      >
-        <image src="{{item.url}}" mode="aspectFill" class="photo-image"></image>
-        <view class="photo-uploader" wx:if="{{item.uploader}}">{{item.uploader}}</view>
-        <view class="photo-status" wx:if="{{item.status === 'pending'}}">审核中</view>
-      </view>
-    </view>
-
-    <!-- 加载更多 -->
-    <view class="load-more" wx:if="{{hasMorePhotos}}" bindtap="onLoadMorePhotos">
-      加载更多
-    </view>
-  </view>
-
-  <!-- 评论区卡片 -->
-  <view class="info-card comment-card">
-    <view class="card-title">
-      评论区
-      <view class="comment-count">{{comments.length}}条评论</view>
-    </view>
-
-    <!-- 评论列表 -->
-    <view class="comment-list">
-      <view 
-        wx:for="{{comments}}" 
-        wx:key="index"
-        class="comment-item"
-      >
-        <image class="comment-avatar" src="{{item.avatar}}" mode="aspectFill"></image>
-        <view class="comment-content">
-          <view class="comment-header">
-            <text class="comment-name">{{item.name}}</text>
-            <text class="comment-time">{{item.time}}</text>
-          </view>
-          <text class="comment-text">{{item.content}}</text>
+      <block wx:for="{{displayPhotos}}" wx:key="index">
+        <view class="photo-item">
+          <image src="{{item.url}}" mode="aspectFill" class="photo-image" bindtap="previewPhoto" data-index="{{index}}"></image>
+          <view wx:if="{{item.uploader}}" class="photo-uploader">{{item.uploader}}</view>
         </view>
-      </view>
+      </block>
     </view>
-
-    <!-- 评论输入框 -->
-    <view class="comment-input-wrapper">
-    <textarea 
-      class="comment-input"
-      placeholder="说点什么吧..."
-      maxlength="200"
-      bindinput="onCommentInput"
-      value="{{commentText}}"
-      auto-height
-      adjust-position="{{false}}"
-    ></textarea>
-    <button 
-      class="comment-submit-btn {{!commentText ? 'disabled' : ''}}"
-      bindtap="onSubmitComment"
-      disabled="{{!commentText}}"
-      hover-class="none"
-    >
-      发表
-    </button>
-  </view>
   </view>
 
   <!-- 照片预览弹窗 -->
-  <van-popup
-    show="{{showPhotoPreview}}"
-    bindclose="onPhotoPreviewClose"
-    position="bottom"
-    round
-    closeable
-    close-icon="close"
-    custom-style="height: 100%; background: black;"
-  >
+  <van-popup show="{{showPhotoPreview}}" bindclose="onPhotoPreviewClose" position="bottom" round closeable close-icon="close" custom-style="height: 100%; background: black;">
     <view class="photo-preview">
-      <swiper
-        current="{{currentPhotoIndex}}"
-        indicator-dots="{{false}}"
-        autoplay="{{false}}"
-        bindchange="onSwiperChange"
-      >
-        <swiper-item wx:for="{{reviewData.photos}}" wx:key="index">
+      <swiper current="{{currentPhotoIndex}}" indicator-dots="{{false}}" autoplay="{{false}}" bindchange="onSwiperChange">
+        <swiper-item wx:for="{{displayPhotos}}" wx:key="index">
           <image src="{{item.url}}" mode="widthFix" class="preview-image"></image>
         </swiper-item>
       </swiper>
-      <view class="preview-info">{{currentPhotoIndex + 1}}/{{reviewData.photos.length}}</view>
+      <view class="preview-info">{{currentPhotoIndex + 1}}/{{photoCount}}</view>
     </view>
   </van-popup>
+</view>
+
+<!-- 悬浮编辑按钮（仅管理员可见） -->
+<view class="edit-fab" wx:if="{{isAdmin}}" bindtap="onEditClick">
+  <van-icon name="edit" size="48" color="#fff" />
 </view>

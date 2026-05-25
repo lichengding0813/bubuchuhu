@@ -1,0 +1,71 @@
+<view class="new-container">
+  <view class="form-card">
+    <view class="card-title">基本信息</view>
+    <view class="edit-field">
+      <view class="edit-label">活动名称</view>
+      <input class="edit-input" model:value="{{form.name}}" data-field="name" bindinput="onInput" placeholder="请输入活动名称" />
+    </view>
+    <view class="edit-field">
+      <view class="edit-label">活动时间</view>
+      <input class="edit-input" model:value="{{form.time}}" data-field="time" bindinput="onInput" placeholder="2025.03.20 08:00" />
+    </view>
+    <view class="edit-field">
+      <view class="edit-label">活动地点</view>
+      <input class="edit-input" model:value="{{form.location}}" data-field="location" bindinput="onInput" placeholder="杭州·西湖" />
+    </view>
+    <view class="edit-field">
+      <view class="edit-label">难度</view>
+      <input class="edit-input" model:value="{{form.difficulty}}" data-field="difficulty" bindinput="onInput" placeholder="中等" />
+    </view>
+    <view class="edit-row">
+      <view class="edit-field half">
+        <view class="edit-label">里程 (km)</view>
+        <input class="edit-input" model:value="{{form.distance}}" data-field="distance" bindinput="onInput" type="digit" placeholder="0" />
+      </view>
+      <view class="edit-field half">
+        <view class="edit-label">爬升 (m)</view>
+        <input class="edit-input" model:value="{{form.climb}}" data-field="climb" bindinput="onInput" type="digit" placeholder="0" />
+      </view>
+    </view>
+    <view class="edit-field">
+      <view class="edit-label">参与人数</view>
+      <input class="edit-input" model:value="{{form.participants}}" data-field="participants" bindinput="onInput" type="number" placeholder="0" />
+    </view>
+  </view>
+
+  <view class="form-card">
+    <view class="card-title">封面图</view>
+    <view class="edit-field">
+      <view class="edit-label">人合照</view>
+      <view class="upload-area" bindtap="chooseCover" data-type="cover">
+        <image wx:if="{{form.cover}}" src="{{form.cover}}" mode="aspectFill" class="uploaded-image"></image>
+        <view wx:else class="upload-placeholder"><van-icon name="plus" /> 上传图片</view>
+      </view>
+    </view>
+    <view class="edit-field">
+      <view class="edit-label">卜合照</view>
+      <view class="upload-area" bindtap="chooseCover" data-type="cover2">
+        <image wx:if="{{form.cover2}}" src="{{form.cover2}}" mode="aspectFill" class="uploaded-image"></image>
+        <view wx:else class="upload-placeholder"><van-icon name="plus" /> 上传图片</view>
+      </view>
+    </view>
+  </view>
+
+  <view class="form-card">
+    <view class="card-title">活动总结</view>
+    <textarea class="edit-textarea" model:value="{{form.summary}}" data-field="summary" bindinput="onInput" placeholder="请输入活动总结" auto-height />
+  </view>
+
+  <view class="form-card">
+    <view class="card-title">照片墙</view>
+    <view class="photo-grid-form">
+      <view wx:for="{{form.photos}}" wx:key="index" class="photo-item-form">
+        <image src="{{item.url}}" mode="aspectFill" class="photo-img"></image>
+        <van-icon name="delete" size="18" color="#ff4444" class="del-icon" bindtap="removePhoto" data-index="{{index}}" />
+      </view>
+      <view class="add-photo-btn" bindtap="addPhoto">+</view>
+    </view>
+  </view>
+
+  <van-button type="primary" block round bindtap="onSubmit" custom-class="submit-btn">{{mode === 'edit' ? '保存修改' : '立即创建'}}</van-button>
+</view>
