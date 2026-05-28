@@ -49,6 +49,10 @@ Page({
 
   onShow() {
     this.initUserData();
+    // 每次显示页面时刷新统计数据（如果已登录）
+    if (this.data.userInfo.isLogin) {
+      this.loadUserStats();
+    }
   },
 
   // 从storage初始化用户数据
@@ -157,14 +161,81 @@ Page({
     this.setData({ menuList });
   },
 
-  // 加载用户统计数据
-  loadUserStats() {
-    this.setData({
-      stats: {
-        created: 3,
-        joined: 5
+  // 加载用户统计数据（调用后端接口）
+  async loadUserStats() {
+    const { isLogin, openId } = this.data.userInfo;
+    if (!isLogin || !openId) {
+      // 未登录时清空统计数据
+      this.setData({
+        stats: { created: 0, joined: 0 }
+      });
+      return;
+    }
+    
+    // 并行请求两个接口
+    await Promise.all([
+      this.fetchCreatedCount(openId),
+      this.fetchJoinedCount(openId)
+    ]);
+  },
+
+  // 获取我发起的活动数量
+  async fetchCreatedCount(openId) {
+    try {
+      const result = await wx.cloud.callContainer({
+        config: { env: "prod-3gktwx67d1dd1e76" },
+        path: "/api/activity/my-activities-with-audit",
+        header: {
+          "X-WX-SERVICE": "flask-mysql-login",
+          "X-Wx-OpenId": openId,
+          "content-type": "application/json"
+        },
+        method: "GET"
+      });
+      
+      if (result.data && result.data.code === 200) {
+        const activities = result.data.data || [];
+        this.setData({
+          'stats.created': activities.length
+        });
+      } else {
+        console.error('获取发起活动数量失败:', result.data?.msg);
+        this.setData({ 'stats.created': 0 });
       }
-    });
+    } catch (error) {
+      console.error('获取发起活动异常:', error);
+      this.setData({ 'stats.created': 0 });
+    }
+  },
+
+  // 获取我报名的活动数量（进行中+已结束）
+  async fetchJoinedCount(openId) {
+    try {
+      const result = await wx.cloud.callContainer({
+        config: { env: "prod-3gktwx67d1dd1e76" },
+        path: "/api/activity/my-participations-grouped",
+        header: {
+          "X-WX-SERVICE": "flask-mysql-login",
+          "X-Wx-OpenId": openId,
+          "content-type": "application/json"
+        },
+        method: "GET"
+      });
+      
+      if (result.data && result.data.code === 200) {
+        const { ongoing = [], ended = [] } = result.data.data;
+        const total = ongoing.length + ended.length;
+        this.setData({
+          'stats.joined': total
+        });
+      } else {
+        console.error('获取报名活动数量失败:', result.data?.msg);
+        this.setData({ 'stats.joined': 0 });
+      }
+    } catch (error) {
+      console.error('获取报名活动异常:', error);
+      this.setData({ 'stats.joined': 0 });
+    }
   },
 
   // 处理登录点击
@@ -250,11 +321,13 @@ Page({
         
         this.buildMenuList();
         
+        // 登录成功后加载统计数据
+        this.loadUserStats();
+        
         if (userData.needVerify === 1 && userData.isBlacklist === 0) {
           this.setData({ showVerifyDialog: true });
         } else {
           wx.showToast({ title: '登录成功', icon: 'success' });
-          this.loadUserStats();
         }
       } else {
         throw new Error(result.data?.msg || '登录失败');
@@ -321,6 +394,8 @@ Page({
         } else if (userData.needVerify === 0) {
           this.setData({ showVerifyDialog: false });
           wx.showToast({ title: '验证通过', icon: 'success' });
+          // 验证通过后刷新统计数据
+          this.loadUserStats();
         } else {
           const attempts = userData.verifyAttempts || 0;
           const left = 3 - attempts;
@@ -350,6 +425,28 @@ Page({
   goToUserDetail() {
     wx.navigateTo({
       url: '/pages/user-detail/user-detail'
+    });
+  },
+
+  // 跳转到“我发起的”活动列表
+  goToCreatedActivities() {
+    if (!this.data.userInfo.isLogin) {
+      wx.showToast({ title: '请先登录', icon: 'none' });
+      return;
+    }
+    wx.navigateTo({
+      url: '/pages/my-created-activities/my-created-activities'
+    });
+  },
+
+  // 跳转到“我报名的”活动列表
+  goToJoinedActivities() {
+    if (!this.data.userInfo.isLogin) {
+      wx.showToast({ title: '请先登录', icon: 'none' });
+      return;
+    }
+    wx.navigateTo({
+      url: '/pages/my-joined-activities/my-joined-activities'
     });
   },
 
