@@ -63,11 +63,11 @@
     <view class="qr-section">
       <view class="qr-item">
         <text class="qr-label">活动群</text>
-        <image class="qr-image" src="{{activityDetail.groupQR}}" mode="aspectFill"></image>
+        <image class="qr-image" src="{{activityDetail.groupQR}}" mode="aspectFill" bindtap="previewQRCode" data-url="{{activityDetail.groupQR}}"></image>
       </view>
       <view class="qr-item" wx:if="{{activityDetail.busQR}}">
         <text class="qr-label">大巴群</text>
-        <image class="qr-image" src="{{activityDetail.busQR}}" mode="aspectFill"></image>
+        <image class="qr-image" src="{{activityDetail.busQR}}" mode="aspectFill" bindtap="previewQRCode" data-url="{{activityDetail.busQR}}"></image>
       </view>
     </view>
   </view>
@@ -84,6 +84,13 @@
         <text wx:elif="{{item === 'self'}}">🚗 自驾</text>
       </view>
     </view>
+    <view class="insurance-badge" wx:if="{{activityDetail.is_force_insurance !== undefined}}">
+  <van-icon name="certificate" size="16px" />
+  <text class="insurance-label">户外保险：</text>
+  <text class="insurance-value {{activityDetail.is_force_insurance == 1 ? 'mandatory' : 'optional'}}">
+    {{activityDetail.is_force_insurance == 1 ? '是' : '否'}}
+  </text>
+</view>
     <view class="detail-content">
       <text class="detail-text">{{activityDetail.description}}</text>
     </view>
@@ -121,42 +128,42 @@
     </view>
   </view>
 
-<!-- 底部固定区域 -->
-<view class="bottom-fixed">
-  <!-- 同意条款区域 -->
-  <view class="agree-section">
-    <!-- 报名参与者须知 - 始终显示 -->
-    <view class="agree-item">
-      <van-checkbox value="{{agreeNotice}}" bindchange="onAgreeNoticeChange" shape="square" size="18px">
-        <text class="agree-text">我已阅读并同意</text>
-      </van-checkbox>
-      <text class="notice-link" bindtap="onNoticeClick" data-type="participant">《报名参与者须知》</text>
+  <!-- 底部固定区域 -->
+  <view class="bottom-fixed">
+    <!-- 同意条款区域 -->
+    <view class="agree-section">
+      <!-- 报名参与者须知 - 始终显示 -->
+      <view class="agree-item">
+        <van-checkbox value="{{agreeNotice}}" bindchange="onAgreeNoticeChange" disabled="{{isRegistered}}" shape="square" size="18px">
+          <text class="agree-text">我已阅读并同意</text>
+        </van-checkbox>
+        <text class="notice-link" bindtap="onNoticeClick" data-type="participant">《报名参与者须知》</text>
+      </view>
+
+      <!-- 大巴免责声明 - 直接用数组判断 -->
+      <view class="agree-item" wx:if="{{activityDetail.travel && activityDetail.travel[0] === 'bus'}}">
+        <van-checkbox value="{{agreeBus}}" bindchange="onAgreeBusChange" disabled="{{isRegistered}}" shape="square" size="18px">
+          <text class="agree-text">我已阅读并同意</text>
+        </van-checkbox>
+        <text class="notice-link" bindtap="onNoticeClick" data-type="bus">《大巴行程免责声明》</text>
+      </view>
+
+      <!-- 自驾/高铁免责声明 -->
+      <view class="agree-item" wx:if="{{activityDetail.travel && (activityDetail.travel[0] === 'train'|| activityDetail.travel[1] === 'train' || activityDetail.travel[0] === 'self' || activityDetail.travel[1] === 'self' || activityDetail.travel[2] === 'self')}}">
+        <van-checkbox value="{{agreeSelf}}" bindchange="onAgreeSelfChange" disabled="{{isRegistered}}" shape="square" size="18px">
+          <text class="agree-text">我已阅读并同意</text>
+        </van-checkbox>
+        <text class="notice-link" bindtap="onNoticeClick" data-type="self">《自驾/高铁行程免责声明》</text>
+      </view>
     </view>
 
-<!-- 大巴免责声明 - 直接用数组判断 -->
-<view class="agree-item" wx:if="{{activityDetail.travel && activityDetail.travel[0] === 'bus'}}">
-  <van-checkbox value="{{agreeBus}}" bindchange="onAgreeBusChange" shape="square" size="18px">
-    <text class="agree-text">我已阅读并同意</text>
-  </van-checkbox>
-  <text class="notice-link" bindtap="onNoticeClick" data-type="bus">《大巴行程免责声明》</text>
-</view>
-
-<!-- 自驾/高铁免责声明 -->
-<view class="agree-item" wx:if="{{activityDetail.travel && (activityDetail.travel[0] === 'train' || activityDetail.travel[0] === 'self')}}">
-  <van-checkbox value="{{agreeSelf}}" bindchange="onAgreeSelfChange" shape="square" size="18px">
-    <text class="agree-text">我已阅读并同意</text>
-  </van-checkbox>
-  <text class="notice-link" bindtap="onNoticeClick" data-type="self">《自驾/高铁行程免责声明》</text>
-</view>
+    <!-- 报名按钮 -->
+    <view class="submit-btn">
+      <van-button type="info" block bindtap="onSignUpClick" disabled="{{!canSignUp || isRegistered}}">
+        {{isRegistered ? '已报名' : '立即报名'}}
+      </van-button>
+    </view>
   </view>
-
-  <!-- 报名按钮 -->
-  <view class="submit-btn">
-    <van-button type="info" block bindtap="onSignUpClick" disabled="{{!canSignUp}}">
-      立即报名
-    </van-button>
-  </view>
-</view>
 
   <!-- 须知弹窗 -->
   <van-popup show="{{showNotice}}" bindclose="onNoticeClose" position="bottom" round closeable close-icon="close" custom-style="height: 80%;">

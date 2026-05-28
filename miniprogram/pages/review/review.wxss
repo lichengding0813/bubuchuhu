@@ -41,11 +41,12 @@ page {
 }
 
 .review-cover {
-  flex: 0 0 100px;
-  height: 100px;
-  border-radius: 12px;
-  background: linear-gradient(145deg, #b7daf9, #96c9ff);
-  margin-right: 12px;
+  width: 240rpx;
+  height: 240rpx;
+  border-radius: 12rpx;
+  margin-right: 24rpx;
+  background-color: #f0f0f0; /* 占位背景色 */
+  flex-shrink: 0;
 }
 
 .review-info {

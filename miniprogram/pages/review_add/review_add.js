@@ -13,6 +13,7 @@ Page({
       participants: '',
       cover: '',
       cover2: '',
+      cover3: '',       // 新增：公益记录图片
       summary: '',
       photos: []
     },
@@ -20,12 +21,11 @@ Page({
   },
 
   onLoad(options) {
-    // 确保云开发已初始化（通常在 app.js 中完成）
     if (!wx.cloud) {
       console.error('请使用 2.2.3 或以上的基础库以使用云能力');
     } else {
       wx.cloud.init({
-        env: 'prod-3gktwx67d1dd1e76', // 替换为您的云开发环境 ID
+        env: 'prod-3gktwx67d1dd1e76',
         traceUser: true
       });
     }
@@ -50,9 +50,10 @@ Page({
             distance: editData.distance,
             climb: editData.climb,
             participants: editData.participants,
-            cover: editData.cover,
-            cover2: editData.cover2,
-            summary: editData.summary,
+            cover: editData.cover || '',
+            cover2: editData.cover2 || '',
+            cover3: editData.cover3 || '',      // 新增
+            summary: editData.summary || '',
             photos: editData.photos || []
           }
         });
@@ -71,7 +72,6 @@ Page({
   async uploadImageToCloud(filePath) {
     wx.showLoading({ title: '上传中...', mask: true });
     try {
-      // 生成唯一文件名（按时间 + 随机数 + 扩展名）
       const ext = filePath.split('.').pop();
       const cloudPath = `review/${Date.now()}_${Math.floor(Math.random() * 10000)}.${ext}`;
       const res = await wx.cloud.uploadFile({
@@ -79,7 +79,7 @@ Page({
         filePath: filePath
       });
       wx.hideLoading();
-      return res.fileID; // 例如 cloud://xxx.png
+      return res.fileID;
     } catch (error) {
       wx.hideLoading();
       console.error('上传失败:', error);
@@ -88,9 +88,9 @@ Page({
     }
   },
 
-  // 选择封面图（人合照 / 卜合照）
+  // 选择封面图（活动合照 / 卜卜合照 / 公益记录）
   async chooseCover(e) {
-    const type = e.currentTarget.dataset.type; // 'cover' or 'cover2'
+    const type = e.currentTarget.dataset.type;   // 'cover', 'cover2', 'cover3'
     wx.chooseImage({
       count: 1,
       sizeType: ['compressed'],
@@ -148,7 +148,6 @@ Page({
 
     try {
       let result;
-      // 准备提交的数据（注意：cover、cover2、photos 中的 url 已经是 cloud:// 字符串）
       const submitData = {
         name: form.name,
         time: form.time,
@@ -160,6 +159,7 @@ Page({
         summary: form.summary,
         cover: form.cover,
         cover2: form.cover2,
+        cover3: form.cover3,          // 新增
         photos: form.photos
       };
 
@@ -190,16 +190,22 @@ Page({
       wx.hideLoading();
       if (result.data && result.data.code === 200) {
         wx.showToast({ title: mode === 'edit' ? '保存成功' : '创建成功', icon: 'success' });
+
         if (mode === 'edit') {
           const app = getApp();
           delete app.globalData.editReviewData;
         }
+
         setTimeout(() => {
           wx.navigateBack();
           const pages = getCurrentPages();
           const prevPage = pages[pages.length - 2];
-          if (prevPage && prevPage.loadReviewList) {
-            prevPage.loadReviewList(true);
+          if (prevPage) {
+            if (prevPage.route === 'pages/review-detail/review-detail') {
+              prevPage.refreshDetail && prevPage.refreshDetail();
+            } else if (prevPage.loadReviewList) {
+              prevPage.loadReviewList(true);
+            }
           }
         }, 1500);
       } else {

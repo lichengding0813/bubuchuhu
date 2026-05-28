@@ -13,7 +13,8 @@
     "pages/review-detail/review-detail",
     "pages/admin-review/admin-review",
     "pages/admin-detail/admin-detail",
-    "pages/review_add/review_add"
+    "pages/review_add/review_add",
+    "pages/update-log/update-log"
   ],
   "tabBar": {
     "color": "#7f8c8d",
@@ -58,6 +59,8 @@
     "van-cell-group": "/miniprogram_npm/@vant/weapp/cell-group/index",
     "van-checkbox": "/miniprogram_npm/@vant/weapp/checkbox/index",
     "van-checkbox-group": "/miniprogram_npm/@vant/weapp/checkbox-group/index",
+    "van-radio-group": "@vant/weapp/radio-group/index",
+    "van-radio": "@vant/weapp/radio/index",
     "van-stepper": "/miniprogram_npm/@vant/weapp/stepper/index",
     "van-dropdown-menu": "/miniprogram_npm/@vant/weapp/dropdown-menu/index",
     "van-dropdown-item": "/miniprogram_npm/@vant/weapp/dropdown-item/index",

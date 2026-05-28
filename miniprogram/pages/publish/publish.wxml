@@ -122,6 +122,14 @@
         <van-stepper value="{{maxParticipants}}" bindchange="onStepperChange" min="2" max="100" integer />
       </view>
 
+<!-- 新增：是否强制购买保险 -->
+<view class="form-item insurance-item">
+  <view class="item-label">强制购买户外保险</view>
+  <van-radio-group value="{{forceInsurance}}" bindchange="onForceInsuranceChange" direction="horizontal">
+    <van-radio name="{{1}}">是</van-radio>
+    <van-radio name="{{0}}">否</van-radio>
+  </van-radio-group>
+</view>
       <!-- 报名截止时间 -->
       <view class="form-item">
         <view class="item-label">报名截止时间</view>
@@ -134,7 +142,7 @@
       <view class="card-title">发起人信息 <text class="required-star">*</text></view>
 
       <view class="form-item">
-        <view class="item-label">发起人微信号</view>
+        <view class="item-label">发起人微信号<text class="required-star">*</text></view>
         <van-field value="{{wechat}}" bind:input="onInput" data-field="wechat" placeholder="请输入微信号" border="{{false}}" />
       </view>
 

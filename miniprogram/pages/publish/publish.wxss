@@ -790,3 +790,44 @@ page {
   margin-top: 20rpx;
   padding: 20rpx;
 }
+
+
+/* 强制保险单选框 - 样式修复 */
+.insurance-item {
+  margin-bottom: 20px;          /* 与上下表单项保持统一间距 */
+}
+
+.insurance-item .item-label {
+  margin-bottom: 12px;          /* 标签与单选按钮组间距 */
+  font-weight: 500;
+}
+
+/* 覆盖 van-radio-group 默认布局，确保垂直居中对齐 */
+.insurance-item van-radio-group {
+  display: flex;
+  align-items: center;          /* 垂直居中 */
+  gap: 24px;                    /* 两个选项之间的间距 */
+  flex-wrap: wrap;              /* 小屏幕自动换行 */
+}
+
+/* 单个 van-radio 样式调整 */
+.insurance-item van-radio {
+  --radio-label-margin: 0 0 0 8px;   /* 文字与圆圈间距 */
+  --radio-label-color: #2e4d73;      /* 文字颜色匹配表单主题 */
+  --radio-label-font-size: 15px;     /* 与 item-label 字体大小一致 */
+  --radio-size: 18px;                /* 圆圈大小 */
+  --radio-checked-icon-color: #5faee3; /* 选中时的蓝色 */
+}
+
+/* 提示文字样式（与表单通用提示统一） */
+.insurance-tip {
+  margin-top: 12px;
+  font-size: 13px;
+  color: #7f9fbf;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #f0f9ff;
+  padding: 8px 12px;
+  border-radius: 8px;
+}

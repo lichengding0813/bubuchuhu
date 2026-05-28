@@ -9,7 +9,6 @@ Page({
     verifyAnswer: '',
     verifyError: '',
     autoFocus: false,
-    // 锁定弹窗
     showLockedDialog: false
   },
 
@@ -20,7 +19,7 @@ Page({
   onShow() {
     // 每次回到首页时，先更新活动状态，再刷新列表
     if (this.data.userInfo) {
-      this.updateActivityStatus();          // 异步更新状态（内部会等待完成）
+      this.updateActivityStatus(); // 异步更新状态（内部会等待完成）
     }
   },
 
@@ -32,14 +31,14 @@ Page({
         config: {
           env: "prod-3gktwx67d1dd1e76"
         },
-        path: "/api/activity/update-status",   // 后端新增的接口路径
+        path: "/api/activity/update-status", // 后端新增的接口路径
         header: {
           "X-WX-SERVICE": "flask-mysql-login",
           "X-Wx-OpenId": userInfo?.openId,
           "content-type": "application/json"
         },
         method: "POST",
-        data: {}  // 无需参数
+        data: {} // 无需参数
       });
       // 更新成功后，刷新活动列表
       this.getActivityList();
@@ -139,12 +138,12 @@ Page({
           size: 10,
         }
       });
-      // console.log(result.data)
+      console.log(result.data)
       if (result.data && result.data.code === 200) {
         const activities = result.data.data.list || [];
 
         // 格式化活动数据
-        const formattedList = activities.map(item => {
+        let formattedList = activities.map(item => {
           // 计算剩余名额
           const participantCount = item.participant_count || 0;
           const remainCount = item.max_participants - participantCount;
@@ -158,12 +157,22 @@ Page({
             totalCount: item.max_participants,
             difficulty: this.getDifficultyText(item.difficulty),
             statusText: this.getStatusText(item.status),
-            statusBadge: this.getStatusBadge(item.status, remainCount),
+            statusBadge: this.getStatusBadge(item.status, remainCount, item.has_registered),
             statusClass: this.getStatusClass(item.status),
-            coverUrl: item.cover_url
+            coverUrl: item.cover_url,
+            has_registered: item.has_registered
           };
         });
 
+        // ==============================================
+        // ✅ 在这里提前过滤：只保留 可报名 / 已结束 / 已报名
+        // ==============================================
+        const validStatus = ['可报名', '已结束', '已报名'];
+        formattedList = formattedList.filter(item => {
+          return validStatus.includes(item.statusBadge);
+        });
+
+        // 赋值到 data
         this.setData({
           activityList: formattedList
         });
@@ -213,28 +222,17 @@ Page({
   },
 
   // 获取状态徽章
-  getStatusBadge(status, remainCount) {
+  getStatusBadge(status, remainCount, has_registered) {
+    // console.log(has_registered)
+    if (has_registered) return '已报名';
     if (status === 1) {
-      if (remainCount <= 0) {
-        return '已满员';
-      } else if (remainCount < 5) {
-        return '余位少';
-      } else {
-        return '可报名';
-      }
-    } else if (status === 3) {
-      return '进行中';
-    } else if (status === 4) {
-      return '已结束';
-    } else if (status === 0) {
-      return '待审核';
-    } else if (status === 2) {
-      return '已拒绝';
-    } else if (status === 5) {
-      return '已取消';
+      if (remainCount <= 0) return '已满员';
+      return '可报名';
     }
-    return '已截止';
+    const map = { 0: '待审核', 2: '已拒绝', 3: '进行中', 4: '已结束', 5: '已取消' };
+    return map[status] || '已截止';
   },
+
 
   // 获取状态样式类
   getStatusClass(status) {
@@ -245,69 +243,6 @@ Page({
       3: 'active', // 进行中
       4: 'ended', // 已结束
       5: 'cancelled' // 已取消
-    };
-    return map[status] || 'closed';
-  },
-
-  // 格式化活动时间
-  formatActivityTime(timeStr) {
-    const date = new Date(timeStr);
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const hour = String(date.getHours()).padStart(2, '0');
-    const minute = String(date.getMinutes()).padStart(2, '0');
-    return `${month}/${day} ${hour}:${minute}`;
-  },
-
-  // 获取难度文本
-  getDifficultyText(level) {
-    const map = {
-      1: '⭐ 简单',
-      2: '⭐⭐ 中等',
-      3: '⭐⭐⭐ 困难',
-      4: '⭐⭐⭐⭐ 挑战'
-    };
-    return map[level] || '⭐ 简单';
-  },
-
-  // 获取状态文本
-  getStatusText(status) {
-    const map = {
-      0: '待审核',
-      1: '报名中',
-      2: '审核拒绝',
-      3: '进行中',
-      4: '已结束',
-      5: '已取消'
-    };
-    return map[status] || '未知';
-  },
-
-  // 获取状态徽章
-  getStatusBadge(status, remainCount) {
-    if (status === 1 && remainCount > 0) {
-      return remainCount < 5 ? '余位少' : '可报名';
-    } else if (status === 1 && remainCount === 0) {
-      return '已满员';
-    } else if (status === 3) {
-      return '进行中';
-    } else if (status === 4) {
-      return '已结束';
-    } else if (status === 0) {
-      return '待审核';
-    }
-    return '已截止';
-  },
-
-  // 获取状态样式类
-  getStatusClass(status) {
-    const map = {
-      0: 'pending',
-      1: 'ongoing',
-      2: 'rejected',
-      3: 'active',
-      4: 'ended',
-      5: 'cancelled'
     };
     return map[status] || 'closed';
   },
@@ -465,5 +400,12 @@ Page({
     wx.navigateTo({
       url: `/pages/details/details?id=${id}`
     });
-  }
+  },
+
+  onShareAppMessage() {
+    return {
+      title: '步步出沪|徒然好想走', // 分享卡片的标题
+      path: '/pages/home/home', // 用户点开后进入的页面路径，默认为当前页
+    }
+  },
 });

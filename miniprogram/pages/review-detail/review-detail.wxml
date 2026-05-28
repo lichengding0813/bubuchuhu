@@ -1,26 +1,47 @@
 <view class="detail-container">
   <!-- 不再有顶部的编辑栏 -->
 
-  <!-- 轮播图 -->
-  <view class="swiper-section">
-    <swiper class="cover-swiper" indicator-dots="{{true}}" autoplay="{{false}}" circular="{{true}}">
-      <swiper-item>
-        <image class="cover-image" src="{{reviewData.cover}}" mode="aspectFill"></image>
-        <view class="cover-date">活动合照</view>
-      </swiper-item>
-      <swiper-item>
-        <image class="cover-image" src="{{reviewData.cover2}}" mode="aspectFill"></image>
-        <view class="cover-date">卜卜合照</view>
-      </swiper-item>
-    </swiper>
-  </view>
+
+<!-- 轮播图 -->
+<view class="swiper-section">
+  <swiper class="cover-swiper" indicator-dots="{{true}}" autoplay="{{true}}" interval="2000" circular="{{true}}">
+    <swiper-item>
+      <image class="cover-image" 
+             src="{{reviewData.cover}}" 
+             mode="aspectFill"
+             bindtap="previewImage"
+             data-src="{{reviewData.cover}}"></image>
+      <view class="cover-date">活动合照</view>
+    </swiper-item>
+    <swiper-item>
+      <image class="cover-image" 
+             src="{{reviewData.cover2}}" 
+             mode="aspectFill"
+             bindtap="previewImage"
+             data-src="{{reviewData.cover2}}"></image>
+      <view class="cover-date">卜卜合照</view>
+    </swiper-item>
+    <swiper-item>
+      <image class="cover-image" 
+             src="{{reviewData.cover3}}" 
+             mode="aspectFill"
+             bindtap="previewImage"
+             data-src="{{reviewData.cover3}}"></image>
+      <view class="cover-date">公益记录</view>
+    </swiper-item>
+  </swiper>
+</view>
 
   <!-- 基础信息卡片 -->
   <view class="info-card">
     <view class="activity-title">{{reviewData.name}}</view>
     <view class="activity-meta">
-      <view class="meta-item"><van-icon name="clock-o" /><text>{{reviewData.time}}</text></view>
-      <view class="meta-item"><van-icon name="location-o" /><text>{{reviewData.location}}</text></view>
+      <view class="meta-item">
+        <van-icon name="clock-o" /><text>{{reviewData.time}}</text>
+      </view>
+      <view class="meta-item">
+        <van-icon name="location-o" /><text>{{reviewData.location}}</text>
+      </view>
     </view>
     <view class="activity-stats">
       <view class="stat-item"><text class="stat-label">难度</text><text class="stat-value">{{reviewData.difficulty}}</text></view>
@@ -33,8 +54,10 @@
   <!-- 活动总结卡片 -->
   <view class="info-card">
     <view class="card-title">活动总结</view>
-    <view class="summary-content"><rich-text nodes="{{reviewData.summary}}"></rich-text></view>
-    <view class="summary-meta">编辑于 {{reviewData.summaryTime}}</view>
+    <view class="summary-content">
+      <rich-text nodes="{{reviewData.summary}}"></rich-text>
+    </view>
+    <!-- <view class="summary-meta">编辑于 {{reviewData.summaryTime}}</view> -->
   </view>
 
   <!-- 照片墙卡片 -->
@@ -44,23 +67,24 @@
       <block wx:for="{{displayPhotos}}" wx:key="index">
         <view class="photo-item">
           <image src="{{item.url}}" mode="aspectFill" class="photo-image" bindtap="previewPhoto" data-index="{{index}}"></image>
-          <view wx:if="{{item.uploader}}" class="photo-uploader">{{item.uploader}}</view>
+          <!-- <view wx:if="{{item.uploader}}" class="photo-uploader">{{item.uploader}}</view> -->
         </view>
       </block>
     </view>
   </view>
-
   <!-- 照片预览弹窗 -->
   <van-popup show="{{showPhotoPreview}}" bindclose="onPhotoPreviewClose" position="bottom" round closeable close-icon="close" custom-style="height: 100%; background: black;">
     <view class="photo-preview">
-      <swiper current="{{currentPhotoIndex}}" indicator-dots="{{false}}" autoplay="{{false}}" bindchange="onSwiperChange">
+      <swiper current="{{currentPhotoIndex}}" indicator-dots="{{false}}" autoplay="{{false}}" bindchange="onSwiperChange" style="height: 100%;">
         <swiper-item wx:for="{{displayPhotos}}" wx:key="index">
-          <image src="{{item.url}}" mode="widthFix" class="preview-image"></image>
+          <!-- mode 改为 aspectFit，保证图片完整显示 -->
+          <image src="{{item.url}}" mode="aspectFit" class="preview-image"></image>
         </swiper-item>
       </swiper>
       <view class="preview-info">{{currentPhotoIndex + 1}}/{{photoCount}}</view>
     </view>
   </van-popup>
+
 </view>
 
 <!-- 悬浮编辑按钮（仅管理员可见） -->

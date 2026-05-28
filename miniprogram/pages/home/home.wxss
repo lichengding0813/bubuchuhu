@@ -127,6 +127,7 @@ page {
 }
 
 
+
 .activity-card {
   display: flex;
   background-color: white;
@@ -203,6 +204,12 @@ page {
   background-color: #c7e3ff;
   color: #1f64a5;
 }
+
+.status-badge.registered-badge {
+  background-color: #d9f5d9;
+  color: #2e7d32;
+}
+
 
 .status-badge.closed {
   background-color: #ffcece;

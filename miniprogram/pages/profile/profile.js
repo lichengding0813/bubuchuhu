@@ -9,7 +9,7 @@ Page({
       verified: 0,
       needVerify: 0,
       isBlacklist: 0,
-      isAdmin: 0,  // 添加 isAdmin 字段
+      isAdmin: 0,
       createTime: '',
       lastLoginTime: '',
       loginCount: 0
@@ -29,11 +29,15 @@ Page({
         text: '个人信息设置',
         url: '/pages/settings/settings'
       },
-      // 待审核菜单项会动态添加，不在这里写死
       {
         icon: 'info',
         text: '关于我们',
         url: '/pages/about/about'
+      },
+      {
+        icon: 'records',
+        text: '更新日志',
+        url: '/pages/update-log/update-log'
       },
     ]
   },
@@ -44,19 +48,16 @@ Page({
   },
 
   onShow() {
-    // 每次显示页面时重新从storage获取数据
     this.initUserData();
   },
 
   // 从storage初始化用户数据
   initUserData() {
     try {
-      // 从storage获取userInfo
       const storageUserInfo = wx.getStorageSync('userInfo');
       console.log('storageUserInfo:', storageUserInfo);
       
       if (storageUserInfo) {
-        // 更新userInfo，标记为已登录
         this.setData({
           userInfo: {
             ...storageUserInfo,
@@ -64,14 +65,10 @@ Page({
           },
           openId: storageUserInfo.openId || ''
         });
-        
-        // 根据needVerify更新待审核红点
         this.updatePendingRedDot(storageUserInfo.needVerify);
-        
-        // 动态构建菜单（根据是否为管理员）
         this.buildMenuList();
       } else {
-        // 未登录状态
+        // 未登录状态：只显示公开菜单（关于我们、更新日志）
         this.setData({
           userInfo: {
             nickName: '点击登录',
@@ -86,15 +83,19 @@ Page({
             createTime: '',
             lastLoginTime: '',
             loginCount: 0
-          }
-        });
-        // 未登录时只显示基本菜单
-        this.setData({
-          menuList: [{
-            icon: 'info',
-            text: '关于我们',
-            url: '/pages/about/about'
-          }]
+          },
+          menuList: [
+            {
+              icon: 'info',
+              text: '关于我们',
+              url: '/pages/about/about'
+            },
+            {
+              icon: 'records',
+              text: '更新日志',
+              url: '/pages/update-log/update-log'
+            }
+          ]
         });
       }
     } catch (error) {
@@ -102,12 +103,12 @@ Page({
     }
   },
 
-  // 动态构建菜单列表
+  // 动态构建菜单列表（登录后使用）
   buildMenuList() {
     const { isAdmin, needVerify } = this.data.userInfo;
     const menuList = [];
     
-    // 个人信息设置（总是显示）
+    // 个人信息设置（登录后显示）
     menuList.push({
       icon: 'setting',
       text: '个人信息设置',
@@ -120,7 +121,7 @@ Page({
         icon: 'records',
         text: '待审核',
         url: '/pages/admin-review/admin-review',
-        showRedDot: needVerify === 1  // 根据验证状态显示红点
+        showRedDot: needVerify === 1
       });
     }
     
@@ -131,9 +132,14 @@ Page({
       url: '/pages/about/about'
     });
     
-    console.log('构建的菜单列表:', menuList);
-    console.log('当前用户 isAdmin:', isAdmin);
+    // 更新日志（始终显示）
+    menuList.push({
+      icon: 'records',
+      text: '更新日志',
+      url: '/pages/update-log/update-log'
+    });
     
+    console.log('当前用户 isAdmin:', isAdmin);
     this.setData({ menuList });
   },
 
@@ -148,18 +154,15 @@ Page({
       }
       return item;
     });
-
     this.setData({ menuList });
   },
 
   // 加载用户统计数据
   loadUserStats() {
-    // 这里可以调用云函数获取用户发起的和报名的活动数量
-    // 示例数据
     this.setData({
       stats: {
-        created: 3,  // 实际应从后端获取
-        joined: 5     // 实际应从后端获取
+        created: 3,
+        joined: 5
       }
     });
   },
@@ -178,7 +181,7 @@ Page({
     const { index } = e.currentTarget.dataset;
     const menu = this.data.menuList[index];
     
-    if (!this.data.userInfo.isLogin && menu.text !== '关于我们') {
+    if (!this.data.userInfo.isLogin && menu.text !== '关于我们' && menu.text !== '更新日志') {
       wx.showToast({
         title: '请先登录',
         icon: 'none'
@@ -186,26 +189,21 @@ Page({
       return;
     }
     
-    // 根据不同的菜单项执行不同的操作
     switch(menu.text) {
       case '关于我们':
-        wx.navigateTo({
-          url: menu.url
-        });
+        wx.navigateTo({ url: menu.url });
+        break;
+      case '更新日志':
+        wx.navigateTo({ url: menu.url });
         break;
       case '个人信息设置':
-        wx.navigateTo({
-          url: menu.url
-        });
+        wx.navigateTo({ url: menu.url });
         break;
       case '待审核':
-        // 检查是否需要验证
         if (this.data.userInfo.needVerify) {
           this.setData({ showVerifyDialog: true });
         } else {
-          wx.navigateTo({
-            url: menu.url
-          });
+          wx.navigateTo({ url: menu.url });
         }
         break;
       default:
@@ -239,11 +237,9 @@ Page({
         const userData = result.data.data;
         console.log('登录成功，用户信息:', userData);
         
-        // 保存到storage和globalData
         getApp().globalData.userInfo = userData;
         wx.setStorageSync('userInfo', userData);
         
-        // 更新页面数据
         this.setData({
           userInfo: {
             ...userData,
@@ -252,10 +248,8 @@ Page({
           isLoading: false
         });
         
-        // 重新构建菜单
         this.buildMenuList();
         
-        // 检查是否需要验证
         if (userData.needVerify === 1 && userData.isBlacklist === 0) {
           this.setData({ showVerifyDialog: true });
         } else {
@@ -317,7 +311,6 @@ Page({
         getApp().globalData.userInfo = userData;
         wx.setStorageSync('userInfo', userData);
         
-        // 重新构建菜单
         this.buildMenuList();
 
         if (userData.isBlacklist === 1) {

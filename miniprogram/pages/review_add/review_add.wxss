@@ -316,17 +316,21 @@ page {
   border-color: #5faee3;
 }
 
+
 .edit-textarea {
   width: 100%;
-  background: #fafeff;
-  border: 1px solid #e2edf7;
-  border-radius: 12px;
-  padding: 12px;
-  font-size: 14px;
+  min-height: 200rpx;
+  padding: 24rpx;
+  font-size: 30rpx;
+  line-height: 1.5;
+  background-color: #fafeff;
   color: #134579;
-  min-height: 120px;
+  border-radius: 16rpx;
   box-sizing: border-box;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
+
+
 
 .edit-row {
   display: flex;

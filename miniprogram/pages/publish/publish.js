@@ -1,7 +1,8 @@
+// pages/activity_add/activity_add.js
 Page({
   data: {
     agree: false,
-    canSubmit: true,
+    canSubmit: false,
     showBusQR: false,
     showNotice: false,
     showDatePicker: false,
@@ -60,7 +61,7 @@ Page({
     groupQR: '',
     busQR: '',
     cover: '',
-
+    forceInsurance: 0,   // 0-不强制，1-强制
     // 集合点
     meetingPoints: [{
       time: '',
@@ -129,6 +130,13 @@ Page({
     }, (_, i) => i + 1);
     this.setData({
       days
+    });
+  },
+
+  // 单选框变更
+  onForceInsuranceChange(e) {
+    this.setData({
+      forceInsurance: e.detail
     });
   },
 
@@ -233,7 +241,6 @@ Page({
   },
 
   onLoad() {
-
     this.initPickerData();
     // 初始化云环境
     wx.cloud.init({
@@ -257,9 +264,12 @@ Page({
         console.log('自动填入微信号：', userInfo.wechatId)
         this.setData({
           wechat: userInfo.wechatId
+        }, () => {
+          this.checkCanSubmit()
         })
       } else {
-        console.warn('用户未设置微信号')
+        // 即使没有微信号，也要重新校验一次（确保按钮状态正确）
+        this.checkCanSubmit()
       }
     } else {
       console.warn('未获取到用户openId')
@@ -275,6 +285,8 @@ Page({
     defaultDeadline.setHours(defaultDeadline.getHours() - 1)
     this.setData({
       deadline: this.formatTime(defaultDeadline)
+    }, () => {
+      this.checkCanSubmit()
     })
   },
 
@@ -306,49 +318,37 @@ Page({
     return date.getTime();
   },
 
-  // 通用输入处理 - 双向绑定
+  // 通用输入处理 - 双向绑定（修复：每次输入后触发校验）
   onInput(e) {
     const {
       field
     } = e.currentTarget.dataset
-    // 从你的日志看，e.detail 直接就是输入的值
     const value = e.detail || ''
-    // console.log(`输入 ${field}:`, value)
-
-    // 更新数据
     this.setData({
       [field]: value
+    }, () => {
+      this.checkCanSubmit()
     })
   },
 
   // 集合点地点输入 - 专门处理 location 字段
   onMeetingLocationInput(e) {
-    // console.log('集合点地点输入:', e)
-
     const {
       index
     } = e.currentTarget.dataset
-    // 从事件中获取输入的值
     const value = e.detail.value || e.detail || ''
-
-    // console.log(`集合点${index} location:`, value)
-
-    // 获取当前的 meetingPoints 数组
     const {
       meetingPoints
     } = this.data
-
-    // 更新对应索引的 location
     if (meetingPoints[index]) {
       meetingPoints[index].location = value
-
-      // 更新数据
       this.setData({
         meetingPoints: [...meetingPoints]
+      }, () => {
+        this.checkCanSubmit()
       })
     }
   },
-
 
   // 出行方式变化
   onTravelChange(e) {
@@ -405,6 +405,8 @@ Page({
     })
     this.setData({
       meetingPoints: [...meetingPoints]
+    }, () => {
+      this.checkCanSubmit()
     })
   },
 
@@ -531,7 +533,6 @@ Page({
     }
     return options;
   },
-
 
   // 日期时间选择取消
   onDateTimeCancel() {
@@ -699,7 +700,7 @@ Page({
     })
   },
 
-  // 检查是否可以提交
+  // 检查是否可以提交（修复：微信号必须非空）
   checkCanSubmit() {
     const {
       agree,
@@ -717,6 +718,9 @@ Page({
       busQR
     } = this.data
 
+    // 微信号必须存在且不为空字符串
+    const isWechatValid = wechat && wechat.trim().length > 0
+
     // 检查必填项
     const requiredFields = [
       name,
@@ -727,7 +731,7 @@ Page({
       route,
       difficulty,
       maxParticipants >= 2,
-      wechat,
+      isWechatValid,   // 使用严格校验
       groupQR
     ]
 
@@ -739,13 +743,32 @@ Page({
 
     const allRequiredValid = [...requiredFields, meetingPointsValid].every(Boolean)
 
+    const canSubmit = agree && allRequiredValid && busRequired
     this.setData({
-      canSubmit: agree && allRequiredValid && busRequired
+      canSubmit
     })
   },
 
-  // 表单提交
+  // 表单提交（增加最终校验）
   onSubmit() {
+    // 最终校验：微信号必填
+    if (!this.data.wechat || this.data.wechat.trim() === '') {
+      wx.showToast({
+        title: '请填写发起人微信号',
+        icon: 'none'
+      })
+      return
+    }
+
+    // 最终校验：同意条款
+    if (!this.data.agree) {
+      wx.showToast({
+        title: '请阅读并同意发起者须知',
+        icon: 'none'
+      })
+      return
+    }
+
     wx.showModal({
       title: '确认发起活动',
       content: '请确认所有信息填写正确',
@@ -792,7 +815,8 @@ Page({
             wechat: this.data.wechat || '',
             travelOptions: travelOptionsNumbers,
             busQR: this.data.busQR || '',
-            meetingPoints: this.data.meetingPoints || []
+            meetingPoints: this.data.meetingPoints || [],
+            mandatoryInsurance: this.data.forceInsurance,
           }
 
           console.log('提交的表单数据：', formData)

@@ -15,5 +15,17 @@ App({
   },
   globalData: {
     userInfo: null
+  },
+
+  onLaunch() {
+    // 初始化云开发能力
+    if (!wx.cloud) {
+      console.error('请使用 2.2.3 或以上的基础库以使用云能力');
+    } else {
+      wx.cloud.init({
+        env: 'prod-3gktwx67d1dd1e76',  // 您的云环境ID
+        traceUser: true,               // 是否在控制台显示用户访问记录
+      });
+    }
   }
 })

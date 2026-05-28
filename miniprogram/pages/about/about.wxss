@@ -4,7 +4,7 @@ page {
 }
 
 .about-container {
-  min-height: 100vh;
+  min-height: 90vh;
   padding-bottom: 30px;
   background-color: #f0faff;
 }

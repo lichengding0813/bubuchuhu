@@ -1,27 +1,10 @@
+/* pages/review-detail/review-detail.wxss */
 page {
   background-color: #f0faff;
 }
 
 .detail-container {
   padding: 0 16px 80px 16px;
-}
-
-/* 顶部编辑图标 */
-.detail-header {
-  display: flex;
-  justify-content: flex-end;
-  padding: 12px 0;
-  margin-bottom: 8px;
-}
-.detail-header .van-icon--edit {
-  padding: 8px;
-  background-color: rgba(25, 137, 250, 0.1);
-  border-radius: 50%;
-  transition: all 0.2s ease;
-}
-.detail-header .van-icon--edit:active {
-  background-color: rgba(25, 137, 250, 0.2);
-  transform: scale(0.95);
 }
 
 /* 轮播图 */
@@ -33,7 +16,7 @@ page {
 }
 .cover-swiper {
   width: 100%;
-  height: 240px;
+  height: 500px;
   border-radius: 20px;
 }
 .cover-image {
@@ -49,17 +32,6 @@ page {
   padding: 4px 12px;
   border-radius: 20px;
   font-size: 12px;
-}
-.cover-edit-btn {
-  position: absolute;
-  bottom: 12px;
-  right: 12px;
-  background: rgba(0,0,0,0.6);
-  color: white;
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-size: 12px;
-  z-index: 10;
 }
 
 /* 卡片通用样式 */
@@ -121,69 +93,19 @@ page {
   font-weight: 600;
   color: #1e4d7c;
 }
+
+/* 活动总结 - 修复溢出问题 */
 .summary-content {
   font-size: 14px;
   color: #2e4d73;
   line-height: 1.6;
   margin-bottom: 12px;
-}
-.summary-meta {
-  font-size: 12px;
-  color: #8aaec0;
-  text-align: right;
-}
-
-/* 编辑模式字段样式 */
-.edit-field {
-  margin-bottom: 16px;
-}
-.edit-label {
-  font-size: 14px;
-  color: #1e4d7c;
-  font-weight: 500;
-  margin-bottom: 6px;
-}
-.edit-input {
-  width: 100%;
-  background: #fafeff;
-  border: 1px solid #e2edf7;
-  border-radius: 12px;
-  padding: 12px;
-  font-size: 14px;
-  color: #134579;
-  box-sizing: border-box;
-}
-.edit-input:focus {
-  border-color: #5faee3;
-}
-.edit-textarea {
-  width: 100%;
-  background: #fafeff;
-  border: 1px solid #e2edf7;
-  border-radius: 12px;
-  padding: 12px;
-  font-size: 14px;
-  color: #134579;
-  min-height: 120px;
-  box-sizing: border-box;
-}
-.edit-row {
-  display: flex;
-  gap: 12px;
-}
-.edit-field.half {
-  flex: 1;
+  word-break: break-all;      /* 强制换行，防止长文本/URL溢出 */
+  overflow-wrap: break-word;
+  white-space: normal;
 }
 
 /* 照片墙 */
-.photo-count {
-  font-size: 14px;
-  color: #5f7fa3;
-  font-weight: normal;
-}
-.add-photo-icon {
-  margin-left: auto;
-}
 .photo-grid {
   display: flex;
   flex-wrap: wrap;
@@ -192,7 +114,7 @@ page {
 }
 .photo-item {
   position: relative;
-  width: calc(33.33% - 6px);
+  width: calc(32.33% - 6px);
   aspect-ratio: 1/1;
   border-radius: 12px;
   overflow: hidden;
@@ -203,35 +125,15 @@ page {
   width: 100%;
   height: 100%;
 }
-.photo-uploader {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: rgba(0,0,0,0.5);
-  color: white;
-  font-size: 10px;
-  padding: 2px;
-  text-align: center;
-}
-.photo-delete {
-  position: absolute;
-  top: 6px;
-  right: 6px;
-  background: rgba(0,0,0,0.6);
-  border-radius: 50%;
-  padding: 4px;
-}
 
 /* 照片预览弹窗 */
 .photo-preview {
   height: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
+  position: relative;
 }
 .preview-image {
   width: 100%;
+  height: 100%;
 }
 .preview-info {
   position: absolute;
@@ -243,45 +145,10 @@ page {
   background: rgba(0,0,0,0.6);
   padding: 8px;
   font-size: 14px;
+  z-index: 10;
 }
 
-/* 底部固定操作栏 */
-.edit-bottom-bar {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: rgba(255,255,255,0.96);
-  backdrop-filter: blur(10px);
-  padding: 12px 16px;
-  padding-bottom: calc(12px + constant(safe-area-inset-bottom));
-  padding-bottom: calc(12px + env(safe-area-inset-bottom));
-  display: flex;
-  gap: 12px;
-  box-shadow: 0 -4px 12px rgba(0,130,210,0.08);
-  border-top: 1px solid rgba(160,200,255,0.4);
-  z-index: 100;
-}
-.edit-bottom-bar .van-button {
-  flex: 1;
-  border-radius: 40px;
-  font-weight: 500;
-  height: 44px;
-}
-.edit-bottom-bar .van-button--primary {
-  background-color: #5faee3;
-  border-color: #5faee3;
-}
-.edit-bottom-bar .van-button--default {
-  background-color: white;
-  border-color: #d9e8f5;
-  color: #5f7fa3;
-}
-
-
-/* 原有样式保持不变，最后添加上以下代码 */
-
-/* 悬浮编辑按钮（模仿列表页新建按钮） */
+/* 悬浮编辑按钮 */
 .edit-fab {
   position: fixed;
   bottom: 30px;
@@ -296,13 +163,12 @@ page {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   z-index: 100;
 }
-
 .edit-fab van-icon {
   color: white;
   font-size: 28px;
 }
 
-/* 针对有底部安全区的机型 */
+/* 安全区适配 */
 @supports (bottom: constant(safe-area-inset-bottom)) or (bottom: env(safe-area-inset-bottom)) {
   .edit-fab {
     bottom: calc(30px + constant(safe-area-inset-bottom));

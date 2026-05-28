@@ -12,7 +12,7 @@
     data-id="{{item.id}}"
     bindtap="onReviewClick"
   >
-    <view class="review-cover"></view>
+    <view class="review-cover"><image class="review-cover" src="{{item.cover}}" mode="aspectFill" /></view>
     <view class="review-info">
       <text class="review-name">{{item.name}}</text>
       <view class="review-meta">

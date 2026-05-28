@@ -49,11 +49,18 @@
         <view wx:else class="upload-placeholder"><van-icon name="plus" /> 上传图片</view>
       </view>
     </view>
+    <view class="edit-field">
+      <view class="edit-label">公益记录</view>
+      <view class="upload-area" bindtap="chooseCover" data-type="cover3">
+        <image wx:if="{{form.cover3}}" src="{{form.cover3}}" mode="aspectFill" class="uploaded-image"></image>
+        <view wx:else class="upload-placeholder"><van-icon name="plus" /> 上传图片</view>
+      </view>
+    </view>
   </view>
 
   <view class="form-card">
     <view class="card-title">活动总结</view>
-    <textarea class="edit-textarea" model:value="{{form.summary}}" data-field="summary" bindinput="onInput" placeholder="请输入活动总结" auto-height />
+    <textarea class="edit-textarea" maxlength="2000" model:value="{{form.summary}}" data-field="summary" bindinput="onInput" placeholder="请输入活动总结"  auto-height />
   </view>
 
   <view class="form-card">

@@ -21,7 +21,7 @@
 
 <!-- 活动卡片列表 -->
 <block wx:for="{{activityList}}" wx:key="index">
-  <view class="activity-card" data-id="{{item.id}}" bindtap="onActivityClick" wx:if="{{showAll || index < 3}}">
+  <view class="activity-card" data-id="{{item.id}}" bindtap="onActivityClick" wx:if="{{(showAll || index < 3)}}">
     <view class="card-left">
       <image 
         class="cover-image" 
@@ -54,7 +54,7 @@
           <text class="remain-count {{item.remainCount < 5 ? 'warning' : ''}}">{{item.remainCount}}/{{item.totalCount}} 剩余</text>
         </view>
         <text class="tag-difficulty">{{item.difficulty}}</text>
-        <text class="status-badge {{item.statusClass}}">{{item.statusBadge}}</text>
+        <text class="status-badge {{item.has_registered ? 'registered-badge' : item.statusClass}}">{{item.statusBadge}}</text>
       </view>
     </view>
   </view>

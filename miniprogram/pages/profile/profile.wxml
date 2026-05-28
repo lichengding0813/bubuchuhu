@@ -26,7 +26,7 @@
   </view>
 
   <!-- 统计数据 -->
-  <!-- <view class="stats-card">
+  <view class="stats-card">
     <view class="stat-item" bindtap="goToCreatedActivities">
       <text class="stat-number">{{stats.created}}</text>
       <text class="stat-label">我发起的</text>
@@ -35,7 +35,7 @@
       <text class="stat-number">{{stats.joined}}</text>
       <text class="stat-label">我报名的</text>
     </view>
-  </view> -->
+  </view>
 
   <!-- 菜单列表 -->
   <view class="menu-list">
