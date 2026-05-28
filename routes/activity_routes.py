@@ -715,3 +715,65 @@ def update_activities_status():
             cursor.close()
         if conn:
             conn.close()
+
+
+@activity_bp.route('/participants', methods=['GET'])
+def get_activity_participants():
+    """获取活动报名人员列表（忽略status字段，返回所有报名记录及用户头像）"""
+    activity_id = request.args.get('activity_id')
+    if not activity_id:
+        return jsonify({'code': 400, 'msg': '缺少活动ID'})
+
+    conn = None
+    cursor = None
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+
+        # 检查活动是否存在
+        cursor.execute("SELECT id FROM activities WHERE id = %s", (activity_id,))
+        if not cursor.fetchone():
+            return jsonify({'code': 404, 'msg': '活动不存在'})
+
+        # 查询所有报名记录，关联 users 表获取头像和昵称（使用报名时填写的昵称优先，若为空则取 users 表中的昵称）
+        cursor.execute("""
+            SELECT 
+                p.id, p.user_openid, 
+                IFNULL(p.nickname, u.nickName) AS nickname,
+                u.avatarUrl,
+                p.phone, p.wechat_id, 
+                p.travel_option, p.remark, p.created_at
+            FROM activity_participants p
+            LEFT JOIN users u ON p.user_openid = u.openId
+            WHERE p.activity_id = %s
+            ORDER BY p.created_at ASC
+        """, (activity_id,))
+        participants = cursor.fetchall()
+
+        # 格式化时间、转换出行方式文本
+        for p in participants:
+            if p.get('created_at'):
+                p['created_at_formatted'] = p['created_at'].strftime('%m/%d %H:%M') if isinstance(p['created_at'],
+                                                                                                  datetime) else str(
+                    p['created_at'])
+            else:
+                p['created_at_formatted'] = ''
+
+            travel_map = {1: '自驾', 2: '拼车', 3: '大巴'}
+            p['travel_option_text'] = travel_map.get(p.get('travel_option'), '未选择')
+
+        return jsonify({
+            'code': 200,
+            'data': {
+                'total': len(participants),
+                'list': participants
+            }
+        })
+
+    except Exception as e:
+        return jsonify({'code': 500, 'msg': f'数据库错误: {str(e)}'})
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
