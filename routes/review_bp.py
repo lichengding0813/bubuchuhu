@@ -4,7 +4,7 @@ from db_utils import get_db
 from middleware import check_verified_and_blacklist, check_admin
 import uuid
 import os
-import pymysql.cursors  # 新增导入
+import pymysql.cursors
 
 review_bp = Blueprint('review', __name__, url_prefix='/api/reviews')
 
@@ -30,17 +30,14 @@ def upload_image():
     if not allowed_file(file.filename):
         return jsonify({'code': 400, 'msg': '不支持的图片格式'})
 
-    # 生成唯一文件名
     ext = file.filename.rsplit('.', 1)[1].lower()
     filename = f"{uuid.uuid4().hex}.{ext}"
-    # 保存路径（请根据实际配置修改）
     upload_dir = os.path.join(os.path.dirname(__file__), 'static', 'uploads')
     if not os.path.exists(upload_dir):
         os.makedirs(upload_dir)
     filepath = os.path.join(upload_dir, filename)
     file.save(filepath)
 
-    # 返回可访问的URL（需配置静态路由或使用完整域名）
     url = f"/static/uploads/{filename}"
     return jsonify({'code': 200, 'msg': '上传成功', 'data': {'url': url}})
 
@@ -57,13 +54,11 @@ def get_review_list():
     cursor = None
     try:
         conn = get_db()
-        cursor = conn.cursor(pymysql.cursors.DictCursor)  # 修正1
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
 
-        # 总数
         cursor.execute("SELECT COUNT(*) as total FROM activity_reviews WHERE status = 1")
         total = cursor.fetchone()['total']
 
-        # 分页列表
         cursor.execute("""
             SELECT id, name, time, location, participants, cover
             FROM activity_reviews
@@ -98,12 +93,12 @@ def get_review_detail(review_id):
     cursor = None
     try:
         conn = get_db()
-        cursor = conn.cursor(pymysql.cursors.DictCursor)  # 修正2
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
 
-        # 查询主表
+        # 查询主表（增加了 cover3）
         cursor.execute("""
             SELECT id, name, time, location, difficulty, distance, climb,
-                   participants, summary, summary_time, cover, cover2
+                   participants, summary, summary_time, cover, cover2, cover3
             FROM activity_reviews
             WHERE id = %s AND status = 1
         """, (review_id,))
@@ -148,19 +143,23 @@ def create_review():
         conn = get_db()
         cursor = conn.cursor()
 
-        # 插入主表
+        # 插入主表（增加了 cover3）
         cursor.execute("""
             INSERT INTO activity_reviews
             (name, time, location, difficulty, distance, climb, participants,
-             summary, summary_time, cover, cover2, created_by)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+             summary, summary_time, cover, cover2, cover3, created_by)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """, (
             data['name'], data['time'], data['location'],
             data.get('difficulty', '中等'),
-            data.get('distance', 0), data.get('climb', 0), data.get('participants', 0),
+            data.get('distance', 0),
+            data.get('climb', 0),
+            data.get('participants', 0),
             data.get('summary', ''),
             datetime.now().strftime('%Y.%m.%d %H:%M'),
-            data.get('cover', ''), data.get('cover2', ''),
+            data.get('cover', ''),
+            data.get('cover2', ''),
+            data.get('cover3', ''),   # 新增 cover3
             g.openid
         ))
         review_id = cursor.lastrowid
@@ -198,28 +197,32 @@ def update_review(review_id):
         conn = get_db()
         cursor = conn.cursor()
 
-        # 检查是否存在
         cursor.execute("SELECT id FROM activity_reviews WHERE id = %s AND status = 1", (review_id,))
         if not cursor.fetchone():
             return jsonify({'code': 404, 'msg': '活动回顾不存在'})
 
-        # 更新主表
+        # 更新主表（增加了 cover3）
         cursor.execute("""
             UPDATE activity_reviews SET
                 name = %s, time = %s, location = %s,
                 difficulty = %s, distance = %s, climb = %s, participants = %s,
-                summary = %s, summary_time = %s, cover = %s, cover2 = %s
+                summary = %s, summary_time = %s, cover = %s, cover2 = %s, cover3 = %s
             WHERE id = %s
         """, (
             data['name'], data['time'], data['location'],
-            data.get('difficulty', '中等'), data.get('distance', 0),
-            data.get('climb', 0), data.get('participants', 0),
-            data.get('summary', ''), datetime.now().strftime('%Y.%m.%d %H:%M'),
-            data.get('cover', ''), data.get('cover2', ''),
+            data.get('difficulty', '中等'),
+            data.get('distance', 0),
+            data.get('climb', 0),
+            data.get('participants', 0),
+            data.get('summary', ''),
+            datetime.now().strftime('%Y.%m.%d %H:%M'),
+            data.get('cover', ''),
+            data.get('cover2', ''),
+            data.get('cover3', ''),   # 新增 cover3
             review_id
         ))
 
-        # 更新照片墙：先删除旧照片，再插入新照片
+        # 照片墙处理：先删除旧照片，再插入新照片
         cursor.execute("DELETE FROM review_photos WHERE review_id = %s", (review_id,))
         photos = data.get('photos', [])
         for idx, photo in enumerate(photos):

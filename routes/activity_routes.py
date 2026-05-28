@@ -34,14 +34,14 @@ def create_activity():
         # 生成活动编号
         activity_no = generate_activity_no()
 
-        # 1. 插入活动主表
+        # 1. 插入活动主表（增加 is_force_insurance 字段）
         sql = """
         INSERT INTO activities (
             activity_no, name, description, activity_time, location,
             route, distance, climb, difficulty, max_participants,
             deadline, cover_url, group_qr_url, wechat_id, created_by,
-            status, created_at
-        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
+            status, is_force_insurance, created_at
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
         """
 
         cursor.execute(sql, (
@@ -60,7 +60,8 @@ def create_activity():
             data.get('groupQR'),
             data.get('wechat'),
             openid,
-            0  # 默认待审核
+            0,  # 默认待审核
+            data.get('mandatoryInsurance', 0)  # 新增：是否强制保险，默认0
         ))
 
         activity_id = cursor.lastrowid
@@ -114,6 +115,7 @@ def get_activity_list():
     size = int(request.args.get('size', 10))
     status = request.args.get('status')
     keyword = request.args.get('keyword', '')
+    openid = request.headers.get('X-Wx-OpenId')
 
     offset = (page - 1) * size
     conn = None
@@ -139,12 +141,12 @@ def get_activity_list():
         cursor.execute(f"SELECT COUNT(*) as total FROM activities a {where_clause}", params)
         total = cursor.fetchone()['total']
 
-        # 查询列表 - 添加 reject_reason 和发起人信息
+        # 查询列表 - 显式增加 is_force_insurance 字段
         sql = f"""
         SELECT 
             a.id, a.activity_no, a.name, a.description, a.activity_time, a.location,
             a.difficulty, a.max_participants, a.status, a.cover_url, a.view_count,
-            a.created_at, a.created_by, a.reject_reason,
+            a.created_at, a.created_by, a.reject_reason, a.is_force_insurance,
             u.nickName as creator_name, u.avatarUrl as creator_avatar
         FROM activities a
         LEFT JOIN users u ON a.created_by = u.openId
@@ -181,6 +183,16 @@ def get_activity_list():
             )
             activity['participant_count'] = cursor.fetchone()['count']
 
+            # 新增：当前用户是否已报名（status=1）
+            activity['has_registered'] = False
+            if openid:
+                cursor.execute(
+                    "SELECT id FROM activity_participants WHERE activity_id = %s AND user_openid = %s AND status = 1",
+                    (activity['id'], openid)
+                )
+                if cursor.fetchone():
+                    activity['has_registered'] = True
+
         return jsonify({
             'code': 200,
             'data': {
@@ -204,6 +216,7 @@ def get_activity_list():
 def get_activity_detail():
     """获取活动详情"""
     activity_id = request.args.get('id')
+    openid = request.headers.get('X-Wx-OpenId')
 
     if not activity_id:
         return jsonify({'code': 400, 'msg': '缺少活动ID'})
@@ -215,7 +228,7 @@ def get_activity_detail():
         conn = get_db()
         cursor = conn.cursor()
 
-        # 获取活动基本信息 - 添加 reject_reason 字段
+        # 获取活动基本信息 - SELECT a.* 会自动包含 is_force_insurance 字段
         cursor.execute("""
             SELECT a.*, u.nickName as creator_name, u.avatarUrl as creator_avatar
             FROM activities a
@@ -243,6 +256,16 @@ def get_activity_detail():
         cursor.execute("SELECT COUNT(*) as count FROM activity_participants WHERE activity_id = %s AND status = 1",
                        (activity_id,))
         activity['participant_count'] = cursor.fetchone()['count']
+
+        # 新增：当前用户是否已报名
+        activity['has_registered'] = False
+        if openid:
+            cursor.execute(
+                "SELECT id FROM activity_participants WHERE activity_id = %s AND user_openid = %s AND status = 1",
+                (activity_id, openid)
+            )
+            if cursor.fetchone():
+                activity['has_registered'] = True
 
         conn.commit()
 
@@ -311,7 +334,7 @@ def participate_activity():
             INSERT INTO activity_participants (
                 activity_id, user_openid, nickname, phone, wechat_id, 
                 travel_option, remark, status, created_at
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NOW())
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, 1, NOW())
         """, (
             activity_id,
             openid,
@@ -320,7 +343,6 @@ def participate_activity():
             data.get('wechat_id'),
             data.get('travel_option'),
             data.get('remark'),
-            0  # 待确认
         ))
 
         conn.commit()
@@ -352,6 +374,7 @@ def get_my_activities():
         conn = get_db()
         cursor = conn.cursor()
 
+        # SELECT a.* 会自动包含 is_force_insurance 字段
         cursor.execute("""
             SELECT a.*, 
                    (SELECT COUNT(*) FROM activity_participants WHERE activity_id = a.id AND status = 1) as participant_count,
@@ -449,18 +472,15 @@ def update_rejected_activity():
         if activity['created_by'] != openid:
             return jsonify({'code': 403, 'msg': '无权限修改此活动'})
 
-        if activity['status'] != 2:  # 2表示审核拒绝
-            return jsonify({'code': 400, 'msg': '只有被驳回的活动才能修改'})
-
-        # 更新活动信息
+        # 更新活动信息（增加 is_force_insurance）
         sql = """
         UPDATE activities SET
             name = %s, description = %s, activity_time = %s, location = %s,
             route = %s, distance = %s, climb = %s, difficulty = %s,
             max_participants = %s, deadline = %s, cover_url = %s,
-            group_qr_url = %s, wechat_id = %s, status = 0,  -- 重新变为待审核
-            reject_reason = NULL, reject_time = NULL,  -- 清空驳回信息
-            updated_at = NOW()
+            group_qr_url = %s, wechat_id = %s, is_force_insurance = %s,
+            status = 0,  -- 重新变为待审核
+            reject_reason = NULL, reject_time = NULL, updated_at = NOW()
         WHERE id = %s
         """
 
@@ -478,6 +498,7 @@ def update_rejected_activity():
             data.get('cover'),
             data.get('groupQR'),
             data.get('wechat'),
+            data.get('mandatoryInsurance', 0),  # 新增字段
             activity_id
         ))
 
@@ -523,6 +544,8 @@ def update_rejected_activity():
     finally:
         if cursor:
             cursor.close()
+        if conn:
+            conn.close()
 
 
 @activity_bp.route('/my-activities-with-audit', methods=['GET'])
@@ -538,6 +561,7 @@ def get_my_activities_with_audit():
         conn = get_db()
         cursor = conn.cursor()
 
+        # SELECT a.* 会自动包含 is_force_insurance 字段
         cursor.execute("""
             SELECT a.*, 
                    (SELECT COUNT(*) FROM activity_participants WHERE activity_id = a.id AND status = 1) as participant_count,
@@ -563,6 +587,8 @@ def get_my_activities_with_audit():
     finally:
         if cursor:
             cursor.close()
+        if conn:
+            conn.close()
 
 
 @activity_bp.route('/my-participations-grouped', methods=['GET'])
@@ -620,6 +646,8 @@ def get_my_participations_grouped():
     finally:
         if cursor:
             cursor.close()
+        if conn:
+            conn.close()
 
 
 @activity_bp.route('/update-status', methods=['POST'])
@@ -647,28 +675,12 @@ def update_activities_status():
         updated_to_ongoing = cursor.rowcount
 
         # 2. 更新状态为“已结束”（status=4）：当前时间 > 活动结束时间（这里假设活动时间即为结束时间）
-        # 注意：如果活动开始后几小时结束，需要更精确的结束时间字段。此处简单处理：活动时间 < 当前时间则结束
         cursor.execute("""
             UPDATE activities 
             SET status = 4 
             WHERE status IN (1, 3) AND activity_time < %s
         """, (now,))
         updated_to_ended = cursor.rowcount
-
-        # 3. 满员判断：不需要写库，但可以返回汇总信息，或者记录到日志
-        # 如果需要将 is_full 写入数据库，下面取消注释
-        # cursor.execute("""
-        #     UPDATE activities a
-        #     LEFT JOIN (
-        #         SELECT activity_id, COUNT(*) as cnt
-        #         FROM activity_participants
-        #         WHERE status = 1
-        #         GROUP BY activity_id
-        #     ) p ON a.id = p.activity_id
-        #     SET a.is_full = CASE WHEN p.cnt >= a.max_participants THEN 1 ELSE 0 END
-        #     WHERE a.status IN (1,3)
-        # """)
-        # conn.commit()
 
         # 获取所有满员的活动ID列表（供前端标记，也可不返回）
         cursor.execute("""
