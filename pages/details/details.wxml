@@ -159,13 +159,44 @@
       <text>参与本活动需要自行购买户外保险</text>
     </view>
 
-    <!-- 报名按钮 -->
-    <view class="submit-btn">
-      <van-button type="info" block bindtap="onSignUpClick" disabled="{{!canSignUp || isRegistered}}">
-        {{isRegistered ? '已报名' : '立即报名'}}
+    <!-- 报名/取消按钮 -->
+    <view class="submit-btn" wx:if="{{!isRegistered}}">
+      <van-button type="info" block bindtap="onSignUpClick" disabled="{{!canSignUp}}">
+        立即报名
       </van-button>
     </view>
+    <view class="submit-btn-group" wx:if="{{isRegistered}}">
+      <van-button type="info" block disabled>已报名</van-button>
+      <van-button plain type="default" block bindtap="onCancelSignUpClick" custom-class="cancel-btn">取消报名</van-button>
+    </view>
   </view>
+
+  <!-- 报名成功弹窗 -->
+  <van-popup show="{{showSuccessPopup}}" bindclose="onSuccessPopupClose" round closeable close-icon="close" custom-style="width: 80%; max-width: 320px;">
+    <view class="success-popup">
+      <view class="success-icon">
+        <van-icon name="checked" size="48px" color="#52c41a" />
+      </view>
+      <view class="success-title">报名成功</view>
+      <view class="success-subtitle">请及时加入活动群联系发起人</view>
+      
+      <view class="success-qr" wx:if="{{activityDetail.groupQR}}" bindtap="onPreviewGroupQR">
+        <text class="success-label">活动群二维码</text>
+        <image class="success-qr-image" src="{{activityDetail.groupQR}}" mode="aspectFit" />
+        <text class="success-hint">点击查看大图，长按识别加群</text>
+      </view>
+
+      <view class="success-wechat" wx:if="{{activityDetail.wechat}}">
+        <text class="success-label">发起人微信号</text>
+        <view class="wechat-row">
+          <text class="wechat-id">{{activityDetail.wechat}}</text>
+          <van-button size="small" type="info" plain bindtap="onCopyWechat">复制</van-button>
+        </view>
+      </view>
+
+      <van-button type="info" block bindtap="onSuccessPopupClose" custom-class="success-close-btn">我知道了</van-button>
+    </view>
+  </van-popup>
 
   <!-- 须知弹窗 -->
   <van-popup show="{{showNotice}}" bindclose="onNoticeClose" position="bottom" round closeable close-icon="close" custom-style="height: 80%;">

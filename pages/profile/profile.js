@@ -127,6 +127,11 @@ Page({
         url: '/pages/admin-review/admin-review',
         showRedDot: needVerify === 1
       });
+      menuList.push({
+        icon: 'replay',
+        text: '全员重新验证',
+        action: 'resetVerification'
+      });
     }
     
     // 关于我们
@@ -252,6 +257,13 @@ Page({
     const { index } = e.currentTarget.dataset;
     const menu = this.data.menuList[index];
     
+    // 优先处理 action 类型菜单
+    if (menu.action === 'resetVerification') {
+      this.onResetVerification();
+      return;
+    }
+
+    // 未登录状态限制
     if (!this.data.userInfo.isLogin && menu.text !== '关于我们' && menu.text !== '更新日志') {
       wx.showToast({
         title: '请先登录',
@@ -259,14 +271,10 @@ Page({
       });
       return;
     }
-    
+
     switch(menu.text) {
       case '关于我们':
-        wx.navigateTo({ url: menu.url });
-        break;
       case '更新日志':
-        wx.navigateTo({ url: menu.url });
-        break;
       case '个人信息设置':
         wx.navigateTo({ url: menu.url });
         break;
@@ -416,6 +424,56 @@ Page({
 
   onLockedConfirm() {
     this.setData({ showLockedDialog: false });
+  },
+
+  // ========== 全员重新验证 ==========
+  onResetVerification() {
+    wx.showModal({
+      title: '确认操作',
+      content: '将重置所有非管理员用户的验证状态，所有用户下次进入时需要重新回答验证问题。确定继续？',
+      confirmText: '确定重置',
+      confirmColor: '#ee0a24',
+      success: (res) => {
+        if (res.confirm) {
+          this.doResetVerification();
+        }
+      }
+    });
+  },
+
+  async doResetVerification() {
+    wx.showLoading({ title: '执行中...' });
+    try {
+      const result = await wx.cloud.callContainer({
+        config: { env: "prod-3gktwx67d1dd1e76" },
+        path: "/api/admin/reset-all-verification",
+        header: {
+          "X-WX-SERVICE": "flask-mysql-login",
+          "X-Wx-OpenId": this.data.openId,
+          "content-type": "application/json"
+        },
+        method: "POST"
+      });
+      wx.hideLoading();
+
+      if (result.data && result.data.code === 200) {
+        const count = result.data.data?.affected_count || 0;
+        wx.showToast({
+          title: `已重置${count}位用户`,
+          icon: 'success',
+          duration: 2000
+        });
+      } else {
+        wx.showToast({
+          title: result.data?.msg || '操作失败',
+          icon: 'none'
+        });
+      }
+    } catch (error) {
+      wx.hideLoading();
+      console.error('全员重新验证失败:', error);
+      wx.showToast({ title: '网络错误', icon: 'none' });
+    }
   },
 
   preventTouchMove() {

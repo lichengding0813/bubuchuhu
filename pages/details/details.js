@@ -22,7 +22,7 @@ Page({
       deadline: '',
       status: '',
       travel: [],
-      is_force_insurance: 0  // 新增：是否强制购买保险 (0-不强制, 1-强制)
+      is_force_insurance: 0
     },
     agreeNotice: false,
     agreeBus: false,
@@ -33,6 +33,7 @@ Page({
     noticeTitle: '报名参与者须知',
     userInfo: null,
     isRegistered: false,
+    showSuccessPopup: false
   },
 
   onLoad(options) {
@@ -237,6 +238,48 @@ Page({
     });
   },
 
+  onCancelSignUpClick() {
+    wx.showModal({
+      title: '确认取消报名',
+      content: '取消后需重新报名，确定要取消吗？',
+      success: (res) => {
+        if (res.confirm) this.cancelParticipation();
+      }
+    });
+  },
+
+  async cancelParticipation() {
+    wx.showLoading({ title: '取消中...' });
+    try {
+      const userInfo = this.data.userInfo || wx.getStorageSync('userInfo');
+      const result = await wx.cloud.callContainer({
+        config: { env: "prod-3gktwx67d1dd1e76" },
+        path: "/api/activity/cancel-participation",
+        header: {
+          "X-WX-SERVICE": "flask-mysql-login",
+          "X-Wx-OpenId": userInfo?.openId,
+          "content-type": "application/json"
+        },
+        method: "POST",
+        data: { activity_id: this.data.activityId }
+      });
+      wx.hideLoading();
+      if (result.data && result.data.code === 200) {
+        wx.showToast({
+          title: '已取消报名',
+          icon: 'success',
+          duration: 1500,
+          success: () => setTimeout(() => this.getActivityDetail(this.data.activityId), 1500)
+        });
+      } else {
+        wx.showToast({ title: result.data?.msg || '取消失败', icon: 'none' });
+      }
+    } catch (error) {
+      wx.hideLoading();
+      wx.showToast({ title: '网络错误', icon: 'error' });
+    }
+  },
+
   async signUpActivity() {
     wx.showLoading({ title: '报名中...' });
     try {
@@ -261,12 +304,7 @@ Page({
       });
       wx.hideLoading();
       if (result.data && result.data.code === 200) {
-        wx.showToast({
-          title: '报名成功',
-          icon: 'success',
-          duration: 2000,
-          success: () => setTimeout(() => wx.navigateBack(), 2000)
-        });
+        this.setData({ showSuccessPopup: true, isRegistered: true });
       } else {
         wx.showToast({ title: result.data?.msg || '报名失败', icon: 'none' });
       }
@@ -279,6 +317,26 @@ Page({
 
   onBackClick() {
     wx.navigateBack({ delta: 1 });
+  },
+
+  onSuccessPopupClose() {
+    this.setData({ showSuccessPopup: false });
+    this.getActivityDetail(this.data.activityId);
+  },
+
+  onPreviewGroupQR() {
+    if (this.data.activityDetail.groupQR) {
+      wx.previewImage({ urls: [this.data.activityDetail.groupQR] });
+    }
+  },
+
+  onCopyWechat() {
+    if (this.data.activityDetail.wechat) {
+      wx.setClipboardData({
+        data: this.data.activityDetail.wechat,
+        success: () => wx.showToast({ title: '微信号已复制', icon: 'success' })
+      });
+    }
   },
 
   preventTouchMove() {},

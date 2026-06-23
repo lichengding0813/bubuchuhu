@@ -290,12 +290,22 @@
 }
 
 .submit-btn van-button {
-  --button-primary-background-color: #96c9ff;
-  --button-primary-border-color: #96c9ff;
-  border-radius: 30px !important;
-  height: 48px !important;
-  line-height: 48px !important;
-  font-weight: 500 !important;
+  border-radius: 8px;
+}
+
+.submit-btn-group {
+  display: flex;
+  gap: 10px;
+}
+
+.submit-btn-group van-button {
+  flex: 1;
+  border-radius: 8px;
+}
+
+.cancel-btn {
+  color: #999 !important;
+  border-color: #ddd !important;
 }
 
 /* 弹窗样式 */
@@ -518,4 +528,77 @@
 
 .insurance-value.optional {
   color: #7f9fbf;               /* 灰色表示可选 */
+}
+
+/* 报名成功弹窗 */
+.success-popup {
+  padding: 30px 20px 20px;
+  text-align: center;
+}
+
+.success-icon {
+  margin-bottom: 12px;
+}
+
+.success-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1e4d7c;
+  margin-bottom: 4px;
+}
+
+.success-subtitle {
+  font-size: 14px;
+  color: #888;
+  margin-bottom: 20px;
+}
+
+.success-qr {
+  margin-bottom: 16px;
+}
+
+.success-label {
+  display: block;
+  font-size: 13px;
+  color: #5f7fa3;
+  margin-bottom: 8px;
+}
+
+.success-qr-image {
+  width: 160px;
+  height: 160px;
+  border-radius: 8px;
+  border: 1px solid #e8e8e8;
+}
+
+.success-hint {
+  display: block;
+  font-size: 11px;
+  color: #aaa;
+  margin-top: 6px;
+}
+
+.success-wechat {
+  margin-bottom: 20px;
+  text-align: left;
+  padding: 0 10px;
+}
+
+.wechat-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #f5f5f5;
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+
+.wechat-id {
+  font-size: 15px;
+  color: #333;
+}
+
+.success-close-btn {
+  margin-top: 8px;
+  border-radius: 8px !important;
 }
