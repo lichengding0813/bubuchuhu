@@ -227,3 +227,40 @@ def remove_from_blacklist():
     finally:
         if cursor:
             cursor.close()
+
+
+@admin_bp.route('/reset-all-verification', methods=['POST'])
+@check_verified_and_blacklist
+@check_admin
+def reset_all_verification():
+    """管理员触发全员重新验证：将所有非管理员用户重置为未验证状态"""
+    conn = None
+    cursor = None
+
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+
+        # 重置所有非管理员用户的验证状态（保持管理员不受影响）
+        cursor.execute("""
+            UPDATE users 
+            SET needVerify = 1, verified = 0, verifyAttempts = 0
+            WHERE isAdmin = 0 OR isAdmin IS NULL
+        """)
+
+        affected = cursor.rowcount
+        conn.commit()
+
+        return jsonify({
+            'code': 200,
+            'msg': f'已重置 {affected} 位用户的验证状态',
+            'data': {'affected_count': affected}
+        })
+
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        return jsonify({'code': 500, 'msg': f'数据库错误: {str(e)}'})
+    finally:
+        if cursor:
+            cursor.close()

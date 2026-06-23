@@ -360,6 +360,65 @@ def participate_activity():
             conn.close()
 
 
+@activity_bp.route('/cancel-participation', methods=['POST'])
+@check_verified_and_blacklist
+def cancel_participation():
+    """取消报名活动"""
+    openid = g.openid
+    data = request.get_json()
+    activity_id = data.get('activity_id')
+
+    if not activity_id:
+        return jsonify({'code': 400, 'msg': '缺少活动ID'})
+
+    conn = None
+    cursor = None
+
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+
+        # 检查活动是否存在且未结束
+        cursor.execute("SELECT id, status, activity_time FROM activities WHERE id = %s", (activity_id,))
+        activity = cursor.fetchone()
+
+        if not activity:
+            return jsonify({'code': 404, 'msg': '活动不存在'})
+
+        if activity['status'] == 4:
+            return jsonify({'code': 400, 'msg': '活动已结束，无法取消报名'})
+
+        # 检查是否已报名
+        cursor.execute(
+            "SELECT id, status FROM activity_participants WHERE activity_id = %s AND user_openid = %s AND status = 1",
+            (activity_id, openid)
+        )
+        participation = cursor.fetchone()
+
+        if not participation:
+            return jsonify({'code': 400, 'msg': '您未报名该活动'})
+
+        # 软删除：将 status 设为 0（已取消）
+        cursor.execute(
+            "UPDATE activity_participants SET status = 0 WHERE id = %s",
+            (participation['id'],)
+        )
+
+        conn.commit()
+
+        return jsonify({'code': 200, 'msg': '取消报名成功'})
+
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        return jsonify({'code': 500, 'msg': f'数据库错误: {str(e)}'})
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+
 @activity_bp.route('/my-activities', methods=['GET'])
 def get_my_activities():
     """获取我发起的活动"""
