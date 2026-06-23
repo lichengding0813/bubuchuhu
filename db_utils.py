@@ -23,7 +23,8 @@ def get_db():
             password=DB_CONFIG['password'],
             database=DB_CONFIG['database'],
             charset=DB_CONFIG['charset'],
-            cursorclass=pymysql.cursors.DictCursor
+            cursorclass=pymysql.cursors.DictCursor,
+            init_command="SET time_zone = '+8:00'"  # 强制使用东八区（北京时间）
         )
     return g.db
 
