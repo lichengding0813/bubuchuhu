@@ -1,0 +1,4 @@
+<!--pages/test/test.wxml-->
+<text>pages/test/test.wxml</text>
+
+<button open-type="getPhoneNumber" bindgetphonenumber="getPhoneNumber">授权</button>
