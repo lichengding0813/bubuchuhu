@@ -109,6 +109,16 @@ page {
   color: #2e4d73;
   margin-bottom: 8px;
   font-weight: 500;
+  display: flex;
+  align-items: center;
+  min-height: 24px;
+}
+
+.required-star {
+  color: #ff6b6b;
+  margin-left: 2px;
+  font-size: 16px;
+  line-height: 1;
 }
 
 .form-row {

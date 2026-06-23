@@ -55,10 +55,6 @@
         <text class="qr-label">活动群</text>
         <image class="qr-image" src="{{activityDetail.group_qr_url || activityDetail.groupQR}}" mode="aspectFill"></image>
       </view>
-      <view class="qr-item" wx:if="{{busQR}}">
-        <text class="qr-label">大巴群</text>
-        <image class="qr-image" src="{{busQR}}" mode="aspectFill"></image>
-      </view>
     </view>
   </view>
 

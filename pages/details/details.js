@@ -107,8 +107,8 @@ Page({
       3: '进行中', 4: '已结束', 5: '已取消'
     };
     const difficultyMap = {
-      1: '⭐ 简单', 2: '⭐⭐ 中等',
-      3: '⭐⭐⭐ 困难', 4: '⭐⭐⭐⭐ 挑战'
+      1: '1星 简单', 2: '2星 轻松',
+      3: '3星 中等', 4: '4星 困难', 5: '5星 挑战'
     };
 
     // 获取是否强制保险（后端返回字段名为 is_force_insurance）
@@ -118,7 +118,7 @@ Page({
       'activityDetail.name': activity.name || '',
       'activityDetail.time': this.formatTime(activity.activity_time),
       'activityDetail.location': activity.location || '',
-      'activityDetail.difficulty': difficultyMap[activity.difficulty] || '⭐ 简单',
+      'activityDetail.difficulty': difficultyMap[activity.difficulty] || '1星 简单',
       'activityDetail.distance': activity.distance || 0,
       'activityDetail.climb': activity.climb || 0,
       'activityDetail.remainCount': remainCount,

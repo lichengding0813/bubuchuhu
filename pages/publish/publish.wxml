@@ -49,17 +49,6 @@
         </van-checkbox>
       </view>
 
-      <!-- 大巴群二维码（只有选择大巴时显示） -->
-      <view class="form-item" wx:if="{{showBusQR}}">
-        <view class="item-label">大巴群二维码 <text class="required-star">*</text></view>
-        <view class="upload-area" bindtap="onUploadQR" data-type="bus">
-          <image wx:if="{{busQR}}" src="{{busQR}}" mode="aspectFill" class="uploaded-image"></image>
-          <view wx:else class="upload-placeholder">
-            <van-icon name="plus" />
-            <text>上传二维码</text>
-          </view>
-        </view>
-      </view>
     </view>
 
     <!-- 集合信息卡片 -->
@@ -275,7 +264,7 @@
       <view class="para">
         <text>8.资料提交要求：</text>
         <text class="highlight">为便于参与者报名活动并及时与您取得联系，</text>
-        <text>请按规定提交真实有效的发起人微信号、活动微信群二维码；若活动出行方式包含大巴，还需额外提交大巴群二维码，确保参与者能及时与您取得联络，获取活动相关通知。</text>
+        <text>请按规定提交真实有效的发起人微信号、活动微信群二维码，确保参与者能及时与您取得联络，获取活动相关通知。</text>
         <text class="highlight">我们将在活动结束后的7日内，删除您的个人信息。</text>
       </view>
       <view class="para">

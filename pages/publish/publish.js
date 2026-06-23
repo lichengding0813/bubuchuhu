@@ -30,18 +30,26 @@ Page({
       }
     ],
 
-    // 难度选项
+    // 难度选项（五星制）
     difficultyOptions: [{
-        text: '初级',
-        value: 'easy'
+        text: '1星',
+        value: 1
       },
       {
-        text: '中级',
-        value: 'medium'
+        text: '2星',
+        value: 2
       },
       {
-        text: '高级',
-        value: 'hard'
+        text: '3星',
+        value: 3
+      },
+      {
+        text: '4星',
+        value: 4
+      },
+      {
+        text: '5星',
+        value: 5
       }
     ],
 
@@ -243,8 +251,7 @@ Page({
   },
 
   fillFormWithData(activity) {
-    const difficultyMap = { 1: 'easy', 2: 'medium', 3: 'hard', 4: 'expert' };
-    const difficulty = difficultyMap[activity.difficulty] || 'easy';
+    const difficulty = activity.difficulty || 1;
 
     const travelTypeMap = { 1: 'bus', 2: 'train', 3: 'self' };
     const travelOptionsFromBackend = (activity.travel_options || []).map(t => travelTypeMap[t.travel_type]).filter(v => v);
@@ -321,7 +328,6 @@ Page({
 
   async submitNewActivity() {
     wx.showLoading({ title: '提交中...' });
-    const difficultyMap = { 'easy': 1, 'medium': 2, 'hard': 3, 'expert': 4 };
     const travelTypeMap = { 'bus': 1, 'train': 2, 'self': 3 };
     const travelOptionsNumbers = (this.data.travel || []).map(item => travelTypeMap[item]).filter(v => v);
     const formData = {
@@ -332,7 +338,7 @@ Page({
       route: this.data.route,
       distance: parseInt(this.data.distance) || 0,
       climb: parseInt(this.data.climb) || 0,
-      difficulty: difficultyMap[this.data.difficulty] || 1,
+      difficulty: parseInt(this.data.difficulty) || 1,
       maxParticipants: this.data.maxParticipants,
       deadline: this.data.deadline,
       cover: this.data.cover,
@@ -371,7 +377,6 @@ Page({
 
   async submitEditActivity() {
     wx.showLoading({ title: '重新提交审核...' });
-    const difficultyMap = { 'easy': 1, 'medium': 2, 'hard': 3, 'expert': 4 };
     const travelTypeMap = { 'bus': 1, 'train': 2, 'self': 3 };
     const travelOptionsNumbers = (this.data.travel || []).map(item => travelTypeMap[item]).filter(v => v);
     const formData = {
@@ -383,7 +388,7 @@ Page({
       route: this.data.route,
       distance: parseInt(this.data.distance) || 0,
       climb: parseInt(this.data.climb) || 0,
-      difficulty: difficultyMap[this.data.difficulty] || 1,
+      difficulty: parseInt(this.data.difficulty) || 1,
       maxParticipants: this.data.maxParticipants,
       deadline: this.data.deadline,
       cover: this.data.cover,

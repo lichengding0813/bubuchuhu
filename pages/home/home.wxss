@@ -216,6 +216,31 @@ page {
   color: #b13e3e;
 }
 
+.status-badge.ended {
+  background-color: #e8e8e8;
+  color: #888;
+}
+
+.ended-section {
+  margin-top: 8px;
+}
+
+.ended-title::before {
+  background-color: #999 !important;
+}
+
+.ended-card {
+  opacity: 0.75;
+}
+
+.ended-cover {
+  filter: grayscale(30%);
+}
+
+.ended-name {
+  color: #666;
+}
+
 .info-row {
   display: flex;
   flex-wrap: wrap;

@@ -1,7 +1,12 @@
 Page({
   data: {
     showAll: false,
+    showAllEnded: false,
     activityList: [],
+    ongoingList: [],
+    endedList: [],
+    ongoingCount: 0,
+    endedCount: 0,
     userInfo: null,
     isLoading: false,
     // 验证弹窗相关
@@ -141,10 +146,10 @@ Page({
       console.log(result.data)
       if (result.data && result.data.code === 200) {
         const activities = result.data.data.list || [];
+        const total = result.data.data.total || 0;
 
         // 格式化活动数据
         let formattedList = activities.map(item => {
-          // 计算剩余名额
           const participantCount = item.participant_count || 0;
           const remainCount = item.max_participants - participantCount;
 
@@ -164,17 +169,12 @@ Page({
           };
         });
 
-        // ==============================================
-        // ✅ 在这里提前过滤：只保留 可报名 / 已结束 / 已报名
-        // ==============================================
-        const validStatus = ['可报名', '已结束', '已报名'];
-        formattedList = formattedList.filter(item => {
-          return validStatus.includes(item.statusBadge);
-        });
-
-        // 赋值到 data
         this.setData({
-          activityList: formattedList
+          activityList: formattedList,
+          ongoingList: formattedList.filter(item => item.statusBadge !== '已结束'),
+          endedList: formattedList.filter(item => item.statusBadge === '已结束'),
+          ongoingCount: formattedList.filter(item => item.statusBadge !== '已结束').length,
+          endedCount: formattedList.filter(item => item.statusBadge === '已结束').length
         });
       }
     } catch (error) {
@@ -200,12 +200,13 @@ Page({
   // 获取难度文本
   getDifficultyText(level) {
     const map = {
-      1: '⭐ 简单',
-      2: '⭐⭐ 中等',
-      3: '⭐⭐⭐ 困难',
-      4: '⭐⭐⭐⭐ 挑战'
+      1: '1星 简单',
+      2: '2星 轻松',
+      3: '3星 中等',
+      4: '4星 困难',
+      5: '5星 挑战'
     };
-    return map[level] || '⭐ 简单';
+    return map[level] || '1星 简单';
   },
 
   // 获取状态文本
@@ -379,6 +380,13 @@ Page({
   onToggleExpand() {
     this.setData({
       showAll: !this.data.showAll
+    });
+  },
+
+  // 点击展开/收起已结束活动
+  onToggleEndedExpand() {
+    this.setData({
+      showAllEnded: !this.data.showAllEnded
     });
   },
 

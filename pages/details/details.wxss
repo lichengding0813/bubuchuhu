@@ -249,6 +249,19 @@
   border-top: 1px solid rgba(160, 200, 255, 0.4);
 }
 
+.insurance-notice {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #fdf6ec;
+  border: 1px solid #e6a23c;
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-bottom: 10px;
+  font-size: 13px;
+  color: #b7791f;
+}
+
 .agree-section {
   margin-bottom: 12px;
 }

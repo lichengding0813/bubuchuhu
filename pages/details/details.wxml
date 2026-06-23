@@ -65,10 +65,6 @@
         <text class="qr-label">活动群</text>
         <image class="qr-image" src="{{activityDetail.groupQR}}" mode="aspectFill" bindtap="previewQRCode" data-url="{{activityDetail.groupQR}}"></image>
       </view>
-      <view class="qr-item" wx:if="{{activityDetail.busQR}}">
-        <text class="qr-label">大巴群</text>
-        <image class="qr-image" src="{{activityDetail.busQR}}" mode="aspectFill" bindtap="previewQRCode" data-url="{{activityDetail.busQR}}"></image>
-      </view>
     </view>
   </view>
 
@@ -155,6 +151,12 @@
         </van-checkbox>
         <text class="notice-link" bindtap="onNoticeClick" data-type="self">《自驾/高铁行程免责声明》</text>
       </view>
+    </view>
+
+    <!-- 保险提示 -->
+    <view class="insurance-notice" wx:if="{{activityDetail.is_force_insurance == 1}}">
+      <van-icon name="warning-o" size="14px" color="#e6a23c" />
+      <text>参与本活动需要自行购买户外保险</text>
     </view>
 
     <!-- 报名按钮 -->
