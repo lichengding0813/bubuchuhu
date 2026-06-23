@@ -1,0 +1,26 @@
+<!-- pages/review/review.wxml - 列表页增加新建入口 -->
+<view class="review-container">
+  <!-- 管理员新建按钮 -->
+  <view class="admin-add-btn" wx:if="{{isAdmin}}" bindtap="onAddReview">
+    <van-icon name="plus" size="48" color="#fff" />
+  </view>
+
+  <view 
+    wx:for="{{reviewList}}" 
+    wx:key="index" 
+    class="review-card"
+    data-id="{{item.id}}"
+    bindtap="onReviewClick"
+  >
+    <view class="review-cover"><image class="review-cover" src="{{item.cover}}" mode="aspectFill" /></view>
+    <view class="review-info">
+      <text class="review-name">{{item.name}}</text>
+      <view class="review-meta">
+        <text>{{item.time}} · {{item.location}}</text>
+      </view>
+      <view class="review-stats">
+        <text>{{item.participants}}人参与</text>
+      </view>
+    </view>
+  </view>
+</view>

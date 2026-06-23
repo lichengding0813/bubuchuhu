@@ -1,0 +1,71 @@
+<!-- 活动报名人员列表 -->
+<view class="participants-container">
+  <!-- 顶部统计卡片 -->
+  <view class="stats-section">
+    <view class="stat-card">
+      <view class="stat-number">{{totalCount}}</view>
+      <view class="stat-label">总报名人数</view>
+    </view>
+  </view>
+
+  <!-- 列表区域 -->
+  <view class="list-section">
+    <view class="section-header">
+      <text class="section-title">报名人员列表</text>
+      <view class="total-badge">共 {{totalCount}} 人</view>
+    </view>
+
+    <!-- 加载状态 -->
+    <view wx:if="{{isLoading}}" class="loading-container">
+      <van-loading size="40px" vertical>加载中...</van-loading>
+    </view>
+
+    <!-- 空状态 -->
+    <view wx:elif="{{participants.length === 0}}" class="empty-container">
+      <van-icon name="user-o" size="80" color="#ccc" />
+      <text class="empty-text">暂无报名人员</text>
+    </view>
+
+    <!-- 人员卡片列表 -->
+    <view wx:else>
+      <view wx:for="{{participants}}" wx:key="id" class="participant-card">
+        <view class="card-header">
+          <view class="user-info">
+            <view class="avatar">
+              <image class="avatar-image" src="{{item.avatarUrl}}" mode="aspectFill"></image>
+            </view>
+            <view class="user-detail">
+              <text class="nickname">{{item.nickname || '未知用户'}}</text>
+              <text class="join-time">报名时间：{{item.created_at_formatted}}</text>
+            </view>
+          </view>
+        </view>
+
+        <view class="card-content">
+          <view class="info-row" wx:if="{{item.phone}}">
+            <van-icon name="phone-o" />
+            <text>手机号：{{item.phone}}</text>
+          </view>
+          <view class="info-row" wx:if="{{item.wechat_id}}">
+            <van-icon name="wechat" />
+            <text>微信号：{{item.wechat_id}}</text>
+          </view>
+          <view class="info-row" wx:if="{{item.travel_option}}">
+            <van-icon name="flag-o" />
+            <text>出行方式：{{item.travel_option_text}}</text>
+          </view>
+          <view class="info-row" wx:if="{{item.remark}}">
+            <van-icon name="comment-o" />
+            <text>备注：{{item.remark}}</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 加载更多（如果需要分页） -->
+      <view wx:if="{{hasMore}}" class="load-more" bindtap="loadMore">
+        <text wx:if="{{!loadingMore}}">加载更多</text>
+        <van-loading wx:else size="24px" />
+      </view>
+    </view>
+  </view>
+</view>

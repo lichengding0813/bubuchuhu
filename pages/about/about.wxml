@@ -1,0 +1,29 @@
+<view class="about-container">
+  <!-- Logo区域
+  <view class="logo-section">
+    <view class="logo-circle">
+      <image src="cloud://prod-3gktwx67d1dd1e76.7072-prod-3gktwx67d1dd1e76-1392222183/logo.png" mode="widthFix" />
+    </view>
+    <text class="app-name">步步出沪 | 徒然好想走</text>
+  </view> -->
+
+  <!-- 关于我们文案卡片 -->
+  <view class="content-card">
+    <image src="cloud://prod-3gktwx67d1dd1e76.7072-prod-3gktwx67d1dd1e76-1392222183/about.jpg" mode="widthFix" />
+    <!-- 分隔线 -->
+    <view class="divider"></view>
+
+    <!-- 联系方式 -->
+    <view class="contact-section">
+      <text class="contact-title">联系我们</text>
+      <view class="contact-item">
+        <van-icon name="wechat" />
+        <text>公众号：步步出沪</text>
+      </view>
+      <view class="contact-item">
+        <van-icon name="notes-o" />
+        <text>小红书：jingyaa110</text>
+      </view>
+    </view>
+  </view>
+</view>

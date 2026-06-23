@@ -1,0 +1,53 @@
+<view class="profile-container">
+  <!-- 用户信息卡片 -->
+  <view class="user-card" bindtap="onLoginClick">
+    <view class="user-avatar">
+      <open-data type="userAvatarUrl" wx:if="{{!userInfo.avatarUrl}}"></open-data>
+      <image src="{{userInfo.avatarUrl}}" wx:else mode="aspectFill"></image>
+    </view>
+    <view class="user-info">
+      <text class="user-name">{{userInfo.nickName || '点击登录'}}</text>
+      <!-- 在用户信息卡片中的 user-badge 部分 -->
+      <view class="user-badge" wx:if="{{userInfo.isLogin}}">
+        <view class="badge-item verified" wx:if="{{userInfo.verified}}">
+          <van-icon name="passed" class="verified-icon" />
+          <text>已认证</text>
+        </view>
+        <view class="badge-item" wx:else>
+          <text>未认证</text>
+        </view>
+        <view class="badge-item phone" wx:if="{{userInfo.phoneNumber}}">
+          <van-icon name="phone-o" class="phone-icon" />
+          <text>已绑定</text>
+        </view>
+      </view>
+    </view>
+    <!-- <van-icon name="arrow" class="arrow-icon" /> -->
+  </view>
+
+  <!-- 统计数据 -->
+  <view class="stats-card">
+    <view class="stat-item" bindtap="goToCreatedActivities">
+      <text class="stat-number">{{stats.created}}</text>
+      <text class="stat-label">我发起的</text>
+    </view>
+    <view class="stat-item" bindtap="goToJoinedActivities">
+      <text class="stat-number">{{stats.joined}}</text>
+      <text class="stat-label">我报名的</text>
+    </view>
+  </view>
+
+  <!-- 菜单列表 -->
+  <view class="menu-list">
+    <view wx:for="{{menuList}}" wx:key="index" class="menu-item" data-index="{{index}}" bindtap="onMenuClick">
+      <view class="menu-left">
+        <van-icon name="{{item.icon}}" class="menu-icon" />
+        <text>{{item.text}}</text>
+      </view>
+      <view class="menu-right">
+        <van-icon name="arrow" class="menu-arrow" />
+        <van-badge dot wx:if="{{item.showRedDot}}" />
+      </view>
+    </view>
+  </view>
+</view>

@@ -1,0 +1,332 @@
+<view class="detail-container">
+  <!-- 顶部返回栏 -->
+  <view class="nav-bar">
+    <view class="back-btn" bindtap="onBackClick">
+      <van-icon name="arrow-left" />
+      <text>返回</text>
+    </view>
+    <text class="nav-title">发起活动</text>
+    <view class="placeholder"></view>
+  </view>
+
+  <!-- 活动封面图 -->
+  <view class="cover-section">
+    <image class="cover-image" src="{{activityDetail.cover}}" mode="aspectFill"></image>
+    <view class="cover-tag" wx:if="{{activityDetail.status}}">{{activityDetail.status}}</view>
+  </view>
+
+  <!-- 活动基本信息卡片 -->
+  <view class="info-card">
+    <view class="activity-title">{{activityDetail.name}}</view>
+    <view class="activity-meta">
+      <view class="meta-item">
+        <van-icon name="clock-o" />
+        <text>{{activityDetail.time}}</text>
+      </view>
+      <view class="meta-item">
+        <van-icon name="location-o" />
+        <text>{{activityDetail.location}}</text>
+      </view>
+    </view>
+    <view class="activity-stats">
+      <view class="stat-item">
+        <text class="stat-label">难度</text>
+        <text class="stat-value">{{activityDetail.difficulty}}</text>
+      </view>
+      <view class="stat-item">
+        <text class="stat-label">里程</text>
+        <text class="stat-value">{{activityDetail.distance}}km</text>
+      </view>
+      <view class="stat-item">
+        <text class="stat-label">爬升</text>
+        <text class="stat-value">{{activityDetail.climb}}m</text>
+      </view>
+      <view class="stat-item">
+        <text class="stat-label">名额</text>
+        <text class="stat-value">{{activityDetail.remainCount}}/{{activityDetail.totalCount}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 发起人信息卡片 -->
+  <view class="info-card">
+    <view class="card-title">发起人信息</view>
+    <view class="organizer-info">
+      <view class="organizer-avatar">
+        <image src="{{activityDetail.creatorAvatar}}" mode="aspectFill"></image>
+      </view>
+      <view class="organizer-detail">
+        <text class="organizer-name">{{activityDetail.organizer}}</text>
+        <text class="organizer-wechat">微信号：{{activityDetail.wechat}}</text>
+      </view>
+    </view>
+    <view class="qr-section">
+      <view class="qr-item">
+        <text class="qr-label">活动群</text>
+        <image class="qr-image" src="{{activityDetail.groupQR}}" mode="aspectFill" bindtap="previewQRCode" data-url="{{activityDetail.groupQR}}"></image>
+      </view>
+      <view class="qr-item" wx:if="{{activityDetail.busQR}}">
+        <text class="qr-label">大巴群</text>
+        <image class="qr-image" src="{{activityDetail.busQR}}" mode="aspectFill" bindtap="previewQRCode" data-url="{{activityDetail.busQR}}"></image>
+      </view>
+    </view>
+  </view>
+
+
+
+  <!-- 活动详情卡片 -->
+  <view class="info-card">
+    <view class="card-title">活动详情</view>
+    <view class="travel-options">
+      <view class="travel-tag" wx:for="{{activityDetail.travel}}" wx:key="index" wx:for-item="item">
+        <text wx:if="{{item === 'bus'}}">🚌 大巴</text>
+        <text wx:elif="{{item === 'train'}}">🚄 高铁</text>
+        <text wx:elif="{{item === 'self'}}">🚗 自驾</text>
+      </view>
+    </view>
+    <view class="insurance-badge" wx:if="{{activityDetail.is_force_insurance !== undefined}}">
+  <van-icon name="certificate" size="16px" />
+  <text class="insurance-label">户外保险：</text>
+  <text class="insurance-value {{activityDetail.is_force_insurance == 1 ? 'mandatory' : 'optional'}}">
+    {{activityDetail.is_force_insurance == 1 ? '是' : '否'}}
+  </text>
+</view>
+    <view class="detail-content">
+      <text class="detail-text">{{activityDetail.description}}</text>
+    </view>
+  </view>
+
+  <!-- 路线信息卡片 -->
+  <view class="info-card" style="margin-bottom: 200rpx;">
+    <view class="card-title">路线信息</view>
+    <view class="route-info">
+      <text class="route-text">{{activityDetail.route}}</text>
+    </view>
+
+    <!-- 集合点列表 - 新增 -->
+    <view class="meeting-points-section" wx:if="{{activityDetail.meetingPoints && activityDetail.meetingPoints.length > 0}}">
+      <view class="section-subtitle">集合点信息</view>
+      <view class="meeting-points-list">
+        <view class="meeting-point-item" wx:for="{{activityDetail.meetingPoints}}" wx:key="index" wx:for-index="idx">
+          <view class="meeting-point-order">集合点 {{idx + 1}}</view>
+          <view class="meeting-point-detail">
+            <view class="meeting-point-time">
+              <van-icon name="clock-o" size="14px" />
+              <text>{{item.meeting_time || item.time}}</text>
+            </view>
+            <view class="meeting-point-location">
+              <van-icon name="location-o" size="14px" />
+              <text>{{item.location}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="route-meta">
+      <text>报名截止：{{activityDetail.deadline}}</text>
+    </view>
+  </view>
+
+  <!-- 底部固定区域 -->
+  <view class="bottom-fixed">
+    <!-- 同意条款区域 -->
+    <view class="agree-section">
+      <!-- 报名参与者须知 - 始终显示 -->
+      <view class="agree-item">
+        <van-checkbox value="{{agreeNotice}}" bindchange="onAgreeNoticeChange" disabled="{{isRegistered}}" shape="square" size="18px">
+          <text class="agree-text">我已阅读并同意</text>
+        </van-checkbox>
+        <text class="notice-link" bindtap="onNoticeClick" data-type="participant">《报名参与者须知》</text>
+      </view>
+
+      <!-- 大巴免责声明 - 直接用数组判断 -->
+      <view class="agree-item" wx:if="{{activityDetail.travel && activityDetail.travel[0] === 'bus'}}">
+        <van-checkbox value="{{agreeBus}}" bindchange="onAgreeBusChange" disabled="{{isRegistered}}" shape="square" size="18px">
+          <text class="agree-text">我已阅读并同意</text>
+        </van-checkbox>
+        <text class="notice-link" bindtap="onNoticeClick" data-type="bus">《大巴行程免责声明》</text>
+      </view>
+
+      <!-- 自驾/高铁免责声明 -->
+      <view class="agree-item" wx:if="{{activityDetail.travel && (activityDetail.travel[0] === 'train'|| activityDetail.travel[1] === 'train' || activityDetail.travel[0] === 'self' || activityDetail.travel[1] === 'self' || activityDetail.travel[2] === 'self')}}">
+        <van-checkbox value="{{agreeSelf}}" bindchange="onAgreeSelfChange" disabled="{{isRegistered}}" shape="square" size="18px">
+          <text class="agree-text">我已阅读并同意</text>
+        </van-checkbox>
+        <text class="notice-link" bindtap="onNoticeClick" data-type="self">《自驾/高铁行程免责声明》</text>
+      </view>
+    </view>
+
+    <!-- 报名按钮 -->
+    <view class="submit-btn">
+      <van-button type="info" block bindtap="onSignUpClick" disabled="{{!canSignUp || isRegistered}}">
+        {{isRegistered ? '已报名' : '立即报名'}}
+      </van-button>
+    </view>
+  </view>
+
+  <!-- 须知弹窗 -->
+  <van-popup show="{{showNotice}}" bindclose="onNoticeClose" position="bottom" round closeable close-icon="close" custom-style="height: 80%;">
+    <view class="notice-popup">
+      <view class="popup-title">{{noticeTitle}}</view>
+      <view class="popup-content">
+        <!-- 报名参与者须知 -->
+        <block wx:if="{{noticeType === 'participant'}}">
+          <text class="subtitle">【最新发布日期：】</text>
+
+          <view class="para">
+            <text>欢迎报名参与本次大巴徒步活动！为保障您的出行安全，明确活动相关规则及责任划分，请您仔细阅读本须知及《大巴行程免责声明》，完成报名即视为接受全部条款。</text>
+          </view>
+
+          <text class="subtitle-light">（一）报名须知</text>
+
+          <view class="para">
+            <text>您需为具备完全民事行为能力的成年人；若为未成年人，需在监护人陪同下参与，且监护人需提前告知活动发起者并获得同意，由监护人承担</text>
+            <text class="highlight">活动过程中的</text>
+            <text>监护及责任。</text>
+          </view>
+
+          <view class="para">
+            <text>2. 信息真实性：报名时请提交真实、准确的个人信息，包括姓名、手机号、紧急联系人姓名及电话。确保紧急情况下能够及时与您及紧急联系人取得联络，若因信息虚假导致无法及时联络或产生其他后果，由您自行承担。</text>
+            <text class="highlight">您的个人信息将由活动发起者收集并用于报名信息统计和活动联络，活动结束后，活动发起者将在合理期限内删除您的前述个人信息。如您对个人信息的处理有任何疑问，请您直接联系活动发起者。您的个人信息将由活动发起者收集并用于报名信息统计和活动联络，活动结束后，活动发起者将在合理期限内删除您的前述个人信息。如您对个人信息的处理有任何疑问，请您直接联系活动发起者。</text>
+          </view>
+
+          <view class="para">
+            <text>3. 风险认知：您需明确知晓徒步活动存在不可预见的风险，包括但不限于中暑、蛇虫叮咬、滑倒摔伤、突发疾病、恶劣天气影响等。您自愿参与本次活动，并承诺自行承担因参与活动产生的一切人身损害和财产损失责任，与活动发起者、小程序运营方无关。</text>
+          </view>
+
+          <view class="para">
+            <text>4. 健康要求：请提前确认自身身体健康状况、徒步经验及户外运动能力符合本次活动的难度等级要求。患有心脏病、高血压、哮喘、癫痫等不适宜户外运动疾病的，请勿报名参与；若隐瞒健康状况参与活动，由此产生的一切后果由您自行承担。</text>
+          </view>
+
+          <view class="para">
+            <text>5. 装备准备：请根据活动要求自行准备徒步所需装备和物资，包括但不限于登山杖、防滑徒步鞋、防晒用品、防蚊液、充足的食物和饮用水、个人药品等，确保能够适应本次活动行程需求。</text>
+          </view>
+
+          <view class="para">
+            <text>6. 报名规则：请在活动报名截止时间前完成报名，逾期将无法提交报名信息。报名成功后即占用活动名额，若无法按时参与，请及时按规则取消报名；未按时参与且未取消报名的，将影响您后续参与平台其他活动的权限。</text>
+          </view>
+
+          <view class="para">
+            <text>7. 取消报名规则：活动开始前可申请取消报名，取消后将释放活动名额。平台将限制取消报名次数（具体次数以后台配置为准），超过限制次数的，将暂停您后续的报名权限。取消报名后，建议及时告知活动发起者，以便发起者调整组织安排。</text>
+          </view>
+
+          <view class="para">
+            <text>8. 行为规范：活动期间请严格遵守发起者的组织安排和引导，不得擅自离队、更改活动路线。请文明参与活动，爱护自然环境，不随意丢弃垃圾；尊重同行参与者，发扬wmls友好互助的精神，共同维护良好的活动氛围。</text>
+          </view>
+
+          <view class="para">
+            <text>9. 拍照与分享：活动期间拍照、录像时，请事先获得被拍摄者的同意，不得未经同意将包含他人肖像的影像资料随意发布至小红书、微博等公共平台。<text class="highlight">为便于您回顾活动并留存美好记忆，您可上传活动照片至照片墙，也可在评论区进行互动，我们将因此申请您的相册、摄像头权限，并向其他用户展示您自愿公开的上述内容，如您需上传的活动照片包含其他参与者，请您确保您已实际取得其同意。</text>您需确保上传至活动照片墙的照片和<text class="highlight">发表的评论</text>内容符合公序良俗，不得包含违规、低俗内容。</text>
+          </view>
+
+          <view class="para">
+            <text class="highlight">10.因活动产生的纠纷，由您自行与相关方进行协商解决，小程序运营方不承担任何责任。</text>
+          </view>
+
+          <view class="para">
+            <text class="highlight">11.知识产权：本平台及相关内容的知识产权归小程序运营方或相关权利人所有。未经授权，任何人不得擅自对相关内容进行使用、复制、传播等。</text>
+          </view>
+
+          <view class="para">
+            <text class="highlight">12.本须知自发布更新之日起生效。如您对上述内容有任何疑问或者希望对您提交的个人信息行使权利，请您通过【】联系小程序运营方和/或直接联系活动发起者。</text>
+          </view>
+        </block>
+
+        <!-- 大巴行程免责声明 -->
+        <block wx:if="{{noticeType === 'bus'}}">
+          <text class="subtitle">【最新发布日期：】</text>
+
+          <view class="para">
+            <text>请各位老师仔细阅读以下声明，勾选“我已阅读并同意《大巴行程免责声明》”即视为完全理解并接受本声明所有条款：</text>
+          </view>
+
+          <view class="para">
+            <text>1.自愿参与与非盈利声明：本次大巴徒步活动由您自愿报名参加，活动本着自由出行、放松心情、亲近自然的原则开展，不存在任何营利性质。您自愿与其他参与者共同出行，认可并践行友好互助的活动理念。</text>
+          </view>
+
+          <view class="para">
+            <text>2.风险自担：您确认已充分知晓并理解本次大巴行程中可能存在的各类风险，包括但不限于大巴交通意外、车辆故障、交通延误，以及徒步过程中的中暑、蛇虫叮咬、滑倒摔伤、突发疾病、恶劣天气等。您自愿承担因参与本次活动（含交通环节）产生的一切人身损害和财产损失责任，与活动发起者、小程序运营方及大巴承运方无关。</text>
+          </view>
+
+          <view class="para">
+            <text>3.健康与保险：您承诺自身身体健康，符合本次活动的参与条件。建议您自行购买户外运动意外险，为自身的人身安全和财产安全提供保障；未购买保险导致的损失，由您自行承担。</text>
+          </view>
+
+          <view class="para">
+            <text>4.同行救助义务：活动期间若有参与者出现意外事故、突发疾病等情况，其他参与者及发起者可本着人道主义原则提供必要的救助，但不承担由此产生的任何法律责任；救助过程中，救助者需注意自身安全。</text>
+          </view>
+
+          <view class="para">
+            <text>5.大巴行程特殊约定：</text><text class="highlight">发起者将在活动前发布大巴租车费用和其他乘车规则，</text>您需遵守大巴乘车规则，按时上下车，爱护车辆设施，不得在车内随意喧哗、乱扔垃圾。因您自身原因违反乘车规则导致的损害，由您自行承担。若因大巴交通延误、故障等不可抗力因素导致活动调整，发起者将尽力协调解决，但不承担相关赔偿责任。<text class="highlight">如您因突发情况无法参与活动，发起者将尽力协商退还已支付的租车费用，如因实际情况无法退还，您可选择转让大巴乘车名额，并要求被转让者通过本平台进行报名。</text>
+          </view>
+
+          <view class="para">
+            <text>6.AA制约定：若活动期间存在AA制餐食、门票等费用，由所有参与者共同承担。活动发起者需进行账单公示，确保费用透明，您可对费用明细提出疑问，由发起者予以解答。</text>
+          </view>
+
+          <view class="para">
+            <text>7.生效条件：您勾选“我已阅读并同意《大巴行程免责声明》”并完成报名，或扫码加入大巴群、添加活动组织者微信，即视为已完全阅读、理解并同意本声明所有条款，本声明自上述行为完成之日起生效。</text>
+          </view>
+
+          <view class="para">
+            <text>祝我们都快乐出行，平安回家！</text>
+          </view>
+        </block>
+
+        <!-- 自驾高铁行程免责声明 -->
+        <block wx:if="{{noticeType === 'self'}}">
+          <text class="subtitle">【最新发布日期：】</text>
+
+          <view class="para">
+            <text>欢迎各位wmls参与本次自驾/高铁徒步活动！为保障您的出行安全，明确活动相关风险及责任划分，特制定本声明。您扫码加入活动群或添加组织者微信，即视为已完全阅读、理解并同意本声明所有条款。</text>
+          </view>
+
+          <view class="para">
+            <text>1.自愿参与与非盈利声明：本次自驾/高铁徒步活动由您自愿报名参加，活动本着wmls自由出行、放松心情、亲近自然的原则开展，不存在任何营利性质。您自愿与其他参与者共同出行，认可并践行友好互助的活动理念。</text>
+          </view>
+
+          <view class="para">
+            <text>2.风险认知与自担：您确认已充分知晓并理解本次活动（含自驾/高铁交通环节）可能存在的各类风险，包括但不限于：自驾途中的交通意外、车辆故障、违章处罚、道路堵塞；高铁出行的延误、换乘失误、票务问题；徒步过程中的中暑、蛇虫叮咬、滑倒摔伤、突发疾病、恶劣天气、路况复杂等。您自愿承担因参与本次活动产生的一切人身损害和财产损失责任，与活动发起者、小程序运营方无关。</text>
+          </view>
+
+          <view class="para">
+            <text>3.健康与资质要求：您需为具备完全民事行为能力的成年人，确认自身身体健康状况、徒步经验及户外运动能力符合本次活动的难度等级要求；患有心脏病、高血压、哮喘、癫痫等不适宜户外运动疾病的，请勿参与。若为自驾参与者，您需具备合法有效的驾驶资质，驾驶的车辆符合国家安全标准，且已购买足额的车辆保险；因驾驶资质不符、车辆未达安全标准或保险不足导致的损失，由您自行承担。</text>
+          </view>
+
+          <view class="para">
+            <text>4.交通责任划分：自驾参与者自行承担驾驶过程中的全部<text class="highlight">费用</text>和责任，包括但不限于车辆损耗、维修费用、违章罚款、交通事故赔偿等。<text class="highlight">若您与同行参与者一同拼车自驾前往，自驾过程中的任何损害将由您与同行参与者协商承担，活动发起者与小程序运营方不承担任何责任。</text>高铁参与者自行承担购票、换乘、延误等交通相关的<text class="highlight">义务及风险</text>，活动发起者与<text class="highlight">小程序运营方</text>不负责协调交通票务问题。</text>
+          </view>
+
+          <view class="para">
+            <text>5.装备与保障：请您自行准备徒步所需的装备、物资及个人药品，包括但不限于登山杖、防滑徒步鞋、防晒用品、防蚊液、充足的食物和饮用水等。建议您自行购买户外运动意外险，为自身安全提供保障。活动发起者仅提供行程规划及建议，不承担个人安全保障责任。</text>
+          </view>
+
+          <view class="para">
+            <text>6.行为规范：活动期间请遵守发起者的行程安排，不得擅自离队、更改活动路线。请文明参与活动，爱护自然环境，不随意丢弃垃圾。自驾参与者需严格遵守交通规则，确保行车安全；若存在拼车情况，拼车双方需自行协商相关费用、责任划分等事宜，与活动发起者无关。
+            </text>
+          </view>
+
+          <view class="para">
+            <text>7.AA制约定：若活动期间存在AA制餐食、门票等费用，由所有参与者共同承担。活动发起者需进行账单公示，确保费用透明，您可对费用明细提出疑问，发起者需予以解答。
+            </text>
+          </view>
+
+          <view class="para">
+            <text>8.救助义务：活动期间若有参与者出现意外事故、突发疾病等情况，其他参与者及发起者可本着人道主义原则提供必要的救助，但不承担由此产生的任何法律责任；救助过程中，救助者需注意自身安全。
+            </text>
+          </view>
+          <view class="para">
+            <text>9.拍照与分享：活动期间拍照、录像时，请事先获得被拍摄者的同意，不得将包含他人肖像的影像资料随意发布至小红书、微博等公共平台，避免产生侵权纠纷。<text class="highlight">为便于您回顾活动并留存美好记忆，您可上传活动照片至照片墙，也可在评论区进行互动，我们将因此申请您的相册、摄像头权限，并向其他用户展示您自愿公开的上述内容，如您需上传的活动照片包含其他参与者，请您确保您已实际取得其同意。您需确保上传至活动照片墙的照片和发表的评论内容符合公序良俗，不得包含违规、低俗内容。</text>
+            </text>
+          </view>
+          <view class="para">
+            <text>10.生效条件：本声明为小程序运营方提供的强制条款，活动发起者发布活动即视为确认本声明；活动参与者扫码加入活动群或添加组织者微信，即视为已完全阅读、理解并同意本声明所有条款，本声明自加入群聊/添加微信之日起生效。</text>
+          </view>
+          <view class="para">
+            <text>祝我们都快乐出行，平安回家！</text>
+          </view>
+        </block>
+      </view>
+    </view>
+  </van-popup>
+</view>
