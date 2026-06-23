@@ -11,7 +11,7 @@ load_dotenv()
 from routes.activity_routes import activity_bp
 from routes.admin_routes import admin_bp
 from routes.review_bp import review_bp
-from db_utils import init_db_config, close_db
+from db_utils import init_db_config, close_db, get_db
 
 app = Flask(__name__)
 
