@@ -2,32 +2,38 @@ from flask import Flask, request, jsonify, g
 import requests
 from datetime import datetime
 import os
+from dotenv import load_dotenv
+
+# 加载 .env 文件（本地开发时生效，云托管时通过环境变量注入）
+load_dotenv()
 
 # 导入路由蓝图
 from routes.activity_routes import activity_bp
 from routes.admin_routes import admin_bp
 from routes.review_bp import review_bp
-from db_utils import get_db, close_db
+from db_utils import init_db_config
 
 app = Flask(__name__)
 
-# ==================== 配置信息 ====================
-# 云数据库配置
-app.config['DB_CONFIG'] = {
-    'host': '10.13.111.246',
-    'port': 3306,
-    'user': 'root',
-    'password': 'fNau8XqS',
-    'database': 'flask_demo',
+# ==================== 配置信息（统一从环境变量读取）====================
+db_config = {
+    'host': os.environ.get('DB_HOST', '10.13.111.246'),
+    'port': int(os.environ.get('DB_PORT', 3306)),
+    'user': os.environ.get('DB_USER', 'root'),
+    'password': os.environ.get('DB_PASSWORD', ''),
+    'database': os.environ.get('DB_NAME', 'flask_demo'),
     'charset': 'utf8mb4'
 }
+app.config['DB_CONFIG'] = db_config
+# 同步到 db_utils 模块
+init_db_config(db_config)
 
 # 微信小程序配置
-app.config['WX_APPID'] = 'wxd1a366672ab0f5ef'
-app.config['WX_SECRET'] = 'd336268096323dc418d18ad93097db9f'
+app.config['WX_APPID'] = os.environ.get('WX_APPID', '')
+app.config['WX_SECRET'] = os.environ.get('WX_SECRET', '')
 
 # 默认头像
-app.config['DEFAULT_AVATAR'] = 'cloud://prod-3gktwx67d1dd1e76.7072-prod-3gktwx67d1dd1e76-1392222183/魔魔胡胡胡蘿蔔.png'
+app.config['DEFAULT_AVATAR'] = os.environ.get('DEFAULT_AVATAR', 'cloud://prod-3gktwx67d1dd1e76.7072-prod-3gktwx67d1dd1e76-1392222183/魔魔胡胡胡蘿蔔.png')
 
 # 配置静态文件服务（用于访问上传的图片）
 app.config['UPLOAD_FOLDER'] = 'static/uploads'

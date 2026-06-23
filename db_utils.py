@@ -3,15 +3,14 @@ import pymysql.cursors
 from flask import g
 import logging
 
-# 从主配置导入
-DB_CONFIG = {
-    'host': '10.13.111.246',
-    'port': 3306,
-    'user': 'root',
-    'password': 'fNau8XqS',
-    'database': 'flask_demo',
-    'charset': 'utf8mb4'
-}
+# 数据库配置（由 app.py 启动时通过 init_db_config 注入）
+DB_CONFIG = {}
+
+
+def init_db_config(config):
+    """由 app.py 调用，注入数据库配置"""
+    global DB_CONFIG
+    DB_CONFIG = config
 
 
 def get_db():
