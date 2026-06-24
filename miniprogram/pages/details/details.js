@@ -56,6 +56,14 @@ Page({
     }
   },
 
+  onShow() {
+    // 从设置页返回后刷新本地 userInfo
+    const userInfo = wx.getStorageSync('userInfo');
+    if (userInfo) {
+      this.setData({ userInfo });
+    }
+  },
+
   async getActivityDetail(activityId) {
     wx.showLoading({ title: '加载中...' });
 
