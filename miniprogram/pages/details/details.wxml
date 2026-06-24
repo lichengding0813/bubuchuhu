@@ -195,6 +195,7 @@
   <van-popup show="{{showNotice}}" bindclose="onNoticeClose" position="bottom" round closeable close-icon="close" custom-style="height: 80%;">
     <view class="notice-popup">
       <view class="popup-title">{{noticeTitle}}</view>
+      <view class="popup-countdown" wx:if="{{noticeCountdown > 0}}">请阅读 {{noticeCountdown}} 秒后可关闭</view>
       <view class="popup-content">
         <!-- 报名参与者须知 -->
         <block wx:if="{{noticeType === 'participant'}}">

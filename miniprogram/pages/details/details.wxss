@@ -326,6 +326,14 @@
   border-bottom: 1px solid #e6f0ff;
 }
 
+.popup-countdown {
+  text-align: center;
+  font-size: 13px;
+  color: #ff6b6b;
+  margin-bottom: 12px;
+  font-weight: 500;
+}
+
 .popup-content {
   flex: 1;
   overflow-y: auto;

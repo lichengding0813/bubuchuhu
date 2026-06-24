@@ -33,7 +33,12 @@ Page({
     noticeTitle: '报名参与者须知',
     userInfo: null,
     isRegistered: false,
-    showSuccessPopup: false
+    showSuccessPopup: false,
+    // 协议强制阅读相关
+    noticeViewed: { participant: false, bus: false, self: false },
+    canCloseNotice: true,
+    noticeCountdown: 0,
+    pendingAgreeField: ''
   },
 
   onLoad(options) {
@@ -211,13 +216,42 @@ Page({
   },
 
   onAgreeNoticeChange(e) {
-    this.setData({ agreeNotice: e.detail }, () => this.checkSignUpStatus());
+    const checked = e.detail;
+    if (checked && !this.data.noticeViewed.participant) {
+      this.openNoticeForAgree('participant', '报名参与者须知', 'agreeNotice');
+      return;
+    }
+    this.setData({ agreeNotice: checked }, () => this.checkSignUpStatus());
   },
   onAgreeBusChange(e) {
-    this.setData({ agreeBus: e.detail }, () => this.checkSignUpStatus());
+    const checked = e.detail;
+    if (checked && !this.data.noticeViewed.bus) {
+      this.openNoticeForAgree('bus', '大巴行程免责声明', 'agreeBus');
+      return;
+    }
+    this.setData({ agreeBus: checked }, () => this.checkSignUpStatus());
   },
   onAgreeSelfChange(e) {
-    this.setData({ agreeSelf: e.detail }, () => this.checkSignUpStatus());
+    const checked = e.detail;
+    if (checked && !this.data.noticeViewed.self) {
+      this.openNoticeForAgree('self', '自驾/高铁行程免责声明', 'agreeSelf');
+      return;
+    }
+    this.setData({ agreeSelf: checked }, () => this.checkSignUpStatus());
+  },
+
+  // 勾选协议时强制弹出须知并开始倒计时
+  openNoticeForAgree(type, title, agreeField) {
+    this.setData({
+      showNotice: true,
+      noticeType: type,
+      noticeTitle: title,
+      canCloseNotice: false,
+      noticeCountdown: 3,
+      pendingAgreeField: agreeField,
+      [agreeField]: false
+    });
+    this.startNoticeCountdown(type, true);
   },
 
   onNoticeClick(e) {
@@ -228,16 +262,70 @@ Page({
       case 'bus': title = '大巴行程免责声明'; break;
       case 'self': title = '自驾/高铁行程免责声明'; break;
     }
-    this.setData({ showNotice: true, noticeType: type, noticeTitle: title });
+    this.setData({
+      showNotice: true,
+      noticeType: type,
+      noticeTitle: title,
+      pendingAgreeField: ''
+    });
+    // 如果还未阅读过，开始倒计时
+    if (!this.data.noticeViewed[type]) {
+      this.setData({ canCloseNotice: false, noticeCountdown: 3 });
+      this.startNoticeCountdown(type, false);
+    }
+  },
+
+  // 开始3秒倒计时
+  startNoticeCountdown(type, autoCheck) {
+    if (this.countdownTimer) clearInterval(this.countdownTimer);
+    let count = 3;
+    this.countdownTimer = setInterval(() => {
+      count--;
+      if (count > 0) {
+        this.setData({ noticeCountdown: count });
+      } else {
+        clearInterval(this.countdownTimer);
+        const updateData = {
+          canCloseNotice: true,
+          noticeCountdown: 0,
+          ['noticeViewed.' + type]: true
+        };
+        if (autoCheck && this.data.pendingAgreeField) {
+          updateData[this.data.pendingAgreeField] = true;
+          updateData.showNotice = false;
+          updateData.pendingAgreeField = '';
+        }
+        this.setData(updateData, () => this.checkSignUpStatus());
+      }
+    }, 1000);
   },
 
   onNoticeClose() {
+    if (!this.data.canCloseNotice) {
+      wx.showToast({ title: `请等待${this.data.noticeCountdown}秒后再关闭`, icon: 'none' });
+      return;
+    }
     this.setData({ showNotice: false });
   },
 
   onSignUpClick() {
     if (!this.data.canSignUp) {
       wx.showToast({ title: '当前不可报名', icon: 'none' });
+      return;
+    }
+    // 校验用户资料完整性：手机号或微信号至少填一项
+    const userInfo = this.data.userInfo || wx.getStorageSync('userInfo');
+    if (!userInfo.phoneNumber && !userInfo.wechatId) {
+      wx.showModal({
+        title: '资料不完整',
+        content: '请先在设置中填写手机号或微信号，以便活动发起者能联系到您',
+        confirmText: '去设置',
+        success: (res) => {
+          if (res.confirm) {
+            wx.navigateTo({ url: '/pages/settings/settings' });
+          }
+        }
+      });
       return;
     }
     wx.showModal({
@@ -357,6 +445,10 @@ Page({
   },
 
   preventTouchMove() {},
+
+  onUnload() {
+    if (this.countdownTimer) clearInterval(this.countdownTimer);
+  },
 
   onShareAppMessage() {
     const { activityId, activityDetail } = this.data;

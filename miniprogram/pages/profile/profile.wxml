@@ -51,3 +51,35 @@
     </view>
   </view>
 </view>
+
+<!-- ========== 自定义验证弹窗 ========== -->
+<view class="custom-dialog" wx:if="{{showVerifyDialog}}">
+  <view class="dialog-mask" catchtouchmove="preventTouchMove"></view>
+  <view class="dialog-container">
+    <view class="dialog-title">验证问题</view>
+    <image class="dialog-image" src="cloud://prod-3gktwx67d1dd1e76.7072-prod-3gktwx67d1dd1e76-1392222183/verify.png" mode="widthFix" />
+    <view class="dialog-content">
+      <view class="question">{{verifyQuestion || '兽妈准备宵夜是？'}}</view>
+      <input class="dialog-input" type="text" placeholder="请输入答案" value="{{verifyAnswer}}" bindinput="onAnswerInput" focus="{{autoFocus}}" confirm-type="done" bindconfirm="onVerifyConfirm" />
+      <view class="error-tip" wx:if="{{verifyError}}">{{verifyError}}</view>
+    </view>
+    <view class="dialog-buttons">
+      <view class="dialog-btn dialog-btn-confirm" bindtap="onVerifyConfirm">确认</view>
+    </view>
+  </view>
+</view>
+
+<!-- ========== 黑名单全屏遮罩 + 锁定弹窗 ========== -->
+<view class="blacklist-mask" wx:if="{{isBlacklisted}}" catchtouchmove="preventTouchMove" bindtap="onMaskTap"></view>
+<view class="custom-dialog" wx:if="{{showLockedDialog}}">
+  <view class="dialog-mask" catchtouchmove="preventTouchMove"></view>
+  <view class="dialog-container">
+    <view class="dialog-title">账户已锁定</view>
+    <view class="dialog-content">
+      <view class="plain-text">由于多次验证失败，您的账户已被锁定。</view>
+    </view>
+    <view class="dialog-buttons">
+      <view class="dialog-btn dialog-btn-confirm" bindtap="onLockedConfirm">知道了</view>
+    </view>
+  </view>
+</view>

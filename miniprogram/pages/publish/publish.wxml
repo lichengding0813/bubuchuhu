@@ -229,6 +229,7 @@
 <van-popup show="{{showNotice}}" bindclose="onNoticeClose" position="bottom" round closeable close-icon="close" custom-style="height: 80%;">
   <view class="notice-popup">
     <view class="popup-title">发起者须知</view>
+    <view class="popup-countdown" wx:if="{{noticeCountdown > 0}}">请阅读 {{noticeCountdown}} 秒后可关闭</view>
     <view class="popup-content">
       <text class="subtitle">最新发布日期：2026-2-21</text>
       <view class="para">

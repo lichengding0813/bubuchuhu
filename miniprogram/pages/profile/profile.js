@@ -21,6 +21,10 @@ Page({
     showVerifyDialog: false,
     verifyAnswer: '',
     verifyError: '',
+    verifyQuestion: '',
+    verifyQuestionIdx: 0,
+    showLockedDialog: false,
+    isBlacklisted: false,
     remainingAttempts: 2,
     openId: '',
     isLoading: false,
@@ -71,6 +75,10 @@ Page({
         });
         this.updatePendingRedDot(storageUserInfo.needVerify);
         this.buildMenuList();
+        // 检查黑名单状态
+        if (storageUserInfo.isBlacklist === 1) {
+          this.setData({ isBlacklisted: true, showLockedDialog: true });
+        }
       } else {
         // 未登录状态：只显示公开菜单（关于我们、更新日志）
         this.setData({
@@ -280,7 +288,13 @@ Page({
         break;
       case '待审核':
         if (this.data.userInfo.needVerify) {
-          this.setData({ showVerifyDialog: true });
+          this.setData({
+            showVerifyDialog: true,
+            verifyQuestion: this.data.userInfo.verifyQuestion || '',
+            verifyQuestionIdx: this.data.userInfo.verifyQuestionIdx || 0,
+            verifyAnswer: '',
+            verifyError: ''
+          });
         } else {
           wx.navigateTo({ url: menu.url });
         }
@@ -314,6 +328,11 @@ Page({
 
       if (result.data && result.data.code === 200) {
         const userData = result.data.data;
+        // 将验证问题信息合并到 userData 中
+        if (result.data.verifyQuestion) {
+          userData.verifyQuestion = result.data.verifyQuestion;
+          userData.verifyQuestionIdx = result.data.verifyQuestionIdx;
+        }
         console.log('登录成功，用户信息:', userData);
         
         getApp().globalData.userInfo = userData;
@@ -333,7 +352,15 @@ Page({
         this.loadUserStats();
         
         if (userData.needVerify === 1 && userData.isBlacklist === 0) {
-          this.setData({ showVerifyDialog: true });
+          // 存储验证问题
+          const updateData = { showVerifyDialog: true };
+          if (result.data.verifyQuestion) {
+            updateData.verifyQuestion = result.data.verifyQuestion;
+            updateData.verifyQuestionIdx = result.data.verifyQuestionIdx;
+          }
+          this.setData(updateData);
+        } else if (userData.isBlacklist === 1) {
+          this.setData({ showLockedDialog: true, isBlacklisted: true });
         } else {
           wx.showToast({ title: '登录成功', icon: 'success' });
         }
@@ -348,11 +375,14 @@ Page({
   },
 
   // ========== 验证相关方法 ==========
-  showVerifyDialog() {
+  showVerifyDialogBox() {
+    const userInfo = this.data.userInfo;
     this.setData({
       showVerifyDialog: true,
       verifyAnswer: '',
       verifyError: '',
+      verifyQuestion: userInfo.verifyQuestion || '',
+      verifyQuestionIdx: userInfo.verifyQuestionIdx || 0,
       autoFocus: true
     }, () => {
       setTimeout(() => this.setData({ autoFocus: false }), 500);
@@ -381,13 +411,18 @@ Page({
           "content-type": "application/json"
         },
         method: "POST",
-        data: { answer }
+        data: { answer, question_idx: this.data.verifyQuestionIdx }
       });
 
       wx.hideLoading();
 
       if (result.data && result.data.code === 200) {
         const userData = result.data.data;
+        // 更新验证问题信息到 userData
+        if (result.data.verifyQuestion) {
+          userData.verifyQuestion = result.data.verifyQuestion;
+          userData.verifyQuestionIdx = result.data.verifyQuestionIdx;
+        }
         this.setData({ userInfo: { ...userData, isLogin: true } });
         getApp().globalData.userInfo = userData;
         wx.setStorageSync('userInfo', userData);
@@ -397,7 +432,8 @@ Page({
         if (userData.isBlacklist === 1) {
           this.setData({
             showVerifyDialog: false,
-            showLockedDialog: true
+            showLockedDialog: true,
+            isBlacklisted: true
           });
         } else if (userData.needVerify === 0) {
           this.setData({ showVerifyDialog: false });
@@ -405,13 +441,17 @@ Page({
           // 验证通过后刷新统计数据
           this.loadUserStats();
         } else {
-          const attempts = userData.verifyAttempts || 0;
-          const left = 3 - attempts;
-          this.setData({
-            verifyError: `答案错误，还剩 ${left} 次机会`,
+          // 验证失败，更新验证问题（后端可能返回新题）
+          const updateData = {
+            verifyError: `答案错误，还剩 ${3 - (userData.verifyAttempts || 0)} 次机会`,
             verifyAnswer: '',
             autoFocus: true
-          });
+          };
+          if (result.data.verifyQuestion) {
+            updateData.verifyQuestion = result.data.verifyQuestion;
+            updateData.verifyQuestionIdx = result.data.verifyQuestionIdx;
+          }
+          this.setData(updateData);
         }
       } else {
         wx.showToast({ title: result.data?.msg || '验证失败', icon: 'none' });
@@ -424,6 +464,11 @@ Page({
 
   onLockedConfirm() {
     this.setData({ showLockedDialog: false });
+  },
+
+  // 点击遮罩层提示
+  onMaskTap() {
+    wx.showToast({ title: '账户已被锁定', icon: 'none' });
   },
 
   // ========== 全员重新验证 ==========

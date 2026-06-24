@@ -305,6 +305,14 @@ page {
   padding-bottom: 12px;
 }
 
+.popup-countdown {
+  text-align: center;
+  font-size: 13px;
+  color: #ff6b6b;
+  margin-bottom: 12px;
+  font-weight: 500;
+}
+
 /* 调整原有提交按钮样式 */
 .submit-btn {
   margin-top: 0;

@@ -119,7 +119,7 @@
     <view class="dialog-title">验证问题</view>
     <image class="dialog-image" src="cloud://prod-3gktwx67d1dd1e76.7072-prod-3gktwx67d1dd1e76-1392222183/verify.png" mode="widthFix" />
     <view class="dialog-content">
-      <view class="question">兽妈准备宵夜是？</view>
+      <view class="question">{{verifyQuestion || '兽妈准备宵夜是？'}}</view>
 
       <input class="dialog-input" type="text" placeholder="请输入答案" value="{{verifyAnswer}}" bindinput="onAnswerInput" focus="{{autoFocus}}" confirm-type="done" bindconfirm="onVerifyConfirm" />
       <view class="error-tip" wx:if="{{verifyError}}">{{verifyError}}</view>
@@ -131,7 +131,10 @@
   </view>
 </view>
 
-<!-- ========== 自定义锁定提示弹窗（保持简洁，也可添加图片） ========== -->
+<!-- ========== 黑名单全屏遮罩 + 锁定弹窗 ========== -->
+<view class="blacklist-mask" wx:if="{{isBlacklisted}}" catchtouchmove="preventTouchMove" bindtap="onMaskTap"></view>
+
+<!-- ========== 自定义锁定提示弹窗 ========== -->
 <view class="custom-dialog" wx:if="{{showLockedDialog}}">
   <view class="dialog-mask" catchtouchmove="preventTouchMove"></view>
   <view class="dialog-container">

@@ -4,6 +4,10 @@ Page({
     agree: false,
     canSubmit: false,
     showNotice: false,
+    // 协议强制阅读相关
+    noticeViewed: false,
+    canCloseNotice: true,
+    noticeCountdown: 0,
     showDatePicker: false,
     currentDatePickerField: '',
     currentDatePickerTitle: '',
@@ -303,6 +307,21 @@ Page({
   },
 
   onSubmit() {
+    // 校验用户资料完整性：手机号或微信号至少填一项
+    const userInfo = wx.getStorageSync('userInfo');
+    if (!userInfo.phoneNumber && !userInfo.wechatId) {
+      wx.showModal({
+        title: '资料不完整',
+        content: '请先在设置中填写手机号或微信号，以便参与者能联系到您',
+        confirmText: '去设置',
+        success: (res) => {
+          if (res.confirm) {
+            wx.navigateTo({ url: '/pages/settings/settings' });
+          }
+        }
+      });
+      return;
+    }
     // 校验
     if (!this.data.wechat || this.data.wechat.trim() === '') {
       wx.showToast({ title: '请填写发起人微信号', icon: 'none' });
@@ -609,7 +628,19 @@ Page({
   },
 
   onAgreeChange(e) {
-    this.setData({ agree: e.detail }, () => this.checkCanSubmit());
+    const checked = e.detail;
+    if (checked && !this.data.noticeViewed) {
+      // 强制弹出发起者须知并开始倒计时
+      this.setData({
+        showNotice: true,
+        canCloseNotice: false,
+        noticeCountdown: 3,
+        agree: false
+      });
+      this.startNoticeCountdown(true);
+      return;
+    }
+    this.setData({ agree: checked }, () => this.checkCanSubmit());
   },
 
   checkCanSubmit() {
@@ -629,9 +660,45 @@ Page({
 
   onNoticeClick() {
     this.setData({ showNotice: true });
+    if (!this.data.noticeViewed) {
+      this.setData({ canCloseNotice: false, noticeCountdown: 3 });
+      this.startNoticeCountdown(false);
+    }
+  },
+
+  // 开始3秒倒计时
+  startNoticeCountdown(autoCheck) {
+    if (this.countdownTimer) clearInterval(this.countdownTimer);
+    let count = 3;
+    this.countdownTimer = setInterval(() => {
+      count--;
+      if (count > 0) {
+        this.setData({ noticeCountdown: count });
+      } else {
+        clearInterval(this.countdownTimer);
+        const updateData = {
+          canCloseNotice: true,
+          noticeCountdown: 0,
+          noticeViewed: true
+        };
+        if (autoCheck) {
+          updateData.agree = true;
+          updateData.showNotice = false;
+        }
+        this.setData(updateData, () => this.checkCanSubmit());
+      }
+    }, 1000);
   },
 
   onNoticeClose() {
+    if (!this.data.canCloseNotice) {
+      wx.showToast({ title: `请等待${this.data.noticeCountdown}秒后再关闭`, icon: 'none' });
+      return;
+    }
     this.setData({ showNotice: false });
+  },
+
+  onUnload() {
+    if (this.countdownTimer) clearInterval(this.countdownTimer);
   }
 });
