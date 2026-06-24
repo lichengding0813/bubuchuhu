@@ -69,10 +69,9 @@ def create_activity():
         # 2. 插入出行方式
         travel_options = data.get('travelOptions', [])
         for travel_type in travel_options:
-            bus_qr = data.get('busQR') if travel_type == 1 else None
             cursor.execute(
                 "INSERT INTO activity_travel_options (activity_id, travel_type, bus_qr_url) VALUES (%s, %s, %s)",
-                (activity_id, travel_type, bus_qr)
+                (activity_id, travel_type, None)
             )
 
         # 3. 插入集合点
@@ -126,12 +125,16 @@ def get_activity_list():
         cursor = conn.cursor()
 
         # 构建查询条件
-        where_clause = "WHERE 1=1"
+        where_clause = "WHERE a.status != 0"  # 默认不展示待审核活动
         params = []
 
         if status is not None:
-            where_clause += " AND a.status = %s"
-            params.append(status)
+            if int(status) == 0:
+                # 显式请求待审核活动时，替换默认条件
+                where_clause = "WHERE a.status = 0"
+            else:
+                where_clause += " AND a.status = %s"
+                params.append(status)
 
         if keyword:
             where_clause += " AND (a.name LIKE %s OR a.description LIKE %s OR a.location LIKE %s)"
@@ -311,9 +314,9 @@ def participate_activity():
         if activity['status'] not in allowed_status:
             return jsonify({'code': 400, 'msg': '活动不可报名'})
 
-        # 检查是否已报名
+        # 检查是否已报名（仅检查有效报名，status=1）
         cursor.execute(
-            "SELECT id FROM activity_participants WHERE activity_id = %s AND user_openid = %s",
+            "SELECT id FROM activity_participants WHERE activity_id = %s AND user_openid = %s AND status = 1",
             (activity_id, openid)
         )
         if cursor.fetchone():
@@ -329,21 +332,36 @@ def participate_activity():
         if current_count >= activity['max_participants']:
             return jsonify({'code': 400, 'msg': '报名人数已满'})
 
-        # 插入报名记录
-        cursor.execute("""
-            INSERT INTO activity_participants (
-                activity_id, user_openid, nickname, phone, wechat_id, 
-                travel_option, remark, status, created_at
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, 1, NOW())
-        """, (
-            activity_id,
-            openid,
-            data.get('nickname'),
-            data.get('phone'),
-            data.get('wechat_id'),
-            data.get('travel_option'),
-            data.get('remark'),
-        ))
+        # 检查是否有已取消的报名记录，有则恢复
+        cursor.execute(
+            "SELECT id FROM activity_participants WHERE activity_id = %s AND user_openid = %s AND status = 0",
+            (activity_id, openid)
+        )
+        cancelled_record = cursor.fetchone()
+
+        if cancelled_record:
+            # 恢复已取消的记录
+            cursor.execute(
+                "UPDATE activity_participants SET status = 1, nickname = %s, phone = %s, wechat_id = %s, travel_option = %s, remark = %s WHERE id = %s",
+                (data.get('nickname'), data.get('phone'), data.get('wechat_id'),
+                 data.get('travel_option'), data.get('remark'), cancelled_record['id'])
+            )
+        else:
+            # 插入新报名记录
+            cursor.execute("""
+                INSERT INTO activity_participants (
+                    activity_id, user_openid, nickname, phone, wechat_id, 
+                    travel_option, remark, status, created_at
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, 1, NOW())
+            """, (
+                activity_id,
+                openid,
+                data.get('nickname'),
+                data.get('phone'),
+                data.get('wechat_id'),
+                data.get('travel_option'),
+                data.get('remark'),
+            ))
 
         conn.commit()
 
@@ -361,10 +379,12 @@ def participate_activity():
 
 
 @activity_bp.route('/cancel-participation', methods=['POST'])
-@check_verified_and_blacklist
 def cancel_participation():
     """取消报名活动"""
-    openid = g.openid
+    openid = request.headers.get('X-Wx-OpenId')
+    if not openid:
+        return jsonify({'code': 401, 'msg': '未获取到用户身份'})
+
     data = request.get_json()
     activity_id = data.get('activity_id')
 
@@ -568,10 +588,9 @@ def update_rejected_activity():
         # 重新插入出行方式
         travel_options = data.get('travelOptions', [])
         for travel_type in travel_options:
-            bus_qr = data.get('busQR') if travel_type == 1 else None
             cursor.execute(
                 "INSERT INTO activity_travel_options (activity_id, travel_type, bus_qr_url) VALUES (%s, %s, %s)",
-                (activity_id, travel_type, bus_qr)
+                (activity_id, travel_type, None)
             )
 
         # 重新插入集合点
