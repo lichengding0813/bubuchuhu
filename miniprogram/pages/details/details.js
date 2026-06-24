@@ -285,17 +285,12 @@ Page({
         this.setData({ noticeCountdown: count });
       } else {
         clearInterval(this.countdownTimer);
-        const updateData = {
+        // 3秒到了：解锁关闭按钮，标记已阅读，但不自动关闭
+        this.setData({
           canCloseNotice: true,
           noticeCountdown: 0,
           ['noticeViewed.' + type]: true
-        };
-        if (autoCheck && this.data.pendingAgreeField) {
-          updateData[this.data.pendingAgreeField] = true;
-          updateData.showNotice = false;
-          updateData.pendingAgreeField = '';
-        }
-        this.setData(updateData, () => this.checkSignUpStatus());
+        });
       }
     }, 1000);
   },
@@ -305,15 +300,17 @@ Page({
       wx.showToast({ title: `请等待${this.data.noticeCountdown}秒后再关闭`, icon: 'none' });
       return;
     }
-    this.setData({ showNotice: false });
+    // 用户手动关闭弹窗后，如果有待勾选的协议，自动勾选
+    const updateData = { showNotice: false };
+    if (this.data.pendingAgreeField) {
+      updateData[this.data.pendingAgreeField] = true;
+      updateData.pendingAgreeField = '';
+    }
+    this.setData(updateData, () => this.checkSignUpStatus());
   },
 
   onSignUpClick() {
-    if (!this.data.canSignUp) {
-      wx.showToast({ title: '当前不可报名', icon: 'none' });
-      return;
-    }
-    // 校验用户资料完整性：手机号或微信号至少填一项
+    // 校验用户资料完整性：手机号或微信号至少填一项（优先检查，先于canSignUp）
     const userInfo = this.data.userInfo || wx.getStorageSync('userInfo');
     if (!userInfo.phoneNumber && !userInfo.wechatId) {
       wx.showModal({
@@ -326,6 +323,10 @@ Page({
           }
         }
       });
+      return;
+    }
+    if (!this.data.canSignUp) {
+      wx.showToast({ title: '当前不可报名', icon: 'none' });
       return;
     }
     wx.showModal({

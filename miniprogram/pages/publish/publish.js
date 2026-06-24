@@ -8,6 +8,7 @@ Page({
     noticeViewed: false,
     canCloseNotice: true,
     noticeCountdown: 0,
+    pendingAgree: false,
     showDatePicker: false,
     currentDatePickerField: '',
     currentDatePickerTitle: '',
@@ -635,7 +636,8 @@ Page({
         showNotice: true,
         canCloseNotice: false,
         noticeCountdown: 3,
-        agree: false
+        agree: false,
+        pendingAgree: true
       });
       this.startNoticeCountdown(true);
       return;
@@ -676,16 +678,12 @@ Page({
         this.setData({ noticeCountdown: count });
       } else {
         clearInterval(this.countdownTimer);
-        const updateData = {
+        // 3秒到了：解锁关闭按钮，标记已阅读，但不自动关闭
+        this.setData({
           canCloseNotice: true,
           noticeCountdown: 0,
           noticeViewed: true
-        };
-        if (autoCheck) {
-          updateData.agree = true;
-          updateData.showNotice = false;
-        }
-        this.setData(updateData, () => this.checkCanSubmit());
+        });
       }
     }, 1000);
   },
@@ -695,7 +693,13 @@ Page({
       wx.showToast({ title: `请等待${this.data.noticeCountdown}秒后再关闭`, icon: 'none' });
       return;
     }
-    this.setData({ showNotice: false });
+    // 用户手动关闭弹窗后，如果有待勾选的协议，自动勾选
+    const updateData = { showNotice: false };
+    if (this.data.pendingAgree) {
+      updateData.agree = true;
+      updateData.pendingAgree = false;
+    }
+    this.setData(updateData, () => this.checkCanSubmit());
   },
 
   onUnload() {
