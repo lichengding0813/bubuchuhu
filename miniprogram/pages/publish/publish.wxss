@@ -71,7 +71,7 @@ page {
 
 .required-star {
   color: #ff6b6b;
-  margin-right: 2px;
+  margin-left: 2px;
 }
 
 .notice-card {
@@ -116,7 +116,7 @@ page {
 
 .required-star {
   color: #ff6b6b;
-  margin-right: 2px;
+  margin-left: 2px;
   font-size: 16px;
   line-height: 1;
 }
@@ -801,6 +801,29 @@ page {
   padding: 20rpx;
 }
 
+
+/* 难度选择 - 左右排布 */
+.difficulty-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.difficulty-label {
+  margin-bottom: 0;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.difficulty-dropdown {
+  flex: 0 0 auto;
+  width: 120px;
+}
+
+.difficulty-dropdown van-dropdown-menu {
+  --dropdown-menu-height: 40px;
+  box-shadow: none;
+}
 
 /* 强制保险单选框 - 样式修复 */
 .insurance-item {

@@ -183,7 +183,7 @@
         <text class="success-label">发起人微信号</text>
         <view class="wechat-row">
           <text class="wechat-id">{{activityDetail.wechat}}</text>
-          <van-button size="small" type="info" plain bindtap="onCopyWechat">复制</van-button>
+          <van-button size="mini" type="info" plain custom-class="copy-wechat-btn" bindtap="onCopyWechat">复制</van-button>
         </view>
       </view>
 
