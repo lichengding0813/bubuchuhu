@@ -183,11 +183,23 @@ Page({
 
   checkSignUpStatus() {
     const { activityDetail, agreeNotice, agreeBus, agreeSelf } = this.data;
-    const isActive = activityDetail.rawStatus === 1;
+    // 后端允许 status=1(报名中) 或 status=3(进行中) 报名
+    const isActive = activityDetail.rawStatus === 1 || activityDetail.rawStatus === 3;
     const hasRemain = activityDetail.remainCount > 0;
-    const now = new Date();
-    const deadline = new Date(activityDetail.deadline);
-    const notExpired = deadline > now;
+
+    // 截止时间对比：手动解析字符串构建本地时间，避免new Date时区偏差
+    let notExpired = true;
+    const deadlineStr = activityDetail.deadline;
+    if (deadlineStr) {
+      const parts = deadlineStr.replace('T', ' ').split(/[- :\/]/);
+      if (parts.length >= 5) {
+        const deadlineDate = new Date(
+          parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]),
+          parseInt(parts[3]), parseInt(parts[4])
+        );
+        notExpired = deadlineDate > new Date();
+      }
+    }
 
     let agreed = agreeNotice;
     if (activityDetail.travel.includes('bus')) agreed = agreed && agreeBus;
