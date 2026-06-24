@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify, g
+from flask.json.provider import DefaultJSONProvider
 import requests
 from datetime import datetime
 import os
@@ -13,7 +14,16 @@ from routes.admin_routes import admin_bp
 from routes.review_bp import review_bp
 from db_utils import init_db_config, close_db, get_db
 
+# ==================== 自定义 JSON 序列化 ====================
+# 将 datetime 统一序列化为 "YYYY-MM-DD HH:MM:SS" 字符串，避免前端时区解析问题
+class BeijingTimeJSONProvider(DefaultJSONProvider):
+    def default(self, o):
+        if isinstance(o, datetime):
+            return o.strftime('%Y-%m-%d %H:%M:%S')
+        return super().default(o)
+
 app = Flask(__name__)
+app.json = BeijingTimeJSONProvider(app)
 
 # ==================== 配置信息（统一从环境变量读取）====================
 db_config = {
