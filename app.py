@@ -3,7 +3,28 @@ from flask.json.provider import DefaultJSONProvider
 import requests
 from datetime import datetime
 import os
+import random
 from dotenv import load_dotenv
+
+# ==================== 验证问题列表 ====================
+VERIFY_QUESTIONS = [
+    {
+        'question': '你问我全世界是哪里最美？答案是——',
+        'answers': ['你身边']
+    },
+    {
+        'question': '玛莎的全名是？',
+        'answers': ['蔡升晏']
+    },
+    {
+        'question': '五月天中谁不是师大附中的学生？',
+        'answers': ['冠佑', '刘冠佑', '刘谚明']
+    },
+    {
+        'question': '五月天中谁放弃了律师的家业？',
+        'answers': ['怪兽', '温尚翊']
+    }
+]
 
 # 加载 .env 文件（本地开发时生效，云托管时通过环境变量注入）
 load_dotenv()
@@ -112,11 +133,14 @@ def login():
             cursor.execute("SELECT * FROM users WHERE openId = %s", (openid,))
             user = cursor.fetchone()
 
-            return jsonify({
-                'code': 200,
-                'msg': '登录成功',
-                'data': user
-            })
+            # 如果需要验证，随机分配一道验证题
+            response_data = {'code': 200, 'msg': '登录成功', 'data': user}
+            if user.get('needVerify') == 1 and user.get('isBlacklist') == 0:
+                q_idx = random.randint(0, len(VERIFY_QUESTIONS) - 1)
+                response_data['verifyQuestion'] = VERIFY_QUESTIONS[q_idx]['question']
+                response_data['verifyQuestionIdx'] = q_idx
+
+            return jsonify(response_data)
         else:
             # 用户不存在：创建新用户
             nickname = f"魔魔胡胡胡蘿蔔{openid[-4:] if len(openid) >= 4 else '0000'}"
@@ -136,11 +160,14 @@ def login():
             cursor.execute("SELECT * FROM users WHERE openId = %s", (openid,))
             user = cursor.fetchone()
 
-            return jsonify({
-                'code': 200,
-                'msg': '注册成功',
-                'data': user
-            })
+            # 新用户需要验证，随机分配一道验证题
+            response_data = {'code': 200, 'msg': '注册成功', 'data': user}
+            if user.get('needVerify') == 1 and user.get('isBlacklist') == 0:
+                q_idx = random.randint(0, len(VERIFY_QUESTIONS) - 1)
+                response_data['verifyQuestion'] = VERIFY_QUESTIONS[q_idx]['question']
+                response_data['verifyQuestionIdx'] = q_idx
+
+            return jsonify(response_data)
 
     except Exception as e:
         if conn:
@@ -163,7 +190,18 @@ def verify_answer():
     if not answer:
         return jsonify({'code': 400, 'msg': '缺少answer参数'})
 
-    CORRECT_ANSWER = '大鸡腿'
+    question_idx = data.get('question_idx', 0)
+
+    # 根据问题索引获取正确答案列表
+    if 0 <= question_idx < len(VERIFY_QUESTIONS):
+        correct_answers = VERIFY_QUESTIONS[question_idx]['answers']
+    else:
+        correct_answers = ['大鸡腿']  # 向后兼容
+
+    # 检查答案是否匹配（忽略首尾空格，不区分大小写）
+    answer_trimmed = answer.strip()
+    is_correct = any(answer_trimmed == ans or answer_trimmed.lower() == ans.lower() 
+                     for ans in correct_answers)
 
     conn = None
     cursor = None
@@ -179,7 +217,7 @@ def verify_answer():
         if user['isBlacklist'] == 1:
             return jsonify({'code': 403, 'msg': '账户已被锁定', 'data': user})
 
-        if answer == CORRECT_ANSWER:
+        if is_correct:
             cursor.execute("""
                 UPDATE users 
                 SET needVerify = 0, verified = 1, verifyAttempts = 0
@@ -209,11 +247,18 @@ def verify_answer():
         cursor.execute("SELECT * FROM users WHERE openId = %s", (openid,))
         user = cursor.fetchone()
 
-        return jsonify({
+        response_data = {
             'code': 200,
             'msg': msg,
             'data': user
-        })
+        }
+
+        # 如果验证未通过且未被锁定，继续返回当前验证题
+        if not is_correct and user.get('isBlacklist') == 0 and user.get('needVerify') == 1:
+            response_data['verifyQuestion'] = VERIFY_QUESTIONS[question_idx]['question']
+            response_data['verifyQuestionIdx'] = question_idx
+
+        return jsonify(response_data)
 
     except Exception as e:
         if conn:
