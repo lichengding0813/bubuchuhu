@@ -12,36 +12,36 @@
   <form catchsubmit="onSubmit">
     <!-- 基本信息卡片 -->
     <view class="form-card">
-      <view class="card-title">基本信息 <text class="required-star">*</text></view>
+      <view class="card-title"><text class="required-star">*</text> 基本信息</view>
 
       <!-- 活动名称 -->
       <view class="form-item">
-        <view class="item-label">活动名称 <text class="required-star">*</text></view>
+        <view class="item-label"><text class="required-star">*</text> 活动名称</view>
         <van-field value="{{name}}" bind:input="onInput" data-field="name" placeholder="请输入活动名称（最多30字）" maxlength="30" border="{{false}}" required />
       </view>
 
       <!-- 活动描述 -->
       <view class="form-item">
-        <view class="item-label">活动描述 <text class="required-star">*</text></view>
+        <view class="item-label"><text class="required-star">*</text> 活动描述</view>
         <van-field value="{{description}}" bind:input="onInput" data-field="description" type="textarea" placeholder="请描述活动详情" autosize border="{{false}}" required />
       </view>
 
       <!-- 活动时间 -->
       <view class="form-item">
-        <view class="item-label">活动时间 <text class="required-star">*</text></view>
+        <view class="item-label"><text class="required-star">*</text> 活动时间</view>
         <van-field value="{{activityTime}}" bind:click-input="onTimePickerClick" data-field="activityTime" placeholder="请选择活动时间" readonly right-icon="arrow" border="{{false}}" required />
       </view>
 
       <!-- 活动地点 -->
       <view class="form-item">
-        <view class="item-label">活动地点 <text class="required-star">*</text></view>
+        <view class="item-label"><text class="required-star">*</text> 活动地点</view>
         <van-field value="{{location}}" bind:input="onInput" data-field="location" placeholder="请输入活动地点" border="{{false}}" required />
       </view>
     </view>
 
     <!-- 出行方式卡片 -->
     <view class="form-card">
-      <view class="card-title">出行方式 <text class="required-star">*</text></view>
+      <view class="card-title"><text class="required-star">*</text> 出行方式</view>
 
       <view class="checkbox-group">
         <van-checkbox wx:for="{{travelOptions}}" wx:key="index" value="{{item.checked}}" data-value="{{item.value}}" bindchange="onTravelChange" shape="square">
@@ -54,7 +54,7 @@
     <!-- 集合信息卡片 -->
     <view class="form-card">
       <view class="card-title">
-        集合信息 <text class="required-star">*</text>
+        <text class="required-star">*</text> 集合信息
         <view class="add-btn" bindtap="onAddMeetingPoint">
           <van-icon name="plus" /> 添加集合点
         </view>
@@ -76,7 +76,7 @@
 
     <!-- 路线信息卡片 -->
     <view class="form-card">
-      <view class="card-title">路线信息 <text class="required-star">*</text></view>
+      <view class="card-title"><text class="required-star">*</text> 路线信息</view>
 
       <view class="form-item">
         <view class="item-label">路线简介</view>
@@ -94,9 +94,9 @@
         </view>
       </view>
 
-      <view class="form-item">
-        <view class="item-label">难度等级 <text class="required-star">*</text></view>
-        <van-dropdown-menu>
+      <view class="form-item difficulty-item">
+        <view class="item-label"><text class="required-star">*</text> 难度等级</view>
+        <van-dropdown-menu active-color="#5faee3">
           <van-dropdown-item value="{{difficulty}}" bindchange="onDifficultyChange" options="{{difficultyOptions}}" />
         </van-dropdown-menu>
       </view>
@@ -104,7 +104,7 @@
 
     <!-- 报名限制卡片 -->
     <view class="form-card">
-      <view class="card-title">报名限制 <text class="required-star">*</text></view>
+      <view class="card-title"><text class="required-star">*</text> 报名限制</view>
 
       <view class="form-item">
         <view class="item-label">人数限制</view>
@@ -128,15 +128,15 @@
 
     <!-- 发起人信息卡片 -->
     <view class="form-card">
-      <view class="card-title">发起人信息 <text class="required-star">*</text></view>
+      <view class="card-title"><text class="required-star">*</text> 发起人信息</view>
 
       <view class="form-item">
-        <view class="item-label">发起人微信号<text class="required-star">*</text></view>
+        <view class="item-label"><text class="required-star">*</text> 发起人微信号</view>
         <van-field value="{{wechat}}" bind:input="onInput" data-field="wechat" placeholder="请输入微信号" border="{{false}}" />
       </view>
 
       <view class="form-item">
-        <view class="item-label">微信群二维码 <text class="required-star">*</text></view>
+        <view class="item-label"><text class="required-star">*</text> 微信群二维码</view>
         <view class="upload-area" bindtap="onUploadQR" data-type="group">
           <image wx:if="{{groupQR}}" src="{{groupQR}}" mode="aspectFill" class="uploaded-image"></image>
           <view wx:else class="upload-placeholder">

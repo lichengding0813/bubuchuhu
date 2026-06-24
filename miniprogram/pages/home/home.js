@@ -186,27 +186,21 @@ Page({
     }
   },
 
-  // 格式化活动时间
+  // 格式化活动时间（后端返回北京时间，直接解析字符串避免时区转换）
   formatActivityTime(timeStr) {
     if (!timeStr) return '';
-    const date = new Date(timeStr);
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const hour = String(date.getHours()).padStart(2, '0');
-    const minute = String(date.getMinutes()).padStart(2, '0');
+    const parts = timeStr.replace('T', ' ').split(/[- :]/);
+    if (parts.length < 5) return timeStr;
+    const month = String(parseInt(parts[1])).padStart(2, '0');
+    const day = String(parseInt(parts[2])).padStart(2, '0');
+    const hour = String(parseInt(parts[3])).padStart(2, '0');
+    const minute = String(parseInt(parts[4])).padStart(2, '0');
     return `${month}/${day} ${hour}:${minute}`;
   },
 
   // 获取难度文本
   getDifficultyText(level) {
-    const map = {
-      1: '1星 简单',
-      2: '2星 轻松',
-      3: '3星 中等',
-      4: '4星 困难',
-      5: '5星 挑战'
-    };
-    return map[level] || '1星 简单';
+    return level + '⭐';
   },
 
   // 获取状态文本

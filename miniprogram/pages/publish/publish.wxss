@@ -71,7 +71,7 @@ page {
 
 .required-star {
   color: #ff6b6b;
-  margin-left: 4px;
+  margin-right: 2px;
 }
 
 .notice-card {
@@ -116,7 +116,7 @@ page {
 
 .required-star {
   color: #ff6b6b;
-  margin-left: 2px;
+  margin-right: 2px;
   font-size: 16px;
   line-height: 1;
 }

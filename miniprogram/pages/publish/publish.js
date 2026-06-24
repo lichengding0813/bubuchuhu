@@ -3,7 +3,6 @@ Page({
     editActivityId: null,   // 编辑模式下的活动ID
     agree: false,
     canSubmit: false,
-    showBusQR: false,
     showNotice: false,
     showDatePicker: false,
     currentDatePickerField: '',
@@ -67,7 +66,7 @@ Page({
     deadline: '',
     wechat: '',
     groupQR: '',
-    busQR: '',
+    cover: '',
     cover: '',
     forceInsurance: 0,
     meetingPoints: [{
@@ -262,9 +261,6 @@ Page({
       checked: travelOptionsFromBackend.includes(opt.value)
     }));
 
-    const busTravel = (activity.travel_options || []).find(t => t.travel_type === 1);
-    const busQR = busTravel ? busTravel.bus_qr_url : '';
-
     let meetingPoints = (activity.meeting_points || []).map(point => ({
       time: point.meeting_time || point.time || '',
       location: point.location || ''
@@ -284,12 +280,10 @@ Page({
       deadline: this.formatTimeForInput(activity.deadline),
       wechat: activity.wechat_id || '',
       groupQR: activity.group_qr_url || '',
-      busQR: busQR,
       cover: activity.cover_url || '',
       forceInsurance: activity.is_force_insurance === 1 ? 1 : 0,
       travelOptions: newTravelOptions,
       travel: travelOptionsFromBackend,
-      showBusQR: showBusQR,
       meetingPoints: meetingPoints
     }, () => {
       this.checkCanSubmit();
@@ -298,12 +292,13 @@ Page({
 
   formatTimeForInput(dateStr) {
     if (!dateStr) return '';
-    const date = new Date(dateStr);
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const hour = String(date.getHours()).padStart(2, '0');
-    const minute = String(date.getMinutes()).padStart(2, '0');
+    const parts = dateStr.replace('T', ' ').split(/[- :]/);
+    if (parts.length < 5) return dateStr;
+    const year = parts[0];
+    const month = String(parseInt(parts[1])).padStart(2, '0');
+    const day = String(parseInt(parts[2])).padStart(2, '0');
+    const hour = String(parseInt(parts[3])).padStart(2, '0');
+    const minute = String(parseInt(parts[4])).padStart(2, '0');
     return `${year}-${month}-${day} ${hour}:${minute}`;
   },
 
@@ -345,7 +340,6 @@ Page({
       groupQR: this.data.groupQR,
       wechat: this.data.wechat,
       travelOptions: travelOptionsNumbers,
-      busQR: this.data.busQR,
       meetingPoints: this.data.meetingPoints,
       mandatoryInsurance: this.data.forceInsurance,
     };
@@ -395,7 +389,6 @@ Page({
       groupQR: this.data.groupQR,
       wechat: this.data.wechat,
       travelOptions: travelOptionsNumbers,
-      busQR: this.data.busQR,
       meetingPoints: this.data.meetingPoints,
       mandatoryInsurance: this.data.forceInsurance,
     };
@@ -432,12 +425,25 @@ Page({
 
   formatTime(date) {
     if (!date) return '';
+    // 支持字符串或Date对象
+    let year, month, day, hour, minute;
+    if (typeof date === 'string') {
+      const parts = date.replace('T', ' ').split(/[- :]/);
+      if (parts.length >= 5) {
+        year = parts[0];
+        month = String(parseInt(parts[1])).padStart(2, '0');
+        day = String(parseInt(parts[2])).padStart(2, '0');
+        hour = String(parseInt(parts[3])).padStart(2, '0');
+        minute = String(parseInt(parts[4])).padStart(2, '0');
+        return `${year}-${month}-${day} ${hour}:${minute}`;
+      }
+    }
     const d = new Date(date);
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    const hour = String(d.getHours()).padStart(2, '0');
-    const minute = String(d.getMinutes()).padStart(2, '0');
+    year = d.getFullYear();
+    month = String(d.getMonth() + 1).padStart(2, '0');
+    day = String(d.getDate()).padStart(2, '0');
+    hour = String(d.getHours()).padStart(2, '0');
+    minute = String(d.getMinutes()).padStart(2, '0');
     return `${year}-${month}-${day} ${hour}:${minute}`;
   },
 
@@ -477,8 +483,7 @@ Page({
     const selectedTravel = newOptions.filter(opt => opt.checked).map(opt => opt.value);
     this.setData({
       travelOptions: newOptions,
-      travel: selectedTravel,
-      showBusQR: selectedTravel.includes('bus')
+      travel: selectedTravel
     }, () => this.checkCanSubmit());
   },
 
@@ -540,7 +545,6 @@ Page({
   },
 
   async onUploadQR(e) {
-    const { type } = e.currentTarget.dataset;
     const { openId } = this.data.userInfo || {};
     if (!openId) {
       wx.showToast({ title: '用户信息异常', icon: 'error' });
@@ -554,16 +558,13 @@ Page({
         try {
           const timestamp = Date.now();
           const fileExtension = tempFilePath.split('.').pop() || 'png';
-          const cloudPath = type === 'bus'
-            ? `activities/bus_qr/${openId}_${timestamp}.${fileExtension}`
-            : `activities/group_qr/${openId}_${timestamp}.${fileExtension}`;
+          const cloudPath = `activities/group_qr/${openId}_${timestamp}.${fileExtension}`;
           const uploadResult = await wx.cloud.uploadFile({
             cloudPath,
             filePath: tempFilePath,
             config: { env: 'prod-3gktwx67d1dd1e76' }
           });
-          const dataField = type === 'bus' ? 'busQR' : 'groupQR';
-          this.setData({ [dataField]: uploadResult.fileID }, () => this.checkCanSubmit());
+          this.setData({ groupQR: uploadResult.fileID }, () => this.checkCanSubmit());
           wx.hideLoading();
           wx.showToast({ title: '上传成功', icon: 'success' });
         } catch (error) {
@@ -614,7 +615,7 @@ Page({
   checkCanSubmit() {
     const {
       agree, name, description, activityTime, location, travel, meetingPoints,
-      route, difficulty, maxParticipants, wechat, groupQR, busQR
+      route, difficulty, maxParticipants, wechat, groupQR
     } = this.data;
     const isWechatValid = wechat && wechat.trim().length > 0;
     const requiredFields = [
@@ -622,9 +623,8 @@ Page({
       route, difficulty, maxParticipants >= 2, isWechatValid, groupQR
     ];
     const meetingPointsValid = meetingPoints.every(p => p.time && p.location);
-    const busRequired = !travel.includes('bus') || busQR;
     const allRequiredValid = [...requiredFields, meetingPointsValid].every(Boolean);
-    this.setData({ canSubmit: agree && allRequiredValid && busRequired });
+    this.setData({ canSubmit: agree && allRequiredValid });
   },
 
   onNoticeClick() {

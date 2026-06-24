@@ -108,8 +108,8 @@ Page({
       3: '进行中', 4: '已结束', 5: '已取消'
     };
     const difficultyMap = {
-      1: '1星 简单', 2: '2星 轻松',
-      3: '3星 中等', 4: '4星 困难', 5: '5星 挑战'
+      1: '1⭐', 2: '2⭐',
+      3: '3⭐', 4: '4⭐', 5: '5⭐'
     };
 
     // 获取是否强制保险（后端返回字段名为 is_force_insurance）
@@ -119,7 +119,7 @@ Page({
       'activityDetail.name': activity.name || '',
       'activityDetail.time': this.formatTime(activity.activity_time),
       'activityDetail.location': activity.location || '',
-      'activityDetail.difficulty': difficultyMap[activity.difficulty] || '1星 简单',
+      'activityDetail.difficulty': (activity.difficulty || 1) + '⭐',
       'activityDetail.distance': activity.distance || 0,
       'activityDetail.climb': activity.climb || 0,
       'activityDetail.remainCount': remainCount,
@@ -155,30 +155,29 @@ Page({
 
   formatTime(timeStr) {
     if (!timeStr) return '';
-    const date = new Date(timeStr);
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const hour = String(date.getHours()).padStart(2, '0');
-    const minute = String(date.getMinutes()).padStart(2, '0');
+    const parts = timeStr.replace('T', ' ').split(/[- :]/);
+    if (parts.length < 5) return timeStr;
+    const month = String(parseInt(parts[1])).padStart(2, '0');
+    const day = String(parseInt(parts[2])).padStart(2, '0');
+    const hour = String(parseInt(parts[3])).padStart(2, '0');
+    const minute = String(parseInt(parts[4])).padStart(2, '0');
     return `${month}/${day} ${hour}:${minute}`;
   },
 
   formatDate(timeStr) {
     if (!timeStr) return '';
-    const date = new Date(timeStr);
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const hour = String(date.getHours()).padStart(2, '0');
-    const minute = String(date.getMinutes()).padStart(2, '0');
+    const parts = timeStr.replace('T', ' ').split(/[- :]/);
+    if (parts.length < 5) return timeStr;
+    const year = parts[0];
+    const month = String(parseInt(parts[1])).padStart(2, '0');
+    const day = String(parseInt(parts[2])).padStart(2, '0');
+    const hour = String(parseInt(parts[3])).padStart(2, '0');
+    const minute = String(parseInt(parts[4])).padStart(2, '0');
     return `${year}-${month}-${day} ${hour}:${minute}`;
   },
 
   previewQRCode(e) {
     const urls = [this.data.activityDetail.groupQR];
-    if (this.data.activityDetail.busQR) {
-      urls.push(this.data.activityDetail.busQR);
-    }
     wx.previewImage({ urls, current: e.currentTarget.dataset.url });
   },
 
@@ -265,6 +264,12 @@ Page({
       });
       wx.hideLoading();
       if (result.data && result.data.code === 200) {
+        this.setData({
+          isRegistered: false,
+          agreeNotice: false,
+          agreeBus: false,
+          agreeSelf: false
+        });
         wx.showToast({
           title: '已取消报名',
           icon: 'success',

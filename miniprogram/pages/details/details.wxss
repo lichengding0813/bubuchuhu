@@ -591,11 +591,22 @@
   background: #f5f5f5;
   border-radius: 8px;
   padding: 8px 12px;
+  gap: 8px;
 }
 
 .wechat-id {
   font-size: 15px;
   color: #333;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wechat-row van-button {
+  flex-shrink: 0 !important;
+  min-width: auto !important;
 }
 
 .success-close-btn {

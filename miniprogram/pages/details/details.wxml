@@ -80,13 +80,6 @@
         <text wx:elif="{{item === 'self'}}">🚗 自驾</text>
       </view>
     </view>
-    <view class="insurance-badge" wx:if="{{activityDetail.is_force_insurance !== undefined}}">
-  <van-icon name="certificate" size="16px" />
-  <text class="insurance-label">户外保险：</text>
-  <text class="insurance-value {{activityDetail.is_force_insurance == 1 ? 'mandatory' : 'optional'}}">
-    {{activityDetail.is_force_insurance == 1 ? '是' : '否'}}
-  </text>
-</view>
     <view class="detail-content">
       <text class="detail-text">{{activityDetail.description}}</text>
     </view>
