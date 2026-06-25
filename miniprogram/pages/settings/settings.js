@@ -100,6 +100,36 @@ Page({
     });
   },
 
+  // 上传头像前先检测图片是否合规
+  async checkImageSecurity(tempFilePath) {
+    try {
+      const fs = wx.getFileSystemManager();
+      const imageData = fs.readFileSync(tempFilePath, 'base64');
+      const userInfo = wx.getStorageSync('userInfo');
+      const result = await wx.cloud.callContainer({
+        config: { env: "prod-3gktwx67d1dd1e76" },
+        path: "/check-image",
+        method: "POST",
+        header: {
+          "X-WX-SERVICE": "flask-mysql-login",
+          "X-Wx-OpenId": userInfo?.openId,
+          "Content-Type": "application/json"
+        },
+        data: { image: imageData }
+      });
+      if (result.data && result.data.code === 200) {
+        return true;
+      } else {
+        const errMsg = result.data?.msg || '图片检测失败';
+        wx.showModal({ title: '图片审核提示', content: errMsg, showCancel: false });
+        return false;
+      }
+    } catch (err) {
+      console.error('图片安全检测失败', err);
+      return true;
+    }
+  },
+
   // 上传头像到云存储
   async uploadAvatar(tempFilePath) {
     const { openId } = this.data.userInfo;
@@ -109,6 +139,13 @@ Page({
     }
 
     this.setData({ isUploading: true });
+    wx.showLoading({ title: '检测图片...' });
+    const safe = await this.checkImageSecurity(tempFilePath);
+    if (!safe) {
+      wx.hideLoading();
+      this.setData({ isUploading: false });
+      return;
+    }
     wx.showLoading({ title: '上传中...', mask: true });
 
     try {
