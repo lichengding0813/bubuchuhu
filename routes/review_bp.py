@@ -137,6 +137,21 @@ def create_review():
         if not data.get(field):
             return jsonify({'code': 400, 'msg': f'缺少字段: {field}'})
 
+    # ==================== 内容安全检测 ====================
+    from app import check_text_security
+    openid_for_check = g.openid
+    texts_to_check = [
+        ('name', data.get('name', ''), '回顾标题'),
+        ('location', data.get('location', ''), '活动地点'),
+        ('summary', data.get('summary', ''), '活动总结'),
+    ]
+    for field_name, text, field_label in texts_to_check:
+        if text and text.strip():
+            is_safe, msg = check_text_security(text, openid_for_check, scene=2, title=data.get('name', ''))
+            if not is_safe:
+                return jsonify({'code': 400, 'msg': f'{field_label}{msg}'})
+    # ==================== 内容安全检测结束 ====================
+
     conn = None
     cursor = None
     try:
@@ -200,6 +215,21 @@ def update_review(review_id):
         cursor.execute("SELECT id FROM activity_reviews WHERE id = %s AND status = 1", (review_id,))
         if not cursor.fetchone():
             return jsonify({'code': 404, 'msg': '活动回顾不存在'})
+
+        # ==================== 内容安全检测 ====================
+        from app import check_text_security
+        openid_for_check = g.openid
+        texts_to_check = [
+            ('name', data.get('name', ''), '回顾标题'),
+            ('location', data.get('location', ''), '活动地点'),
+            ('summary', data.get('summary', ''), '活动总结'),
+        ]
+        for field_name, text, field_label in texts_to_check:
+            if text and text.strip():
+                is_safe, msg = check_text_security(text, openid_for_check, scene=2, title=data.get('name', ''))
+                if not is_safe:
+                    return jsonify({'code': 400, 'msg': f'{field_label}{msg}'})
+        # ==================== 内容安全检测结束 ====================
 
         # 更新主表（增加了 cover3）
         cursor.execute("""

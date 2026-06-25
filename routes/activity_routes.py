@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify, g
+from flask import Blueprint, request, jsonify, g, current_app
 from datetime import datetime
 import random
 import pymysql
@@ -26,6 +26,28 @@ def create_activity():
     data = request.get_json()
     conn = None
     cursor = None
+
+    # ==================== 内容安全检测 ====================
+    from app import check_text_security
+    openid_for_check = openid
+    texts_to_check = [
+        ('name', data.get('name', ''), '活动名称'),
+        ('description', data.get('description', ''), '活动描述'),
+        ('location', data.get('location', ''), '活动地点'),
+        ('route', data.get('route', ''), '路线'),
+    ]
+    # 集合点地点也需要检测
+    for idx, point in enumerate(data.get('meetingPoints', [])):
+        loc = point.get('location', '')
+        if loc:
+            texts_to_check.append((f'meeting_point_{idx}', loc, f'集合点{idx+1}地点'))
+
+    for field_name, text, field_label in texts_to_check:
+        if text and text.strip():
+            is_safe, msg = check_text_security(text, openid_for_check, scene=1, title=data.get('name', ''))
+            if not is_safe:
+                return jsonify({'code': 400, 'msg': f'{field_label}{msg}'})
+    # ==================== 内容安全检测结束 ====================
 
     try:
         conn = get_db()
@@ -530,6 +552,26 @@ def update_rejected_activity():
 
     if not activity_id:
         return jsonify({'code': 400, 'msg': '缺少活动ID'})
+
+    # ==================== 内容安全检测 ====================
+    from app import check_text_security
+    texts_to_check = [
+        ('name', data.get('name', ''), '活动名称'),
+        ('description', data.get('description', ''), '活动描述'),
+        ('location', data.get('location', ''), '活动地点'),
+        ('route', data.get('route', ''), '路线'),
+    ]
+    for idx, point in enumerate(data.get('meetingPoints', [])):
+        loc = point.get('location', '')
+        if loc:
+            texts_to_check.append((f'meeting_point_{idx}', loc, f'集合点{idx+1}地点'))
+
+    for field_name, text, field_label in texts_to_check:
+        if text and text.strip():
+            is_safe, msg = check_text_security(text, openid, scene=1, title=data.get('name', ''))
+            if not is_safe:
+                return jsonify({'code': 400, 'msg': f'{field_label}{msg}'})
+    # ==================== 内容安全检测结束 ====================
 
     conn = None
     cursor = None

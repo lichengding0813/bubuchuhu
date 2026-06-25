@@ -4,6 +4,8 @@ import requests
 from datetime import datetime
 import os
 import random
+import time
+import logging
 from dotenv import load_dotenv
 
 # ==================== 验证问题列表 ====================
@@ -69,6 +71,91 @@ app.config['DEFAULT_AVATAR'] = os.environ.get('DEFAULT_AVATAR', 'cloud://prod-3g
 # 配置静态文件服务（用于访问上传的图片）
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 限制16MB
+
+# ==================== access_token 缓存 ====================
+_access_token_cache = {
+    'token': None,
+    'expires_at': 0  # 过期时间戳
+}
+
+def get_access_token():
+    """获取微信接口调用凭据 access_token，带内存缓存"""
+    now = time.time()
+    # 缓存未过期直接返回
+    if _access_token_cache['token'] and _access_token_cache['expires_at'] > now + 300:
+        return _access_token_cache['token']
+
+    try:
+        url = 'http://api.weixin.qq.com/cgi-bin/token'
+        params = {
+            'grant_type': 'client_credential',
+            'appid': app.config['WX_APPID'],
+            'secret': app.config['WX_SECRET']
+        }
+        res = requests.get(url, params=params, timeout=10)
+        data = res.json()
+
+        if 'access_token' not in data:
+            logging.error(f"获取access_token失败: {data}")
+            return None
+
+        _access_token_cache['token'] = data['access_token']
+        _access_token_cache['expires_at'] = now + data.get('expires_in', 7200)
+        return data['access_token']
+    except Exception as e:
+        logging.error(f"获取access_token异常: {e}")
+        return None
+
+def check_text_security(content, openid, scene=1, title=''):
+    """
+    调用微信 security.msgSecCheck 检测文本内容是否合规
+    - content: 要检测的文本内容
+    - openid: 用户openid
+    - scene: 场景值 1=资料 2=评论 3=论坛 4=社交日志
+    - title: 可选的标题
+    返回: (is_safe: bool, msg: str)
+    """
+    if not content or not content.strip():
+        return True, ''
+
+    access_token = get_access_token()
+    if not access_token:
+        # access_token 获取失败时不阻断业务，记录日志并放行
+        logging.warning("access_token获取失败，跳过内容安全检测")
+        return True, ''
+
+    try:
+        url = f'http://api.weixin.qq.com/wxa/msg_sec_check?access_token={access_token}'
+        body = {
+            'content': content,
+            'version': 2,
+            'scene': scene,
+            'openid': openid
+        }
+        if title:
+            body['title'] = title
+
+        res = requests.post(url, json=body, timeout=10)
+        data = res.json()
+
+        if data.get('errcode') == 0:
+            # errcode=0 还需检查 result.suggest
+            result = data.get('result', {})
+            suggest = result.get('suggest', '')
+            if suggest == 'risky':
+                label = result.get('label', 100)
+                return False, f'内容包含违规信息(类型{label})，请修改后重新提交'
+            return True, ''
+        elif data.get('errcode') == 87014:
+            return False, '内容含有违法违规内容，请修改后重新提交'
+        else:
+            # 其他错误不阻断，记录日志
+            logging.warning(f"内容安全检测接口返回: {data}")
+            return True, ''
+    except Exception as e:
+        logging.error(f"内容安全检测异常: {e}")
+        # 异常时放行，避免阻塞用户操作
+        return True, ''
 
 # ==================== 注册蓝图 ====================
 app.register_blueprint(activity_bp, url_prefix='/api/activity')
