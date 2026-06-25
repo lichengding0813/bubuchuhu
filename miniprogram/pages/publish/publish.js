@@ -410,7 +410,12 @@ Page({
         wx.showToast({ title: '发起成功', icon: 'success', duration: 2000 });
         setTimeout(() => wx.navigateBack(), 2000);
       } else {
-        wx.showToast({ title: result.data?.msg || '提交失败', icon: 'none' });
+        const errMsg = result.data?.msg || '提交失败';
+        if (errMsg.includes('违规')) {
+          wx.showModal({ title: '内容审核提示', content: errMsg, showCancel: false });
+        } else {
+          wx.showToast({ title: errMsg, icon: 'none' });
+        }
       }
     } catch (err) {
       wx.hideLoading();
@@ -459,7 +464,12 @@ Page({
         wx.showToast({ title: '修改成功', icon: 'success', duration: 2000 });
         setTimeout(() => wx.navigateBack(), 2000);
       } else {
-        wx.showToast({ title: result.data?.msg || '提交失败', icon: 'none' });
+        const errMsg = result.data?.msg || '提交失败';
+        if (errMsg.includes('违规')) {
+          wx.showModal({ title: '内容审核提示', content: errMsg, showCancel: false });
+        } else {
+          wx.showToast({ title: errMsg, icon: 'none' });
+        }
       }
     } catch (err) {
       wx.hideLoading();
