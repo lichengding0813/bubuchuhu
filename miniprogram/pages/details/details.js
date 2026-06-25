@@ -204,9 +204,23 @@ Page({
     });
   },
 
-  // 安全解析时间字符串，兼容 "2026-06-25 08:00:00" 和 JS Date.toString() 两种格式
+  // 安全解析时间字符串
+  // wx.cloud.callContainer 会把 "YYYY-MM-DD HH:MM:SS" 当作 UTC 转成 Date 对象
+  // 所以需要用 UTC getter 取回原始值（即后端的北京时间）
   parseTimeStr(timeStr) {
     if (!timeStr) return null;
+    // 如果已经是 Date 对象，直接取 UTC 组件
+    if (timeStr instanceof Date) {
+      return {
+        year: timeStr.getUTCFullYear(),
+        month: timeStr.getUTCMonth() + 1,
+        day: timeStr.getUTCDate(),
+        hour: timeStr.getUTCHours(),
+        minute: timeStr.getUTCMinutes(),
+        second: timeStr.getUTCSeconds()
+      };
+    }
+    // 尝试 YYYY-MM-DD HH:MM:SS 格式
     const str = String(timeStr).replace('T', ' ');
     const parts = str.split(/[- :]/);
     if (parts.length >= 5 && !isNaN(parseInt(parts[0]))) {
@@ -219,16 +233,16 @@ Page({
         second: parts.length >= 6 ? parseInt(parts[5]) : 0
       };
     }
-    // 兜底：用 Date 对象解析
+    // 兜底：Date 解析后取 UTC 组件
     const d = new Date(timeStr);
     if (!isNaN(d.getTime())) {
       return {
-        year: d.getFullYear(),
-        month: d.getMonth() + 1,
-        day: d.getDate(),
-        hour: d.getHours(),
-        minute: d.getMinutes(),
-        second: d.getSeconds()
+        year: d.getUTCFullYear(),
+        month: d.getUTCMonth() + 1,
+        day: d.getUTCDate(),
+        hour: d.getUTCHours(),
+        minute: d.getUTCMinutes(),
+        second: d.getUTCSeconds()
       };
     }
     return null;
