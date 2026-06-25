@@ -237,11 +237,8 @@ Page({
       
       if (result.data && result.data.code === 200) {
         let { ongoing = [], ended = [] } = result.data.data;
-        // 前端过滤：排除已取消的报名记录
-        const filterCancelled = (list) => list.filter(item => {
-          if (item.cancel_status === 1 || item.participant_status === 'cancelled') return false;
-          return true;
-        });
+        // 前端过滤：排除已取消的报名记录（activity_participants.status=0 表示已取消）
+        const filterCancelled = (list) => list.filter(item => item.status !== 0);
         ongoing = filterCancelled(ongoing);
         ended = filterCancelled(ended);
         const total = ongoing.length + ended.length;
