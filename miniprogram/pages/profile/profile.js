@@ -500,6 +500,7 @@ Page({
         method: "POST"
       });
       wx.hideLoading();
+      console.log('重置验证返回:', JSON.stringify(result.data));
 
       if (result.data && result.data.code === 200) {
         const count = result.data.data?.affected_count || 0;

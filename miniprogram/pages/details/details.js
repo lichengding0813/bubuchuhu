@@ -449,6 +449,7 @@ Page({
         data: { activity_id: this.data.activityId }
       });
       wx.hideLoading();
+      console.log('取消报名返回:', JSON.stringify(result.data));
       if (result.data && result.data.code === 200) {
         this.setData({
           isRegistered: false,
