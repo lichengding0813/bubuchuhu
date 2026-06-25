@@ -46,7 +46,7 @@ class BeijingTimeJSONProvider(DefaultJSONProvider):
 app = Flask(__name__)
 app.json = BeijingTimeJSONProvider(app)
 
-# ==================== 配置信息（统一从环境变量读取）====================
+# ==================== 配置信息 ====================
 db_config = {
     'host': os.environ.get('DB_HOST', '10.13.111.246'),
     'port': int(os.environ.get('DB_PORT', 3306)),
@@ -60,7 +60,7 @@ app.config['DB_CONFIG'] = db_config
 init_db_config(db_config)
 
 # 微信小程序配置
-app.config['WX_APPID'] = os.environ.get('WX_APPID', '')
+app.config['WX_APPID'] = os.environ.get('WX_APPID', 'wxd1a366672ab0f5ef')
 app.config['WX_SECRET'] = os.environ.get('WX_SECRET', '')
 
 # 默认头像
