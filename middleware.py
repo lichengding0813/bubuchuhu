@@ -31,6 +31,11 @@ def check_verified_and_blacklist(f):
             if user['isBlacklist'] == 1:
                 return jsonify({'code': 403, 'msg': '账户已被锁定，请联系管理员'})
 
+            # 管理员跳过验证检查（管理员不需要验证也能操作）
+            if user.get('isAdmin') == 1:
+                g.openid = openid
+                return f(*args, **kwargs)
+
             # 检查是否需要验证
             if user['needVerify'] == 1 or user['verified'] == 0:
                 return jsonify({'code': 401, 'msg': '请先完成验证问答', 'needVerify': True})
