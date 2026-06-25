@@ -206,15 +206,45 @@ Page({
     }
   },
 
+  // 安全解析时间字符串，兼容 "2026-06-25 08:00:00" 和 JS Date.toString() 两种格式
+  parseTimeStr(timeStr) {
+    if (!timeStr) return null;
+    // 优先尝试 YYYY-MM-DD HH:MM:SS 格式
+    const str = String(timeStr).replace('T', ' ');
+    const parts = str.split(/[- :]/);
+    if (parts.length >= 5 && !isNaN(parseInt(parts[0]))) {
+      return {
+        year: parseInt(parts[0]),
+        month: parseInt(parts[1]),
+        day: parseInt(parts[2]),
+        hour: parseInt(parts[3]),
+        minute: parseInt(parts[4]),
+        second: parts.length >= 6 ? parseInt(parts[5]) : 0
+      };
+    }
+    // 兜底：用 Date 对象解析
+    const d = new Date(timeStr);
+    if (!isNaN(d.getTime())) {
+      return {
+        year: d.getFullYear(),
+        month: d.getMonth() + 1,
+        day: d.getDate(),
+        hour: d.getHours(),
+        minute: d.getMinutes(),
+        second: d.getSeconds()
+      };
+    }
+    return null;
+  },
+
   // 格式化活动时间（后端返回北京时间，直接解析字符串避免时区转换）
   formatActivityTime(timeStr) {
-    if (!timeStr) return '';
-    const parts = timeStr.replace('T', ' ').split(/[- :]/);
-    if (parts.length < 5) return timeStr;
-    const month = String(parseInt(parts[1])).padStart(2, '0');
-    const day = String(parseInt(parts[2])).padStart(2, '0');
-    const hour = String(parseInt(parts[3])).padStart(2, '0');
-    const minute = String(parseInt(parts[4])).padStart(2, '0');
+    const t = this.parseTimeStr(timeStr);
+    if (!t) return timeStr || '';
+    const month = String(t.month).padStart(2, '0');
+    const day = String(t.day).padStart(2, '0');
+    const hour = String(t.hour).padStart(2, '0');
+    const minute = String(t.minute).padStart(2, '0');
     return `${month}/${day} ${hour}:${minute}`;
   },
 

@@ -204,26 +204,54 @@ Page({
     });
   },
 
+  // 安全解析时间字符串，兼容 "2026-06-25 08:00:00" 和 JS Date.toString() 两种格式
+  parseTimeStr(timeStr) {
+    if (!timeStr) return null;
+    const str = String(timeStr).replace('T', ' ');
+    const parts = str.split(/[- :]/);
+    if (parts.length >= 5 && !isNaN(parseInt(parts[0]))) {
+      return {
+        year: parseInt(parts[0]),
+        month: parseInt(parts[1]),
+        day: parseInt(parts[2]),
+        hour: parseInt(parts[3]),
+        minute: parseInt(parts[4]),
+        second: parts.length >= 6 ? parseInt(parts[5]) : 0
+      };
+    }
+    // 兜底：用 Date 对象解析
+    const d = new Date(timeStr);
+    if (!isNaN(d.getTime())) {
+      return {
+        year: d.getFullYear(),
+        month: d.getMonth() + 1,
+        day: d.getDate(),
+        hour: d.getHours(),
+        minute: d.getMinutes(),
+        second: d.getSeconds()
+      };
+    }
+    return null;
+  },
+
   formatTime(timeStr) {
-    if (!timeStr) return '';
-    const parts = timeStr.replace('T', ' ').split(/[- :]/);
-    if (parts.length < 5) return timeStr;
-    const month = String(parseInt(parts[1])).padStart(2, '0');
-    const day = String(parseInt(parts[2])).padStart(2, '0');
-    const hour = String(parseInt(parts[3])).padStart(2, '0');
-    const minute = String(parseInt(parts[4])).padStart(2, '0');
+    const t = this.parseTimeStr(timeStr);
+    if (!t) return timeStr || '';
+    const month = String(t.month).padStart(2, '0');
+    const day = String(t.day).padStart(2, '0');
+    const hour = String(t.hour).padStart(2, '0');
+    const minute = String(t.minute).padStart(2, '0');
     return `${month}/${day} ${hour}:${minute}`;
   },
 
   formatDate(timeStr) {
-    if (!timeStr) return '';
-    const parts = timeStr.replace('T', ' ').split(/[- :]/);
-    if (parts.length < 5) return timeStr;
-    const year = parts[0];
-    const month = String(parseInt(parts[1])).padStart(2, '0');
-    const day = String(parseInt(parts[2])).padStart(2, '0');
-    const hour = String(parseInt(parts[3])).padStart(2, '0');
-    const minute = String(parseInt(parts[4])).padStart(2, '0');
+    const t = this.parseTimeStr(timeStr);
+    if (!t) return timeStr || '';
+    const year = t.year;
+    const month = String(t.month).padStart(2, '0');
+    const day = String(t.day).padStart(2, '0');
+    const hour = String(t.hour).padStart(2, '0');
+    const minute = String(t.minute).padStart(2, '0');
     return `${year}-${month}-${day} ${hour}:${minute}`;
   },
 
@@ -238,16 +266,13 @@ Page({
     const isActive = activityDetail.rawStatus === 1 || activityDetail.rawStatus === 3;
     const hasRemain = activityDetail.remainCount > 0;
 
-    // 截止时间对比：手动解析字符串构建本地时间，避免new Date时区偏差
+    // 截止时间对比：用 parseTimeStr 统一解析
     let notExpired = true;
     const deadlineStr = activityDetail.deadline;
     if (deadlineStr) {
-      const parts = deadlineStr.replace('T', ' ').split(/[- :\/]/);
-      if (parts.length >= 5) {
-        const deadlineDate = new Date(
-          parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]),
-          parseInt(parts[3]), parseInt(parts[4])
-        );
+      const t = this.parseTimeStr(deadlineStr);
+      if (t) {
+        const deadlineDate = new Date(t.year, t.month - 1, t.day, t.hour, t.minute);
         notExpired = deadlineDate > new Date();
       }
     }
