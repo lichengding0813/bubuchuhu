@@ -53,6 +53,9 @@ Page({
     const userInfo = wx.getStorageSync('userInfo');
     if (userInfo) {
       this.setData({ userInfo });
+    } else {
+      // 通过分享链接进入时可能未登录，主动触发登录以确保 userInfo 可用
+      this.loginIfNeeded();
     }
   },
 
@@ -61,6 +64,41 @@ Page({
     const userInfo = wx.getStorageSync('userInfo');
     if (userInfo) {
       this.setData({ userInfo });
+    }
+  },
+
+  // 分享进入时确保用户已登录，否则报名时 nickname 为空
+  async loginIfNeeded() {
+    try {
+      const loginRes = await new Promise((resolve, reject) => {
+        wx.login({ success: resolve, fail: reject });
+      });
+      if (!loginRes.code) return;
+
+      wx.cloud.init();
+      const result = await wx.cloud.callContainer({
+        config: { env: 'prod-3gktwx67d1dd1e76' },
+        path: '/login',
+        header: {
+          'X-WX-SERVICE': 'flask-mysql-login',
+          'content-type': 'application/json'
+        },
+        method: 'POST',
+        data: { code: loginRes.code }
+      });
+
+      if (result.data && result.data.code === 200) {
+        const userData = result.data.data;
+        if (result.data.verifyQuestion) {
+          userData.verifyQuestion = result.data.verifyQuestion;
+          userData.verifyQuestionIdx = result.data.verifyQuestionIdx;
+        }
+        getApp().globalData.userInfo = userData;
+        wx.setStorageSync('userInfo', userData);
+        this.setData({ userInfo: userData });
+      }
+    } catch (error) {
+      console.error('details页自动登录失败:', error);
     }
   },
 
@@ -430,7 +468,13 @@ Page({
   },
 
   onBackClick() {
-    wx.navigateBack({ delta: 1 });
+    const pages = getCurrentPages();
+    if (pages.length > 1) {
+      wx.navigateBack({ delta: 1 });
+    } else {
+      // 分享进入时页面栈只有当前页，无法navigateBack，回到首页
+      wx.switchTab({ url: '/pages/home/home' });
+    }
   },
 
   onSuccessPopupClose() {
