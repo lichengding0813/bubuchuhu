@@ -236,7 +236,14 @@ Page({
       });
       
       if (result.data && result.data.code === 200) {
-        const { ongoing = [], ended = [] } = result.data.data;
+        let { ongoing = [], ended = [] } = result.data.data;
+        // 前端过滤：排除已取消的报名记录
+        const filterCancelled = (list) => list.filter(item => {
+          if (item.cancel_status === 1 || item.participant_status === 'cancelled') return false;
+          return true;
+        });
+        ongoing = filterCancelled(ongoing);
+        ended = filterCancelled(ended);
         const total = ongoing.length + ended.length;
         this.setData({
           'stats.joined': total
@@ -500,8 +507,6 @@ Page({
         method: "POST"
       });
       wx.hideLoading();
-      console.log('重置验证返回:', JSON.stringify(result.data));
-
       if (result.data && result.data.code === 200) {
         const count = result.data.data?.affected_count || 0;
         wx.showToast({

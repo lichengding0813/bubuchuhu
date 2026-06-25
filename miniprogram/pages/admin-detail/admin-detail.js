@@ -46,18 +46,18 @@ Page({
       if (result.data && result.data.code === 200) {
         const detail = result.data.data;
         
-        // 处理出行方式
+        // 处理出行方式（1=大巴, 2=高铁, 3=自驾）
         let travelOptions = [];
         let busQR = null;
         if (detail.travel_options && detail.travel_options.length > 0) {
           detail.travel_options.forEach(opt => {
             if (opt.travel_type === 1) {
-              travelOptions.push('self');
-            } else if (opt.travel_type === 2) {
-              travelOptions.push('carpool');
-            } else if (opt.travel_type === 3) {
               travelOptions.push('bus');
               busQR = opt.bus_qr_url;
+            } else if (opt.travel_type === 2) {
+              travelOptions.push('train');
+            } else if (opt.travel_type === 3) {
+              travelOptions.push('self');
             }
           });
         }
@@ -92,13 +92,52 @@ Page({
     }
   },
 
+  // 安全解析时间字符串（兼容 callContainer 的二次转换）
+  parseTimeStr(timeStr) {
+    if (!timeStr) return null;
+    if (timeStr instanceof Date) {
+      return {
+        year: timeStr.getUTCFullYear(),
+        month: timeStr.getUTCMonth() + 1,
+        day: timeStr.getUTCDate(),
+        hour: timeStr.getUTCHours(),
+        minute: timeStr.getUTCMinutes(),
+        second: timeStr.getUTCSeconds()
+      };
+    }
+    const str = String(timeStr).replace('T', ' ');
+    const parts = str.split(/[- :]/);
+    if (parts.length >= 5 && !isNaN(parseInt(parts[0]))) {
+      return {
+        year: parseInt(parts[0]),
+        month: parseInt(parts[1]),
+        day: parseInt(parts[2]),
+        hour: parseInt(parts[3]),
+        minute: parseInt(parts[4]),
+        second: parts.length >= 6 ? parseInt(parts[5]) : 0
+      };
+    }
+    const d = new Date(timeStr);
+    if (!isNaN(d.getTime())) {
+      return {
+        year: d.getUTCFullYear(),
+        month: d.getUTCMonth() + 1,
+        day: d.getUTCDate(),
+        hour: d.getUTCHours(),
+        minute: d.getUTCMinutes(),
+        second: d.getUTCSeconds()
+      };
+    }
+    return null;
+  },
+
   // 通过审核
   onApproveClick() {
     wx.showModal({
       title: '确认通过',
       content: '确定要通过该活动吗？',
       confirmText: '确认通过',
-      confirmColor: '#5faee3',
+      confirmColor: '#1e4d7c',
       success: (res) => {
         if (res.confirm) {
           this.reviewActivity('approve');
@@ -231,7 +270,12 @@ Page({
 
   // 返回
   onBackClick() {
-    wx.navigateBack();
+    const pages = getCurrentPages();
+    if (pages.length > 1) {
+      wx.navigateBack({ delta: 1 });
+    } else {
+      wx.switchTab({ url: '/pages/home/home' });
+    }
   },
 
   preventTouchMove() {
@@ -240,41 +284,41 @@ Page({
 
   // ========== 工具函数 ==========
   formatActivityTime(timeStr) {
-    if (!timeStr) return '';
-    const date = new Date(timeStr);
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const hour = String(date.getHours()).padStart(2, '0');
-    const minute = String(date.getMinutes()).padStart(2, '0');
+    const t = this.parseTimeStr(timeStr);
+    if (!t) return '';
+    const month = String(t.month).padStart(2, '0');
+    const day = String(t.day).padStart(2, '0');
+    const hour = String(t.hour).padStart(2, '0');
+    const minute = String(t.minute).padStart(2, '0');
     return `${month}/${day} ${hour}:${minute}`;
   },
 
   formatDateTime(timeStr) {
-    if (!timeStr) return '';
-    const date = new Date(timeStr);
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const hour = String(date.getHours()).padStart(2, '0');
-    const minute = String(date.getMinutes()).padStart(2, '0');
+    const t = this.parseTimeStr(timeStr);
+    if (!t) return '';
+    const year = t.year;
+    const month = String(t.month).padStart(2, '0');
+    const day = String(t.day).padStart(2, '0');
+    const hour = String(t.hour).padStart(2, '0');
+    const minute = String(t.minute).padStart(2, '0');
     return `${year}-${month}-${day} ${hour}:${minute}`;
   },
 
   getDifficultyText(level) {
     const map = {
-      1: '1星 简单',
-      2: '2星 轻松',
-      3: '3星 中等',
-      4: '4星 困难',
-      5: '5星 挑战'
+      1: '1⭐ 简单',
+      2: '2⭐ 轻松',
+      3: '3⭐ 中等',
+      4: '4⭐ 困难',
+      5: '5⭐ 挑战'
     };
-    return map[level] || '1星 简单';
+    return map[level] || '1⭐ 简单';
   },
 
   getStatusText(status) {
     const map = {
       0: '待审核',
-      1: '已通过',
+      1: '报名中',
       2: '已驳回',
       3: '进行中',
       4: '已结束',

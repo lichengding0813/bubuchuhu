@@ -449,7 +449,6 @@ Page({
         data: { activity_id: this.data.activityId }
       });
       wx.hideLoading();
-      console.log('取消报名返回:', JSON.stringify(result.data));
       if (result.data && result.data.code === 200) {
         this.setData({
           isRegistered: false,
@@ -526,6 +525,14 @@ Page({
     if (this.data.activityDetail.groupQR) {
       wx.previewImage({ urls: [this.data.activityDetail.groupQR] });
     }
+  },
+
+  // 点击“已报名”按钮
+  onViewRegistration() {
+    // 这里可以提前获取报名信息并存入 data，然后显示弹窗
+    this.setData({
+      showSuccessPopup: true
+    });
   },
 
   onCopyWechat() {

@@ -205,6 +205,24 @@ Page({
     const userInfo = wx.getStorageSync('userInfo');
     if (userInfo && userInfo.openId) {
       this.setData({ userInfo: { openId: userInfo.openId } });
+
+      // 资料完整性检查前置：手机号或微信号至少填一项
+      if (!userInfo.phoneNumber && !userInfo.wechatId) {
+        wx.showModal({
+          title: '资料不完整',
+          content: '请先在设置中填写手机号或微信号，以便参与者能联系到您',
+          confirmText: '去设置',
+          showCancel: false,
+          success: (res) => {
+            if (res.confirm) {
+              wx.navigateTo({ url: '/pages/settings/settings' });
+            }
+          }
+        });
+        return;
+      }
+
+      // 资料完整，自动填充微信号
       if (userInfo.wechatId) {
         this.setData({ wechat: userInfo.wechatId });
       }
@@ -223,6 +241,17 @@ Page({
     if (id) {
       this.setData({ editActivityId: parseInt(id) });
       this.fetchActivityForEdit(id);
+    }
+  },
+
+  onShow() {
+    // 从设置页返回后，重新读取 userInfo 并自动填充微信号
+    const userInfo = wx.getStorageSync('userInfo');
+    if (userInfo && userInfo.openId) {
+      this.setData({ userInfo: { openId: userInfo.openId } });
+      if (userInfo.wechatId && !this.data.wechat) {
+        this.setData({ wechat: userInfo.wechatId }, () => this.checkCanSubmit());
+      }
     }
   },
 

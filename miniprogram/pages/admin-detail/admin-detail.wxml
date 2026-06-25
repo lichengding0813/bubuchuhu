@@ -1,4 +1,14 @@
 <view class="detail-container">
+  <!-- 顶部返回栏 -->
+  <view class="nav-bar">
+    <view class="back-btn" bindtap="onBackClick">
+      <van-icon name="arrow-left" />
+      <text>返回</text>
+    </view>
+    <text class="nav-title">活动审核</text>
+    <view class="placeholder"></view>
+  </view>
+
   <!-- 活动封面图 -->
   <view class="cover-section">
     <image class="cover-image" src="{{activityDetail.cover_url || activityDetail.cover}}" mode="aspectFill"></image>
@@ -50,7 +60,7 @@
         <text class="organizer-wechat">微信号：{{activityDetail.wechat_id || activityDetail.wechat}}</text>
       </view>
     </view>
-    <view class="qr-section">
+    <view class="qr-section" wx:if="{{activityDetail.group_qr_url || activityDetail.groupQR}}">
       <view class="qr-item">
         <text class="qr-label">活动群</text>
         <image class="qr-image" src="{{activityDetail.group_qr_url || activityDetail.groupQR}}" mode="aspectFill"></image>
@@ -64,8 +74,8 @@
     <view class="travel-options">
       <view class="travel-tag" wx:for="{{travelOptions}}" wx:key="index">
         <text wx:if="{{item === 'bus'}}">🚌 大巴</text>
+        <text wx:elif="{{item === 'train'}}">🚄 高铁</text>
         <text wx:elif="{{item === 'self'}}">🚗 自驾</text>
-        <text wx:elif="{{item === 'carpool'}}">🚙 拼车</text>
       </view>
     </view>
     <view class="detail-content">
@@ -74,10 +84,10 @@
   </view>
 
   <!-- 路线信息卡片 -->
-  <view class="info-card">
+  <view class="info-card" style="margin-bottom: 200rpx;">
     <view class="card-title">路线信息</view>
     <view class="route-info">
-      <text class="route-text">{{activityDetail.route}}</text>
+      <text class="route-text">{{activityDetail.route || activityDetail.routes}}</text>
     </view>
 
     <!-- 集合点列表 -->

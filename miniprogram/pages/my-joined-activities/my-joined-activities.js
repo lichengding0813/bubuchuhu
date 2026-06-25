@@ -44,7 +44,16 @@ Page({
       });
 
       if (result.data && result.data.code === 200) {
-        const { ongoing = [], ended = [] } = result.data.data;
+        let { ongoing = [], ended = [] } = result.data.data;
+
+        // 前端过滤：排除已取消的报名记录（cancel_status 或 status 表示已取消）
+        const filterCancelled = (list) => list.filter(item => {
+          // cancel_status=1 表示已取消，或 participant_status 字段为 cancelled
+          if (item.cancel_status === 1 || item.participant_status === 'cancelled') return false;
+          return true;
+        });
+        ongoing = filterCancelled(ongoing);
+        ended = filterCancelled(ended);
 
         // 格式化时间
         const formatList = (list) => list.map(item => ({
@@ -81,13 +90,49 @@ Page({
     this.setData({ currentList });
   },
 
+  // 安全解析时间字符串（兼容 callContainer 的二次转换）
+  parseTimeStr(timeStr) {
+    if (!timeStr) return null;
+    if (timeStr instanceof Date) {
+      return {
+        year: timeStr.getUTCFullYear(),
+        month: timeStr.getUTCMonth() + 1,
+        day: timeStr.getUTCDate(),
+        hour: timeStr.getUTCHours(),
+        minute: timeStr.getUTCMinutes()
+      };
+    }
+    const str = String(timeStr).replace('T', ' ');
+    const parts = str.split(/[- :]/);
+    if (parts.length >= 5 && !isNaN(parseInt(parts[0]))) {
+      return {
+        year: parseInt(parts[0]),
+        month: parseInt(parts[1]),
+        day: parseInt(parts[2]),
+        hour: parseInt(parts[3]),
+        minute: parseInt(parts[4])
+      };
+    }
+    const d = new Date(timeStr);
+    if (!isNaN(d.getTime())) {
+      return {
+        year: d.getUTCFullYear(),
+        month: d.getUTCMonth() + 1,
+        day: d.getUTCDate(),
+        hour: d.getUTCHours(),
+        minute: d.getUTCMinutes()
+      };
+    }
+    return null;
+  },
+
   formatDateTime(timeStr) {
-    if (!timeStr) return '';
-    const date = new Date(timeStr);
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const hour = String(date.getHours()).padStart(2, '0');
-    const minute = String(date.getMinutes()).padStart(2, '0');
+    const t = this.parseTimeStr(timeStr);
+    if (!t) return '';
+    const month = String(t.month).padStart(2, '0');
+    const day = String(t.day).padStart(2, '0');
+    const hour = String(t.hour).padStart(2, '0');
+    const minute = String(t.minute).padStart(2, '0');
     return `${month}/${day} ${hour}:${minute}`;
   },
 

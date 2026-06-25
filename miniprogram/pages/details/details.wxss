@@ -295,12 +295,13 @@
 
 .submit-btn-group {
   display: flex;
-  gap: 10px;
+  gap: 30rpx;
 }
 
 .submit-btn-group van-button {
   flex: 1;
   border-radius: 8px;
+  width: 10rpx; 
 }
 
 .cancel-btn {
@@ -330,7 +331,7 @@
   text-align: center;
   font-size: 13px;
   color: #ff6b6b;
-  margin-bottom: 12px;
+  margin-top: 12px;
   font-weight: 500;
 }
 
@@ -606,7 +607,7 @@
   font-size: 15px;
   color: #333;
   flex: 1;
-  min-width: 0;
+  min-width: 80px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -621,7 +622,8 @@
   padding: 0 12px !important;
   height: 32px !important;
   line-height: 32px !important;
-  font-size: 13px !important;
+  font-size: 12px !important;
+  max-width: 30px;
 }
 
 .success-close-btn {

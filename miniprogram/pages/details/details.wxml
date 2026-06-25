@@ -60,12 +60,12 @@
         <text class="organizer-wechat">微信号：{{activityDetail.wechat}}</text>
       </view>
     </view>
-    <view class="qr-section">
+    <!-- <view class="qr-section">
       <view class="qr-item">
         <text class="qr-label">活动群</text>
         <image class="qr-image" src="{{activityDetail.groupQR}}" mode="aspectFill" bindtap="previewQRCode" data-url="{{activityDetail.groupQR}}"></image>
       </view>
-    </view>
+    </view> -->
   </view>
 
 
@@ -159,7 +159,7 @@
       </van-button>
     </view>
     <view class="submit-btn-group" wx:if="{{isRegistered}}">
-      <van-button type="info" block disabled>已报名</van-button>
+      <van-button type="info" block bindtap="onViewRegistration">已报名，查看报名信息</van-button>
       <van-button plain type="default" block bindtap="onCancelSignUpClick" custom-class="cancel-btn">取消报名</van-button>
     </view>
   </view>
@@ -194,8 +194,9 @@
   <!-- 须知弹窗 -->
   <van-popup show="{{showNotice}}" bindclose="onNoticeClose" position="bottom" round closeable close-icon="close" custom-style="height: 80%;">
     <view class="notice-popup">
-      <view class="popup-title">{{noticeTitle}}</view>
-      <view class="popup-countdown" wx:if="{{noticeCountdown > 0}}">请阅读 {{noticeCountdown}} 秒后可关闭</view>
+      <view class="popup-title">{{noticeTitle}}
+        <view class="popup-countdown" wx:if="{{noticeCountdown > 0}}">请阅读 {{noticeCountdown}} 秒后可关闭</view>
+      </view>
       <view class="popup-content">
         <!-- 报名参与者须知 -->
         <block wx:if="{{noticeType === 'participant'}}">
