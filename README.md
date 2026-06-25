@@ -1,39 +1,24 @@
----
-AIGC:
-  ContentProducer: '001191110102MAD55U9H0F10002'
-  ContentPropagator: '001191110102MAD55U9H0F10002'
-  Label: '1'
-  ProduceID: 'dffcca84-4bae-46d4-a81f-6d103dbc8612'
-  PropagateID: 'dffcca84-4bae-46d4-a81f-6d103dbc8612'
-  ReservedCode1: '2cd4c885-3811-427e-9612-985e2ca4d153'
-  ReservedCode2: '2cd4c885-3811-427e-9612-985e2ca4d153'
----
 
 # 步步出沪 | 徒然好想走
 
-> 一款面向户外徒步爱好者的微信小程序，提供活动发布、报名管理、活动回顾等全流程功能。
+> 「步步出沪 | 徒然好想走」是一个以五月天粉丝群体为核心的户外徒步活动管理小程序。用户可以发起徒步活动、报名参与、查看活动回顾，管理员可以审核活动、管理用户状态。小程序集成了微信云托管服务，实现前后端一体化部署。
 
 ## 版本历史
 
-### v1.0.3（2026-06-24）
-- ✨ 发布/报名前校验用户资料（手机号或微信号至少填一项）
+### v1.0.2（2026-06-25）
+- ✨ 发布/报名前校验用户资料（需填写手机号或微信号）
 - ✨ 协议须知强制弹窗 + 3 秒阅读倒计时
-- ✨ 多验证问题（4 道题随机分配，支持多答案）
-- ✨ 黑名单用户全屏遮罩（首页、个人页、活动回顾页）
+- ✨ 多验证问题（4 道题随机分配，支持多答案），管理员可以开启全员重新验证
+- ✨ 黑名单用户全屏遮罩，禁止一切操作（首页、个人页、活动回顾页）
 - 🔧 修复时区显示问题（后端统一 datetime 序列化格式）
-- 🔧 修复取消报名失败、重新报名报错
-- 🔧 修复首页待审核活动展示、复制按钮宽度、难度显示格式等 12 项问题
-
-### v1.0.2（2026-06-23）
-- ✨ 时区修复（BeijingTimeJSONProvider 统一序列化）
-- ✨ 报名成功弹窗
-- ✨ 取消报名功能
-- ✨ 移除大巴二维码上传
-- ✨ 难度五星制显示
-- ✨ 保险提示
-- ✨ 已结束活动分区展示
-- ✨ 活动数量显示
-- ✨ 表单标签对齐、管理员全员重新验证
+- 🔧 修复首页待审核活动展示、复制按钮宽度、难度显示格式等显示问题
+- ✨ 新增报名成功弹窗
+- ✨ 新增取消报名功能
+- ⚡ 移除大巴二维码上传
+- ⚡ 难度五星制显示
+- ⚡ 优化购买户外保险提示
+- ⚡ 活动分区展示（已结束活动、进行中活动）
+- ⚡ 首页活动数量统计显示
 
 ### v1.0.1（2025-05-27）
 - ✨ 个人页增加发布和报名活动查看
@@ -44,9 +29,6 @@ AIGC:
 ### v1.0.0（2025-05-25）
 - ✨ 「步步出沪 | 徒然好想走」小程序首次发布
 
-## 项目简介
-
-「步步出沪 | 徒然好想走」是一个以五月天粉丝群体为核心的户外徒步活动管理小程序。用户可以发起徒步活动、报名参与、查看活动回顾，管理员可以审核活动、管理用户状态。小程序集成了微信云托管服务，实现前后端一体化部署。
 
 ## 技术栈
 
@@ -56,7 +38,7 @@ AIGC:
 | UI 组件库 | Vant Weapp | 提供按钮、表单、弹窗等组件 |
 | 后端 | Python Flask | 轻量级 Web 框架 |
 | 数据库驱动 | PyMySQL | 连接 MySQL 数据库 |
-| 数据库 | MySQL (腾讯云 CynosDB) | 云数据库，支持公网/内网访问 |
+| 数据库 | MySQL (腾讯云 CynosDB) | 云数据库 |
 | 部署 | 微信云托管 | 容器化部署，Gunicorn 作为 WSGI 服务器 |
 | 云存储 | 微信云开发 | 图片、头像等文件存储 |
 
@@ -68,7 +50,7 @@ AIGC:
 ├── master      # 空分支（保留）
 ├── backend     # 后端代码（Flask 应用）
 ├── dev         # 前端代码（微信小程序，miniprogram/ 子目录）
-└── database    # 数据库建表语句
+└── database    # 数据库结构（.sql文件）
 ```
 
 ### 后端结构（backend 分支）
@@ -156,7 +138,7 @@ miniprogram/
 | `activities` | 活动表 | id, name, description, activity_time, location, difficulty, distance, climb, max_participants, deadline, status, creator_openid, wechat_id, cover_url, group_qr_url, is_force_insurance |
 | `activity_meeting_points` | 集合点表 | id, activity_id, meeting_time (varchar), location |
 | `activity_travel_options` | 出行方式表 | id, activity_id, travel_type (1=大巴, 2=高铁, 3=自驾), bus_qr_url |
-| `activity_participants` | 报名记录表 | id, activity_id, user_openid, nickname, phone, wechat_id, status (1=已报名, 0=已取消), remark |
+| `activity_participants` | 报名记录表 | id, activity_id, user_openid, nickname, phone, wechat_id, status, remark |
 | `activity_reviews` | 活动回顾表 | id, activity_id, name, cover, time, location, participants, content |
 
 > 建表语句详见 `database` 分支。
@@ -166,14 +148,13 @@ miniprogram/
 | 配置项 | 值 |
 |--------|-----|
 | 云托管环境 | 见云托管控制台 |
-| 云托管服务名 | `flask-mysql-login` |
-| 数据库名 | `flask_demo` |
+
 
 ### 后端部署
 
 1. 后端代码通过微信云托管控制台手动上传代码包部署
 2. Dockerfile 基于 `python:3.9-slim`，使用 Gunicorn 启动
-3. 环境变量通过云托管控制台注入（DB_HOST、DB_PORT、DB_USER、DB_PASSWORD、DB_NAME、WX_APPID、WX_SECRET 等）
+3. 环境变量通过app.py和db_utils.py配置（DB_HOST、DB_PORT、DB_USER、DB_PASSWORD、DB_NAME、WX_APPID、WX_SECRET 等）
 4. 微信 API 调用使用 `http://api.weixin.qq.com`（云托管内部代理，勿改为 https）
 
 ### 前端部署
@@ -233,5 +214,3 @@ git clone -b dev https://gitee.com/sinkdream0813/bubuchuhu.git
 | GET | `/api/reviews` | 活动回顾列表 |
 | GET | `/api/reviews/<id>` | 活动回顾详情 |
 | POST | `/api/reviews` | 新建活动回顾 |
-
-> AI生成
