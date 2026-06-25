@@ -30,6 +30,17 @@ def upload_image():
     if not allowed_file(file.filename):
         return jsonify({'code': 400, 'msg': '不支持的图片格式'})
 
+    # ==================== 图片安全检测 ====================
+    from app import check_image_security
+    openid_for_check = g.openid
+    image_data = file.read()
+    is_safe, msg = check_image_security(image_data, openid_for_check)
+    if not is_safe:
+        return jsonify({'code': 400, 'msg': msg})
+    # 重置文件指针，以便后续 save 操作
+    file.seek(0)
+    # ==================== 图片安全检测结束 ====================
+
     ext = file.filename.rsplit('.', 1)[1].lower()
     filename = f"{uuid.uuid4().hex}.{ext}"
     upload_dir = os.path.join(os.path.dirname(__file__), 'static', 'uploads')

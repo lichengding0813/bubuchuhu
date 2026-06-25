@@ -157,6 +157,83 @@ def check_text_security(content, openid, scene=1, title=''):
         # 异常时放行，避免阻塞用户操作
         return True, ''
 
+def check_image_security(image_data, openid):
+    """
+    调用微信 security.imgSecCheck 检测图片内容是否合规
+    - image_data: 图片二进制数据
+    - openid: 用户openid（用于v2版本）
+    返回: (is_safe: bool, msg: str)
+    """
+    if not image_data:
+        return True, ''
+
+    access_token = get_access_token()
+    if not access_token:
+        logging.warning("access_token获取失败，跳过图片安全检测")
+        return True, ''
+
+    import tempfile
+    temp_path = None
+    try:
+        # 保存到临时文件（imgSecCheck 需要 multipart/form-data）
+        with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as f:
+            f.write(image_data)
+            temp_path = f.name
+
+        url = f'http://api.weixin.qq.com/wxa/img_sec_check?access_token={access_token}'
+        with open(temp_path, 'rb') as f:
+            res = requests.post(url, files={'media': f}, timeout=30)
+
+        data = res.json()
+        if data.get('errcode') == 0:
+            return True, ''
+        elif data.get('errcode') == 87014:
+            return False, '图片包含违规内容，请更换图片后重新提交'
+        else:
+            logging.warning(f"图片安全检测接口返回: {data}")
+            return True, ''
+    except Exception as e:
+        logging.error(f"图片安全检测异常: {e}")
+        return True, ''
+    finally:
+        if temp_path:
+            try:
+                os.unlink(temp_path)
+            except:
+                pass
+
+# ==================== 图片安全检测接口（前端 base64 方式调用） ====================
+@app.route('/check-image', methods=['POST'])
+def check_image():
+    """前端图片安全检测接口，接收 base64 编码的图片数据"""
+    openid = request.headers.get('X-Wx-OpenId')
+    if not openid:
+        return jsonify({'code': 401, 'msg': '未获取到用户身份'})
+
+    data = request.get_json()
+    image_base64 = data.get('image', '')
+    if not image_base64:
+        return jsonify({'code': 400, 'msg': '缺少图片数据'})
+
+    try:
+        import base64
+        # 去掉可能的 data:image/xxx;base64, 前缀
+        if ',' in image_base64:
+            image_base64 = image_base64.split(',', 1)[1]
+        image_data = base64.b64decode(image_base64)
+    except Exception:
+        return jsonify({'code': 400, 'msg': '图片数据格式错误'})
+
+    # 限制图片大小 10MB
+    if len(image_data) > 10 * 1024 * 1024:
+        return jsonify({'code': 400, 'msg': '图片大小不能超过10MB'})
+
+    is_safe, msg = check_image_security(image_data, openid)
+    if not is_safe:
+        return jsonify({'code': 400, 'msg': msg})
+
+    return jsonify({'code': 200, 'msg': '图片检测通过'})
+
 # ==================== 注册蓝图 ====================
 app.register_blueprint(activity_bp, url_prefix='/api/activity')
 app.register_blueprint(admin_bp, url_prefix='/api/admin')  # 确保这行存在
