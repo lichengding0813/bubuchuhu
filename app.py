@@ -330,6 +330,15 @@ def update_profile():
 def health():
     return jsonify({'code': 200, 'msg': '服务正常运行'})
 
+@app.route('/version', methods=['GET'])
+def version():
+    """诊断接口：返回关键路由是否注册"""
+    routes = sorted([str(rule) for rule in app.url_map.iter_rules()])
+    return jsonify({
+        'code': 200,
+        'routes': routes
+    })
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
