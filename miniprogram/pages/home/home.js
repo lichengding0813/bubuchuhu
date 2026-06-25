@@ -168,26 +168,28 @@ Page({
         const activities = result.data.data.list || [];
         const total = result.data.data.total || 0;
 
-        // 格式化活动数据
-        let formattedList = activities.map(item => {
-          const participantCount = item.participant_count || 0;
-          const remainCount = item.max_participants - participantCount;
+        // 格式化活动数据，排除待审核活动(status=0)
+        let formattedList = activities
+          .filter(item => item.status !== 0)
+          .map(item => {
+            const participantCount = item.participant_count || 0;
+            const remainCount = item.max_participants - participantCount;
 
-          return {
-            id: item.id,
-            name: item.name,
-            time: this.formatActivityTime(item.activity_time),
-            location: item.location,
-            remainCount: remainCount,
-            totalCount: item.max_participants,
-            difficulty: this.getDifficultyText(item.difficulty),
-            statusText: this.getStatusText(item.status),
-            statusBadge: this.getStatusBadge(item.status, remainCount, item.has_registered),
-            statusClass: this.getStatusClass(item.status),
-            coverUrl: item.cover_url,
-            has_registered: item.has_registered
-          };
-        });
+            return {
+              id: item.id,
+              name: item.name,
+              time: this.formatActivityTime(item.activity_time),
+              location: item.location,
+              remainCount: remainCount,
+              totalCount: item.max_participants,
+              difficulty: this.getDifficultyText(item.difficulty),
+              statusText: this.getStatusText(item.status),
+              statusBadge: this.getStatusBadge(item.status, remainCount, item.has_registered),
+              statusClass: this.getStatusClass(item.status),
+              coverUrl: item.cover_url,
+              has_registered: item.has_registered
+            };
+          });
 
         this.setData({
           activityList: formattedList,
