@@ -4,7 +4,7 @@
 
 <!-- 轮播图 -->
 <view class="swiper-section">
-  <swiper class="cover-swiper" indicator-dots="{{coverList.length > 1}}" autoplay="{{coverList.length > 1}}" interval="2000" circular="{{coverList.length > 1}}">
+  <swiper class="cover-swiper" indicator-dots="{{coverCount > 1}}" autoplay="{{coverCount > 1}}" interval="2000" circular="{{coverCount > 1}}">
     <swiper-item wx:if="{{reviewData.cover}}">
       <image class="cover-image" 
              src="{{reviewData.cover}}" 

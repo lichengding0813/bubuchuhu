@@ -67,8 +67,14 @@ Page({
       wx.hideLoading();
       if (result.data && result.data.code === 200) {
         const data = result.data.data;
+        // 统计有效封面图数量
+        var coverCount = 0;
+        if (data.cover) coverCount++;
+        if (data.cover2) coverCount++;
+        if (data.cover3) coverCount++;
         this.setData({
           reviewData: data,
+          coverCount: coverCount,
           displayPhotos: data.photos || [],
           photoCount: (data.photos || []).length
         });

@@ -3,7 +3,16 @@ Page({
   data: {
     updateList: [
       {
-        version: "1.0.2",
+        version: "1.1.1",
+        date: "2025-07-03",
+        changes: [
+          { emoji: "⚡", text: "优化活动回顾详情页图片展示，可微信分享" },
+          { emoji: "⚡", text: "优化活动详情封面图片显示" },
+          { emoji: "🔧", text: "修复已报名活动的首页分类展示" }
+        ]
+      },
+      {
+        version: "1.1.0",
         date: "2026-06-25",
         changes: [
           { emoji: "🔧", text: "修复通过分享进入详情页时返回按钮无效的问题" },
