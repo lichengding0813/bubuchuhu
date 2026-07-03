@@ -11,7 +11,7 @@
 
   <!-- 活动封面图 -->
   <view class="cover-section">
-    <image class="cover-image" src="{{activityDetail.cover}}" mode="aspectFill"></image>
+    <image class="cover-image" src="{{activityDetail.cover}}" mode="aspectFill" bindtap="previewCoverImage" data-src="{{activityDetail.cover}}"></image>
     <view class="cover-tag" wx:if="{{activityDetail.status}}">{{activityDetail.status}}</view>
   </view>
 

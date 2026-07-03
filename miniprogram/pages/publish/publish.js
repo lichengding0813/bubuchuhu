@@ -623,7 +623,7 @@ Page({
       if (result.data && result.data.code === 200) {
         return true;
       } else {
-        const errMsg = result.data?.msg || '图片检测失败';
+        const errMsg = result.data?.msg || '图片违规，请重新上传';
         wx.showModal({ title: '图片审核提示', content: errMsg, showCancel: false });
         return false;
       }

@@ -191,12 +191,14 @@ Page({
             };
           });
 
+        // 按状态分组：已结束/已取消归入往期，其余归入最新
+        const endedBadges = ['已结束', '已取消'];
         this.setData({
           activityList: formattedList,
-          ongoingList: formattedList.filter(item => item.statusBadge !== '已结束'),
-          endedList: formattedList.filter(item => item.statusBadge === '已结束'),
-          ongoingCount: formattedList.filter(item => item.statusBadge !== '已结束').length,
-          endedCount: formattedList.filter(item => item.statusBadge === '已结束').length
+          ongoingList: formattedList.filter(item => endedBadges.indexOf(item.statusBadge) === -1),
+          endedList: formattedList.filter(item => endedBadges.indexOf(item.statusBadge) !== -1),
+          ongoingCount: formattedList.filter(item => endedBadges.indexOf(item.statusBadge) === -1).length,
+          endedCount: formattedList.filter(item => endedBadges.indexOf(item.statusBadge) !== -1).length
         });
       }
     } catch (error) {
@@ -282,15 +284,20 @@ Page({
   },
 
   // 获取状态徽章
+  // 优先级：已结束/已取消 > 已报名 > 可报名/已满员
   getStatusBadge(status, remainCount, has_registered) {
-    // console.log(has_registered)
+    // 先判断活动是否已结束或已取消（这些状态优先于报名状态）
+    if (status === 4) return '已结束';
+    if (status === 5) return '已取消';
+    if (status === 2) return '已拒绝';
+
+    // 再判断报名状态
     if (has_registered) return '已报名';
     if (status === 1) {
       if (remainCount <= 0) return '已满员';
       return '可报名';
     }
-    const map = { 0: '待审核', 2: '已拒绝', 3: '进行中', 4: '已结束', 5: '已取消' };
-    return map[status] || '已截止';
+    return '已截止';
   },
 
 

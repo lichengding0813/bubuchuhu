@@ -134,5 +134,13 @@ Page({
 
   onSwiperChange(e) {
     this.setData({ currentPhotoIndex: e.detail.current });
+  },
+
+  onShareAppMessage() {
+    const name = this.data.reviewData.name || '活动回顾';
+    return {
+      title: name,
+      path: `/pages/review-detail/review-detail?id=${this.data.reviewData.id}`
+    };
   }
 });

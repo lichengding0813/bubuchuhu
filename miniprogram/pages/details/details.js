@@ -274,6 +274,12 @@ Page({
     wx.previewImage({ urls, current: e.currentTarget.dataset.url });
   },
 
+  previewCoverImage(e) {
+    const src = e.currentTarget.dataset.src;
+    if (!src) return;
+    wx.previewImage({ urls: [src], current: src });
+  },
+
   checkSignUpStatus() {
     const { activityDetail, agreeNotice, agreeBus, agreeSelf } = this.data;
     // 后端允许 status=1(报名中) 或 status=3(进行中) 报名

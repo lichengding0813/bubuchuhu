@@ -4,8 +4,8 @@
 
 <!-- 轮播图 -->
 <view class="swiper-section">
-  <swiper class="cover-swiper" indicator-dots="{{true}}" autoplay="{{true}}" interval="2000" circular="{{true}}">
-    <swiper-item>
+  <swiper class="cover-swiper" indicator-dots="{{coverList.length > 1}}" autoplay="{{coverList.length > 1}}" interval="2000" circular="{{coverList.length > 1}}">
+    <swiper-item wx:if="{{reviewData.cover}}">
       <image class="cover-image" 
              src="{{reviewData.cover}}" 
              mode="aspectFill"
@@ -13,7 +13,7 @@
              data-src="{{reviewData.cover}}"></image>
       <view class="cover-date">活动合照</view>
     </swiper-item>
-    <swiper-item>
+    <swiper-item wx:if="{{reviewData.cover2}}">
       <image class="cover-image" 
              src="{{reviewData.cover2}}" 
              mode="aspectFill"
@@ -21,7 +21,7 @@
              data-src="{{reviewData.cover2}}"></image>
       <view class="cover-date">卜卜合照</view>
     </swiper-item>
-    <swiper-item>
+    <swiper-item wx:if="{{reviewData.cover3}}">
       <image class="cover-image" 
              src="{{reviewData.cover3}}" 
              mode="aspectFill"
