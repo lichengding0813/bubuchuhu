@@ -202,31 +202,32 @@ def check_image_security(image_data, openid):
             except:
                 pass
 
-# ==================== 图片安全检测接口（前端 base64 方式调用） ====================
-@app.route('/check-image', methods=['POST'])
-def check_image():
-    """前端图片安全检测接口，接收 base64 编码的图片数据"""
+# ==================== 图片安全检测接口（通过云存储 URL） ====================
+@app.route('/check-image-url', methods=['POST'])
+def check_image_url():
+    """前端上传图片到云存储后，用文件URL调用后端检测"""
     openid = request.headers.get('X-Wx-OpenId')
     if not openid:
         return jsonify({'code': 401, 'msg': '未获取到用户身份'})
 
     data = request.get_json()
-    image_base64 = data.get('image', '')
-    if not image_base64:
-        return jsonify({'code': 400, 'msg': '缺少图片数据'})
+    file_url = data.get('url', '')
+    if not file_url:
+        return jsonify({'code': 400, 'msg': '缺少图片URL'})
 
     try:
-        import base64
-        # 去掉可能的 data:image/xxx;base64, 前缀
-        if ',' in image_base64:
-            image_base64 = image_base64.split(',', 1)[1]
-        image_data = base64.b64decode(image_base64)
-    except Exception:
-        return jsonify({'code': 400, 'msg': '图片数据格式错误'})
+        # 下载图片数据
+        res = requests.get(file_url, timeout=30)
+        if res.status_code != 200:
+            return jsonify({'code': 400, 'msg': '图片下载失败'})
 
-    # 限制图片大小 10MB
-    if len(image_data) > 10 * 1024 * 1024:
-        return jsonify({'code': 400, 'msg': '图片大小不能超过10MB'})
+        image_data = res.content
+        if len(image_data) > 10 * 1024 * 1024:
+            return jsonify({'code': 400, 'msg': '图片大小不能超过10MB'})
+
+    except Exception as e:
+        logging.error(f"下载图片失败: {e}")
+        return jsonify({'code': 400, 'msg': '图片下载失败'})
 
     is_safe, msg = check_image_security(image_data, openid)
     if not is_safe:
