@@ -100,27 +100,26 @@ Page({
     });
   },
 
-  // 上传头像前先检测图片是否合规
-  async checkImageSecurity(tempFilePath) {
+  // 上传头像后检测图片是否合规，违规则删除云文件
+  async checkImageSecurity(fileID) {
     try {
-      const fs = wx.getFileSystemManager();
-      const imageData = fs.readFileSync(tempFilePath, 'base64');
       const userInfo = wx.getStorageSync('userInfo');
       const result = await wx.cloud.callContainer({
         config: { env: "prod-3gktwx67d1dd1e76" },
-        path: "/check-image",
+        path: "/check-image-url",
         method: "POST",
         header: {
           "X-WX-SERVICE": "flask-mysql-login",
           "X-Wx-OpenId": userInfo?.openId,
           "Content-Type": "application/json"
         },
-        data: { image: imageData }
+        data: { url: fileID }
       });
       if (result.data && result.data.code === 200) {
         return true;
       } else {
         const errMsg = result.data?.msg || '图片检测失败';
+        try { await wx.cloud.deleteFile({ fileList: [fileID] }); } catch (e) {}
         wx.showModal({ title: '图片审核提示', content: errMsg, showCancel: false });
         return false;
       }
@@ -139,13 +138,6 @@ Page({
     }
 
     this.setData({ isUploading: true });
-    wx.showLoading({ title: '检测图片...' });
-    const safe = await this.checkImageSecurity(tempFilePath);
-    if (!safe) {
-      wx.hideLoading();
-      this.setData({ isUploading: false });
-      return;
-    }
     wx.showLoading({ title: '上传中...', mask: true });
 
     try {
@@ -160,7 +152,16 @@ Page({
       });
 
       const fileID = uploadResult.fileID;
-      
+
+      // 上传成功后检测图片安全性
+      wx.showLoading({ title: '检测图片...' });
+      const safe = await this.checkImageSecurity(fileID);
+      if (!safe) {
+        wx.hideLoading();
+        this.setData({ isUploading: false });
+        return;
+      }
+
       this.setData({
         'userInfo.avatarUrl': fileID,
         isUploading: false

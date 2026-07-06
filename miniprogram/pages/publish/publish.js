@@ -603,33 +603,33 @@ Page({
     this.setData({ showDatePicker: false });
   },
 
-  async checkImageSecurity(tempFilePath) {
-    // 上传图片前先检测是否合规
+  // 上传图片后检测是否合规，违规则删除云文件
+  async checkImageSecurity(fileID) {
     try {
-      const fs = wx.getFileSystemManager();
-      const imageData = fs.readFileSync(tempFilePath, 'base64');
       const userInfo = wx.getStorageSync('userInfo');
       const result = await wx.cloud.callContainer({
         config: { env: "prod-3gktwx67d1dd1e76" },
-        path: "/check-image",
+        path: "/check-image-url",
         method: "POST",
         header: {
           "X-WX-SERVICE": "flask-mysql-login",
           "X-Wx-OpenId": userInfo?.openId,
           "Content-Type": "application/json"
         },
-        data: { image: imageData }
+        data: { url: fileID }
       });
       if (result.data && result.data.code === 200) {
         return true;
       } else {
-        const errMsg = result.data?.msg || '图片违规，请重新上传';
+        const errMsg = result.data?.msg || '图片检测失败';
+        // 检测不通过，删除已上传的云文件
+        try { await wx.cloud.deleteFile({ fileList: [fileID] }); } catch (e) {}
         wx.showModal({ title: '图片审核提示', content: errMsg, showCancel: false });
         return false;
       }
     } catch (err) {
       console.error('图片安全检测失败', err);
-      // 检测失败时放行，不阻断用户操作
+      // 检测失败时放行
       return true;
     }
   },
@@ -644,12 +644,6 @@ Page({
       count: 1,
       success: async (res) => {
         const tempFilePath = res.tempFilePaths[0];
-        wx.showLoading({ title: '检测图片...' });
-        const safe = await this.checkImageSecurity(tempFilePath);
-        if (!safe) {
-          wx.hideLoading();
-          return;
-        }
         wx.showLoading({ title: '上传中...', mask: true });
         try {
           const timestamp = Date.now();
@@ -660,7 +654,15 @@ Page({
             filePath: tempFilePath,
             config: { env: 'prod-3gktwx67d1dd1e76' }
           });
-          this.setData({ groupQR: uploadResult.fileID }, () => this.checkCanSubmit());
+          const fileID = uploadResult.fileID;
+          // 上传成功后检测图片安全性
+          wx.showLoading({ title: '检测图片...' });
+          const safe = await this.checkImageSecurity(fileID);
+          if (!safe) {
+            wx.hideLoading();
+            return;
+          }
+          this.setData({ groupQR: fileID }, () => this.checkCanSubmit());
           wx.hideLoading();
           wx.showToast({ title: '上传成功', icon: 'success' });
         } catch (error) {
@@ -682,12 +684,6 @@ Page({
       count: 1,
       success: async (res) => {
         const tempFilePath = res.tempFilePaths[0];
-        wx.showLoading({ title: '检测图片...' });
-        const safe = await this.checkImageSecurity(tempFilePath);
-        if (!safe) {
-          wx.hideLoading();
-          return;
-        }
         wx.showLoading({ title: '上传中...', mask: true });
         try {
           const timestamp = Date.now();
@@ -698,7 +694,15 @@ Page({
             filePath: tempFilePath,
             config: { env: 'prod-3gktwx67d1dd1e76' }
           });
-          this.setData({ cover: uploadResult.fileID }, () => this.checkCanSubmit());
+          const fileID = uploadResult.fileID;
+          // 上传成功后检测图片安全性
+          wx.showLoading({ title: '检测图片...' });
+          const safe = await this.checkImageSecurity(fileID);
+          if (!safe) {
+            wx.hideLoading();
+            return;
+          }
+          this.setData({ cover: fileID }, () => this.checkCanSubmit());
           wx.hideLoading();
           wx.showToast({ title: '上传成功', icon: 'success' });
         } catch (error) {

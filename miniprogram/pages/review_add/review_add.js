@@ -68,45 +68,37 @@ Page({
     this.setData({ [`form.${field}`]: e.detail.value });
   },
 
-  // 上传图片前先检测是否合规
-  async checkImageSecurity(tempFilePath) {
+  // 上传图片后检测是否合规，违规则删除云文件
+  async checkImageSecurity(fileID) {
     try {
-      const fs = wx.getFileSystemManager();
-      const imageData = fs.readFileSync(tempFilePath, 'base64');
       const userInfo = wx.getStorageSync('userInfo');
       const result = await wx.cloud.callContainer({
         config: { env: "prod-3gktwx67d1dd1e76" },
-        path: "/check-image",
+        path: "/check-image-url",
         method: "POST",
         header: {
           "X-WX-SERVICE": "flask-mysql-login",
           "X-Wx-OpenId": userInfo?.openId,
           "Content-Type": "application/json"
         },
-        data: { image: imageData }
+        data: { url: fileID }
       });
       if (result.data && result.data.code === 200) {
         return true;
       } else {
         const errMsg = result.data?.msg || '图片检测失败';
+        try { await wx.cloud.deleteFile({ fileList: [fileID] }); } catch (e) {}
         wx.showModal({ title: '图片审核提示', content: errMsg, showCancel: false });
         return false;
       }
     } catch (err) {
       console.error('图片安全检测失败', err);
-      // 检测失败时放行，不阻断用户操作
       return true;
     }
   },
 
   // 上传图片到云存储，返回 cloud:// 格式的 fileID
   async uploadImageToCloud(filePath) {
-    wx.showLoading({ title: '检测图片...' });
-    const safe = await this.checkImageSecurity(filePath);
-    if (!safe) {
-      wx.hideLoading();
-      return null;
-    }
     wx.showLoading({ title: '上传中...', mask: true });
     try {
       const ext = filePath.split('.').pop();
@@ -115,8 +107,16 @@ Page({
         cloudPath: cloudPath,
         filePath: filePath
       });
+      const fileID = res.fileID;
+      // 上传成功后检测图片安全性
+      wx.showLoading({ title: '检测图片...' });
+      const safe = await this.checkImageSecurity(fileID);
+      if (!safe) {
+        wx.hideLoading();
+        return null;
+      }
       wx.hideLoading();
-      return res.fileID;
+      return fileID;
     } catch (error) {
       wx.hideLoading();
       console.error('上传失败:', error);
