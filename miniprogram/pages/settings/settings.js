@@ -100,8 +100,8 @@ Page({
     });
   },
 
-  // 上传头像后检测图片是否合规，违规则删除云文件
-  async checkImageSecurity(fileID) {
+  // 上传头像后检测图片是否合规，违规时将图片存到 flagged/ 文件夹供人工复核
+  async checkImageSecurity(fileID, tempFilePath) {
     try {
       const userInfo = wx.getStorageSync('userInfo');
       const result = await wx.cloud.callContainer({
@@ -119,6 +119,14 @@ Page({
         return true;
       } else {
         const errMsg = result.data?.msg || '图片检测失败';
+        // 违规：将图片存到 flagged/ 文件夹（带openid和昵称），再删除原文件
+        try {
+          const openId = userInfo?.openId || 'unknown';
+          const nickName = (userInfo?.nickName || 'unknown').replace(/[\/\\:*?"<>|]/g, '_');
+          const ext = tempFilePath.split('.').pop() || 'png';
+          const flaggedPath = 'flagged/' + openId + '_' + nickName + '_' + Date.now() + '.' + ext;
+          await wx.cloud.uploadFile({ cloudPath: flaggedPath, filePath: tempFilePath });
+        } catch (e) { console.error('保存违规图片到flagged失败', e); }
         try { await wx.cloud.deleteFile({ fileList: [fileID] }); } catch (e) {}
         wx.showModal({ title: '图片审核提示', content: errMsg, showCancel: false });
         return false;
@@ -155,7 +163,7 @@ Page({
 
       // 上传成功后检测图片安全性
       wx.showLoading({ title: '检测图片...' });
-      const safe = await this.checkImageSecurity(fileID);
+      const safe = await this.checkImageSecurity(fileID, tempFilePath);
       if (!safe) {
         wx.hideLoading();
         this.setData({ isUploading: false });
