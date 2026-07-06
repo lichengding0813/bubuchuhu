@@ -72,6 +72,16 @@ Page({
   async checkImageSecurity(fileID, tempFilePath) {
     try {
       const userInfo = wx.getStorageSync('userInfo');
+      // cloud:// 协议链接后端无法直接下载，先转成 https 临时链接
+      let httpUrl = fileID;
+      try {
+        const tempRes = await wx.cloud.getTempFileURL({ fileList: [fileID] });
+        if (tempRes.fileList && tempRes.fileList[0] && tempRes.fileList[0].tempFileURL) {
+          httpUrl = tempRes.fileList[0].tempFileURL;
+        }
+      } catch (e) {
+        console.error('getTempFileURL失败，尝试直接传原始URL', e);
+      }
       const result = await wx.cloud.callContainer({
         config: { env: "prod-3gktwx67d1dd1e76" },
         path: "/check-image-url",
@@ -81,7 +91,7 @@ Page({
           "X-Wx-OpenId": userInfo?.openId,
           "Content-Type": "application/json"
         },
-        data: { url: fileID }
+        data: { url: httpUrl }
       });
       if (result.data && result.data.code === 200) {
         return true;
