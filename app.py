@@ -24,25 +24,40 @@ except RuntimeError as e:
     logging.critical(f"配置验证失败: {e}")
     raise
 
-# ==================== 验证问题列表 ====================
-VERIFY_QUESTIONS = [
-    {
-        'question': '你问我全世界是哪里最美？答案是——',
-        'answers': ['你身边']
-    },
-    {
-        'question': '玛莎的全名是？',
-        'answers': ['蔡升晏']
-    },
-    {
-        'question': '五月天中谁不是师大附中的学生？',
-        'answers': ['冠佑', '刘冠佑', '刘谚明']
-    },
-    {
-        'question': '五月天中谁放弃了律师的家业？',
-        'answers': ['怪兽', '温尚翊']
-    }
-]
+# ==================== 验证问题（从数据库动态加载） ====================
+def get_verify_questions():
+    """从数据库获取启用的验证问题列表"""
+    conn = None
+    cursor = None
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT id, question, answers FROM verify_questions WHERE is_active = 1 ORDER BY sort_order ASC"
+        )
+        rows = cursor.fetchall()
+        if not rows:
+            # 数据库无数据时回退到内置问题（防止表未初始化导致登录失败）
+            return [
+                {'id': 0, 'question': '你问我全世界是哪里最美？答案是——', 'answers': ['你身边']},
+                {'id': 1, 'question': '玛莎的全名是？', 'answers': ['蔡升晏']},
+            ]
+        return [{
+            'id': row['id'],
+            'question': row['question'],
+            'answers': [a.strip() for a in row['answers'].split(',')]
+        } for row in rows]
+    except Exception:
+        logging.exception("加载验证问题失败，使用内置问题")
+        return [
+            {'id': 0, 'question': '你问我全世界是哪里最美？答案是——', 'answers': ['你身边']},
+            {'id': 1, 'question': '玛莎的全名是？', 'answers': ['蔡升晏']},
+        ]
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
 
 # ==================== 导入路由蓝图 ====================
 from routes.activity_routes import activity_bp
@@ -339,9 +354,10 @@ def login():
 
             response_data = {'code': 200, 'msg': '登录成功', 'data': user}
             if user.get('needVerify') == 1 and user.get('isBlacklist') == 0:
-                q_idx = random.randint(0, len(VERIFY_QUESTIONS) - 1)
-                response_data['verifyQuestion'] = VERIFY_QUESTIONS[q_idx]['question']
-                response_data['verifyQuestionIdx'] = q_idx
+                questions = get_verify_questions()
+                q = random.choice(questions)
+                response_data['verifyQuestion'] = q['question']
+                response_data['verifyQuestionIdx'] = q['id']
 
             return jsonify(response_data)
         else:
@@ -360,9 +376,10 @@ def login():
 
             response_data = {'code': 200, 'msg': '注册成功', 'data': user}
             if user.get('needVerify') == 1 and user.get('isBlacklist') == 0:
-                q_idx = random.randint(0, len(VERIFY_QUESTIONS) - 1)
-                response_data['verifyQuestion'] = VERIFY_QUESTIONS[q_idx]['question']
-                response_data['verifyQuestionIdx'] = q_idx
+                questions = get_verify_questions()
+                q = random.choice(questions)
+                response_data['verifyQuestion'] = q['question']
+                response_data['verifyQuestionIdx'] = q['id']
 
             return jsonify(response_data)
 
@@ -390,10 +407,15 @@ def verify_answer():
         return jsonify({'code': 400, 'msg': '缺少answer参数'})
 
     question_idx = data.get('question_idx', 0)
-    if 0 <= question_idx < len(VERIFY_QUESTIONS):
-        correct_answers = VERIFY_QUESTIONS[question_idx]['answers']
+    questions = get_verify_questions()
+    # 按 id 查找对应的问题
+    matched_q = next((q for q in questions if q['id'] == question_idx), None)
+    if matched_q:
+        correct_answers = matched_q['answers']
+        current_question = matched_q
     else:
         correct_answers = ['大鸡腿']
+        current_question = None
 
     answer_trimmed = answer.strip()
     is_correct = any(answer_trimmed == ans or answer_trimmed.lower() == ans.lower()
@@ -440,8 +462,11 @@ def verify_answer():
 
         response_data = {'code': 200, 'msg': msg, 'data': user}
         if not is_correct and user.get('isBlacklist') == 0 and user.get('needVerify') == 1:
-            response_data['verifyQuestion'] = VERIFY_QUESTIONS[question_idx]['question']
-            response_data['verifyQuestionIdx'] = question_idx
+            # 答错后重新随机出一道题
+            new_q = random.choice(questions) if questions else None
+            if new_q:
+                response_data['verifyQuestion'] = new_q['question']
+                response_data['verifyQuestionIdx'] = new_q['id']
         return jsonify(response_data)
 
     except Exception:

@@ -268,3 +268,162 @@ def reset_all_verification():
     finally:
         if cursor:
             cursor.close()
+        if conn:
+            conn.close()
+
+
+# ==================== 验证问题管理 ====================
+
+@admin_bp.route('/verify-questions', methods=['GET'])
+@check_verified_and_blacklist
+@check_admin
+def get_verify_questions():
+    """获取所有验证问题"""
+    conn = None
+    cursor = None
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT id, question, answers, sort_order, is_active, created_at, updated_at FROM verify_questions ORDER BY sort_order ASC"
+        )
+        rows = cursor.fetchall()
+        questions = []
+        for row in rows:
+            questions.append({
+                'id': row['id'],
+                'question': row['question'],
+                'answers': [a.strip() for a in row['answers'].split(',')],
+                'sort_order': row['sort_order'],
+                'is_active': row['is_active'],
+                'answers_text': row['answers']
+            })
+        return jsonify({'code': 200, 'data': questions})
+    except Exception:
+        logging.exception("获取验证问题失败")
+        return jsonify({'code': 500, 'msg': '服务器内部错误，请稍后重试'})
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+
+@admin_bp.route('/verify-questions', methods=['POST'])
+@check_verified_and_blacklist
+@check_admin
+def add_verify_question():
+    """添加验证问题"""
+    data = request.get_json()
+    question = (data.get('question') or '').strip()
+    answers = (data.get('answers') or '').strip()
+
+    if not question or not answers:
+        return jsonify({'code': 400, 'msg': '问题和答案都不能为空'})
+
+    conn = None
+    cursor = None
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute("SELECT COALESCE(MAX(sort_order), 0) as max_order FROM verify_questions")
+        max_order = cursor.fetchone()['max_order']
+
+        cursor.execute(
+            "INSERT INTO verify_questions (question, answers, sort_order, is_active) VALUES (%s, %s, %s, 1)",
+            (question, answers, max_order + 1)
+        )
+        conn.commit()
+        new_id = cursor.lastrowid
+        return jsonify({'code': 200, 'msg': '添加成功', 'data': {'id': new_id}})
+    except Exception:
+        if conn:
+            conn.rollback()
+        logging.exception("添加验证问题失败")
+        return jsonify({'code': 500, 'msg': '服务器内部错误，请稍后重试'})
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+
+@admin_bp.route('/verify-questions/<int:qid>', methods=['PUT'])
+@check_verified_and_blacklist
+@check_admin
+def update_verify_question(qid):
+    """更新验证问题"""
+    data = request.get_json()
+    question = (data.get('question') or '').strip()
+    answers = (data.get('answers') or '').strip()
+    is_active = data.get('is_active')
+
+    if not question or not answers:
+        return jsonify({'code': 400, 'msg': '问题和答案都不能为空'})
+
+    conn = None
+    cursor = None
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+
+        if is_active is not None:
+            cursor.execute(
+                "UPDATE verify_questions SET question = %s, answers = %s, is_active = %s WHERE id = %s",
+                (question, answers, int(is_active), qid)
+            )
+        else:
+            cursor.execute(
+                "UPDATE verify_questions SET question = %s, answers = %s WHERE id = %s",
+                (question, answers, qid)
+            )
+
+        if cursor.rowcount == 0:
+            return jsonify({'code': 404, 'msg': '问题不存在'})
+
+        conn.commit()
+        return jsonify({'code': 200, 'msg': '更新成功'})
+    except Exception:
+        if conn:
+            conn.rollback()
+        logging.exception("更新验证问题失败")
+        return jsonify({'code': 500, 'msg': '服务器内部错误，请稍后重试'})
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+
+@admin_bp.route('/verify-questions/<int:qid>', methods=['DELETE'])
+@check_verified_and_blacklist
+@check_admin
+def delete_verify_question(qid):
+    """删除验证问题"""
+    conn = None
+    cursor = None
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT COUNT(*) as cnt FROM verify_questions WHERE is_active = 1")
+        cnt = cursor.fetchone()['cnt']
+        if cnt <= 1:
+            return jsonify({'code': 400, 'msg': '至少需要保留 1 道验证问题'})
+
+        cursor.execute("DELETE FROM verify_questions WHERE id = %s", (qid,))
+        if cursor.rowcount == 0:
+            return jsonify({'code': 404, 'msg': '问题不存在'})
+
+        conn.commit()
+        return jsonify({'code': 200, 'msg': '删除成功'})
+    except Exception:
+        if conn:
+            conn.rollback()
+        logging.exception("删除验证问题失败")
+        return jsonify({'code': 500, 'msg': '服务器内部错误，请稍后重试'})
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
