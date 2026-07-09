@@ -318,6 +318,19 @@ page {
   margin-top: 0;
 }
 
+.draft-btn {
+  margin-top: 12px;
+  margin-bottom: 8px;
+}
+
+.draft-btn van-button {
+  --button-default-color: #5faee3;
+  --button-default-border-color: #5faee3;
+  border-radius: 30px !important;
+  height: 44px !important;
+  line-height: 44px !important;
+}
+
 .date-picker-header {
   display: flex;
   justify-content: space-between;

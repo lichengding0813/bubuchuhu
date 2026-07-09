@@ -175,6 +175,12 @@
           发起活动
         </van-button>
       </view>
+
+      <view class="draft-btn" wx:if="{{!editActivityId}}">
+        <van-button plain block bindtap="onSaveDraft">
+          暂存草稿
+        </van-button>
+      </view>
     </view>
 
   </form>

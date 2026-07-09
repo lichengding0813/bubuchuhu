@@ -1,6 +1,7 @@
 Page({
   data: {
     editActivityId: null,   // 编辑模式下的活动ID
+    draftId: null,          // 草稿编辑模式下的草稿ID
     agree: false,
     canSubmit: false,
     showNotice: false,
@@ -237,8 +238,12 @@ Page({
     this.setData({ deadline: this.formatTime(defaultDeadline) }, () => this.checkCanSubmit());
 
     // 编辑模式：如果传入活动 id，加载活动数据
-    const { id } = options;
-    if (id) {
+    const { id, draft } = options;
+    if (draft === '1' && id) {
+      // 草稿编辑模式
+      this.setData({ draftId: parseInt(id) });
+      this.fetchDraftForEdit(id);
+    } else if (id) {
       this.setData({ editActivityId: parseInt(id) });
       this.fetchActivityForEdit(id);
     }
@@ -322,6 +327,101 @@ Page({
     }, () => {
       this.checkCanSubmit();
     });
+  },
+
+  // ==================== 草稿功能 ====================
+
+  async fetchDraftForEdit(draftId) {
+    wx.showLoading({ title: '加载草稿...' });
+    try {
+      const userInfo = wx.getStorageSync('userInfo');
+      const result = await wx.cloud.callContainer({
+        config: { env: "prod-3gktwx67d1dd1e76" },
+        path: "/api/activity/detail",
+        header: {
+          "X-WX-SERVICE": "flask-mysql-login",
+          "X-Wx-OpenId": userInfo?.openId,
+          "content-type": "application/json"
+        },
+        method: "GET",
+        data: { id: draftId }
+      });
+      wx.hideLoading();
+      if (result.data && result.data.code === 200) {
+        this.fillFormWithData(result.data.data);
+      } else {
+        wx.showToast({ title: '加载草稿失败', icon: 'none' });
+      }
+    } catch (error) {
+      wx.hideLoading();
+      console.error('加载草稿失败', error);
+      wx.showToast({ title: '网络错误', icon: 'error' });
+    }
+  },
+
+  collectFormData() {
+    const travelTypeMap = { 'bus': 1, 'train': 2, 'self': 3 };
+    const travelOptionsNumbers = (this.data.travel || []).map(item => travelTypeMap[item]).filter(v => v);
+    return {
+      name: this.data.name,
+      description: this.data.description,
+      activityTime: this.data.activityTime,
+      location: this.data.location,
+      route: this.data.route,
+      distance: parseInt(this.data.distance) || 0,
+      climb: parseInt(this.data.climb) || 0,
+      difficulty: parseInt(this.data.difficulty) || 1,
+      maxParticipants: this.data.maxParticipants,
+      deadline: this.data.deadline,
+      cover: this.data.cover,
+      groupQR: this.data.groupQR,
+      wechat: this.data.wechat,
+      travelOptions: travelOptionsNumbers,
+      meetingPoints: this.data.meetingPoints,
+      mandatoryInsurance: this.data.forceInsurance,
+    };
+  },
+
+  async onSaveDraft() {
+    // 草稿不校验必填项，只要有任意内容即可
+    const formData = this.collectFormData();
+    const hasAnyContent = formData.name || formData.description || formData.location || formData.activityTime;
+    if (!hasAnyContent) {
+      wx.showToast({ title: '请至少填写一项内容', icon: 'none' });
+      return;
+    }
+
+    if (this.data.draftId) {
+      formData.draft_id = this.data.draftId;
+    }
+
+    wx.showLoading({ title: '保存中...' });
+    try {
+      const userInfo = wx.getStorageSync('userInfo');
+      const result = await wx.cloud.callContainer({
+        config: { env: "prod-3gktwx67d1dd1e76" },
+        path: "/api/activity/save-draft",
+        method: "POST",
+        header: {
+          "X-WX-SERVICE": "flask-mysql-login",
+          "X-Wx-OpenId": userInfo?.openId,
+          "Content-Type": "application/json"
+        },
+        data: formData
+      });
+      wx.hideLoading();
+      if (result.data && result.data.code === 200) {
+        this.setData({ draftId: result.data.data.draft_id });
+        wx.showToast({ title: '草稿已保存', icon: 'success', duration: 1500 });
+        setTimeout(() => wx.navigateBack(), 1500);
+      } else {
+        wx.showToast({ title: result.data?.msg || '保存失败', icon: 'none' });
+      }
+    } catch (err) {
+      wx.hideLoading();
+      console.error('保存草稿失败', err);
+      wx.showToast({ title: '网络错误', icon: 'error' });
+    }
   },
 
   formatTimeForInput(dateStr) {
