@@ -7,6 +7,17 @@ RUN groupadd -r appuser && useradd -r -g appuser appuser
 # 设置工作目录
 WORKDIR /app
 
+# ==================== 环境变量（部署时需替换为真实值） ====================
+# 数据库配置
+# ENV DB_HOST=your-db-host
+# ENV DB_PORT=3306
+# ENV DB_USER=your-db-user
+# ENV DB_PASSWORD=your-db-password
+# ENV DB_NAME=flask_demo
+# 微信小程序配置
+# ENV WX_APPID=your-appid
+# ENV WX_SECRET=your-appsecret
+
 # 先复制依赖文件，利用 Docker 缓存层
 COPY requirements.txt .
 
