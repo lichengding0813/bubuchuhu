@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify, g
 from datetime import datetime
+import logging
 from db_utils import get_db
 from middleware import check_verified_and_blacklist, check_admin
 import uuid
@@ -89,7 +90,7 @@ def get_review_list():
             }
         })
     except Exception as e:
-        return jsonify({'code': 500, 'msg': f'数据库错误: {str(e)}'})
+        return jsonify({'code': 500, 'msg': '服务器内部错误，请稍后重试'})
     finally:
         if cursor:
             cursor.close()
@@ -129,7 +130,7 @@ def get_review_detail(review_id):
 
         return jsonify({'code': 200, 'data': review})
     except Exception as e:
-        return jsonify({'code': 500, 'msg': f'数据库错误: {str(e)}'})
+        return jsonify({'code': 500, 'msg': '服务器内部错误，请稍后重试'})
     finally:
         if cursor:
             cursor.close()
@@ -200,10 +201,11 @@ def create_review():
 
         conn.commit()
         return jsonify({'code': 200, 'msg': '创建成功', 'data': {'id': review_id}})
-    except Exception as e:
+    except Exception:
         if conn:
             conn.rollback()
-        return jsonify({'code': 500, 'msg': f'数据库错误: {str(e)}'})
+        logging.exception("数据库操作失败")
+        return jsonify({'code': 500, 'msg': '服务器内部错误，请稍后重试'})
     finally:
         if cursor:
             cursor.close()
@@ -274,10 +276,11 @@ def update_review(review_id):
 
         conn.commit()
         return jsonify({'code': 200, 'msg': '更新成功'})
-    except Exception as e:
+    except Exception:
         if conn:
             conn.rollback()
-        return jsonify({'code': 500, 'msg': f'数据库错误: {str(e)}'})
+        logging.exception("数据库操作失败")
+        return jsonify({'code': 500, 'msg': '服务器内部错误，请稍后重试'})
     finally:
         if cursor:
             cursor.close()
@@ -300,10 +303,11 @@ def delete_review(review_id):
             return jsonify({'code': 404, 'msg': '活动回顾不存在'})
         conn.commit()
         return jsonify({'code': 200, 'msg': '删除成功'})
-    except Exception as e:
+    except Exception:
         if conn:
             conn.rollback()
-        return jsonify({'code': 500, 'msg': f'数据库错误: {str(e)}'})
+        logging.exception("数据库操作失败")
+        return jsonify({'code': 500, 'msg': '服务器内部错误，请稍后重试'})
     finally:
         if cursor:
             cursor.close()

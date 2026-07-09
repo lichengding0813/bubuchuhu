@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify, g
 from datetime import datetime
+import logging
 from db_utils import get_db
 from middleware import check_verified_and_blacklist, check_admin
 
@@ -57,7 +58,7 @@ def get_pending_activities():
         })
 
     except Exception as e:
-        return jsonify({'code': 500, 'msg': f'数据库错误: {str(e)}'})
+        return jsonify({'code': 500, 'msg': '服务器内部错误，请稍后重试'})
     finally:
         if cursor:
             cursor.close()
@@ -133,10 +134,11 @@ def review_activity():
             'data': {'activity_id': activity_id, 'status': new_status}
         })
 
-    except Exception as e:
+    except Exception:
         if conn:
             conn.rollback()
-        return jsonify({'code': 500, 'msg': f'数据库错误: {str(e)}'})
+        logging.exception("数据库操作失败")
+        return jsonify({'code': 500, 'msg': '服务器内部错误，请稍后重试'})
     finally:
         if cursor:
             cursor.close()
@@ -183,7 +185,7 @@ def get_blacklist():
         })
 
     except Exception as e:
-        return jsonify({'code': 500, 'msg': f'数据库错误: {str(e)}'})
+        return jsonify({'code': 500, 'msg': '服务器内部错误，请稍后重试'})
     finally:
         if cursor:
             cursor.close()
@@ -220,10 +222,11 @@ def remove_from_blacklist():
 
         return jsonify({'code': 200, 'msg': '已移出黑名单'})
 
-    except Exception as e:
+    except Exception:
         if conn:
             conn.rollback()
-        return jsonify({'code': 500, 'msg': f'数据库错误: {str(e)}'})
+        logging.exception("数据库操作失败")
+        return jsonify({'code': 500, 'msg': '服务器内部错误，请稍后重试'})
     finally:
         if cursor:
             cursor.close()
@@ -257,10 +260,11 @@ def reset_all_verification():
             'data': {'affected_count': affected}
         })
 
-    except Exception as e:
+    except Exception:
         if conn:
             conn.rollback()
-        return jsonify({'code': 500, 'msg': f'数据库错误: {str(e)}'})
+        logging.exception("数据库操作失败")
+        return jsonify({'code': 500, 'msg': '服务器内部错误，请稍后重试'})
     finally:
         if cursor:
             cursor.close()

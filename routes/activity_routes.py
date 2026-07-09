@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify, g, current_app
 from datetime import datetime
 import random
 import pymysql
+import logging
 from db_utils import get_db, execute_query
 
 from middleware import check_verified_and_blacklist
@@ -118,10 +119,11 @@ def create_activity():
             'data': {'activity_id': activity_id, 'activity_no': activity_no}
         })
 
-    except Exception as e:
+    except Exception:
         if conn:
             conn.rollback()
-        return jsonify({'code': 500, 'msg': f'数据库错误: {str(e)}'})
+        logging.exception("数据库操作失败")
+        return jsonify({'code': 500, 'msg': '服务器内部错误，请稍后重试'})
     finally:
         if cursor:
             cursor.close()
@@ -229,7 +231,7 @@ def get_activity_list():
         })
 
     except Exception as e:
-        return jsonify({'code': 500, 'msg': f'数据库错误: {str(e)}'})
+        return jsonify({'code': 500, 'msg': '服务器内部错误，请稍后重试'})
     finally:
         if cursor:
             cursor.close()
@@ -300,7 +302,7 @@ def get_activity_detail():
         })
 
     except Exception as e:
-        return jsonify({'code': 500, 'msg': f'数据库错误: {str(e)}'})
+        return jsonify({'code': 500, 'msg': '服务器内部错误，请稍后重试'})
     finally:
         if cursor:
             cursor.close()
@@ -389,10 +391,11 @@ def participate_activity():
 
         return jsonify({'code': 200, 'msg': '报名成功'})
 
-    except Exception as e:
+    except Exception:
         if conn:
             conn.rollback()
-        return jsonify({'code': 500, 'msg': f'数据库错误: {str(e)}'})
+        logging.exception("数据库操作失败")
+        return jsonify({'code': 500, 'msg': '服务器内部错误，请稍后重试'})
     finally:
         if cursor:
             cursor.close()
@@ -450,10 +453,11 @@ def cancel_participation():
 
         return jsonify({'code': 200, 'msg': '取消报名成功'})
 
-    except Exception as e:
+    except Exception:
         if conn:
             conn.rollback()
-        return jsonify({'code': 500, 'msg': f'数据库错误: {str(e)}'})
+        logging.exception("数据库操作失败")
+        return jsonify({'code': 500, 'msg': '服务器内部错误，请稍后重试'})
     finally:
         if cursor:
             cursor.close()
@@ -494,7 +498,7 @@ def get_my_activities():
         })
 
     except Exception as e:
-        return jsonify({'code': 500, 'msg': f'数据库错误: {str(e)}'})
+        return jsonify({'code': 500, 'msg': '服务器内部错误，请稍后重试'})
     finally:
         if cursor:
             cursor.close()
@@ -534,7 +538,7 @@ def get_my_participations():
         })
 
     except Exception as e:
-        return jsonify({'code': 500, 'msg': f'数据库错误: {str(e)}'})
+        return jsonify({'code': 500, 'msg': '服务器内部错误，请稍后重试'})
     finally:
         if cursor:
             cursor.close()
@@ -657,10 +661,11 @@ def update_rejected_activity():
             'data': {'activity_id': activity_id}
         })
 
-    except Exception as e:
+    except Exception:
         if conn:
             conn.rollback()
-        return jsonify({'code': 500, 'msg': f'数据库错误: {str(e)}'})
+        logging.exception("数据库操作失败")
+        return jsonify({'code': 500, 'msg': '服务器内部错误，请稍后重试'})
     finally:
         if cursor:
             cursor.close()
@@ -703,7 +708,7 @@ def get_my_activities_with_audit():
         })
 
     except Exception as e:
-        return jsonify({'code': 500, 'msg': f'数据库错误: {str(e)}'})
+        return jsonify({'code': 500, 'msg': '服务器内部错误，请稍后重试'})
     finally:
         if cursor:
             cursor.close()
@@ -762,7 +767,7 @@ def get_my_participations_grouped():
         })
 
     except Exception as e:
-        return jsonify({'code': 500, 'msg': f'数据库错误: {str(e)}'})
+        return jsonify({'code': 500, 'msg': '服务器内部错误，请稍后重试'})
     finally:
         if cursor:
             cursor.close()
@@ -826,10 +831,11 @@ def update_activities_status():
                 'full_activity_ids': [act['id'] for act in full_activities]
             }
         })
-    except Exception as e:
+    except Exception:
         if conn:
             conn.rollback()
-        return jsonify({'code': 500, 'msg': f'更新失败: {str(e)}'})
+        logging.exception("数据库操作失败")
+        return jsonify({'code': 500, 'msg': '服务器内部错误，请稍后重试'})
     finally:
         if cursor:
             cursor.close()
@@ -891,7 +897,7 @@ def get_activity_participants():
         })
 
     except Exception as e:
-        return jsonify({'code': 500, 'msg': f'数据库错误: {str(e)}'})
+        return jsonify({'code': 500, 'msg': '服务器内部错误，请稍后重试'})
     finally:
         if cursor:
             cursor.close()

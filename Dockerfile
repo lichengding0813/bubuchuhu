@@ -1,18 +1,33 @@
 # 使用官方 Python 轻量级镜像
 FROM python:3.9-slim
 
+# 创建非 root 用户
+RUN groupadd -r appuser && useradd -r -g appuser appuser
+
 # 设置工作目录
 WORKDIR /app
 
-# 将本地代码拷贝到容器内
-COPY . /app
+# 先复制依赖文件，利用 Docker 缓存层
+COPY requirements.txt .
 
 # 安装依赖
 RUN pip install --no-cache-dir -r requirements.txt -i https://mirrors.cloud.tencent.com/pypi/simple
 
+# 复制应用代码
+COPY . .
+
+# 创建上传目录并设置权限
+RUN mkdir -p static/uploads && chown -R appuser:appuser /app
+
+# 切换到非 root 用户
+USER appuser
+
 # 指定运行端口
 EXPOSE 5000
 
-# 启动服务
-# 使用 gunicorn 作为生产服务器
-CMD ["gunicorn", "--bind", ":5000", "--workers", "2", "--threads", "8", "--timeout", "0", "app:app"]
+# 健康检查
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:5000/')" || exit 1
+
+# 启动服务（gunicorn 超时改为 120s 以支持图片检测等长请求）
+CMD ["gunicorn", "--bind", ":5000", "--workers", "2", "--threads", "8", "--timeout", "120", "app:app"]
