@@ -232,11 +232,11 @@ page {
 }
 
 .popup-header {
+  position: relative;
   display: flex;
-  justify-content: flex-end;
+  justify-content: center;
   align-items: center;
   margin-bottom: 20px;
-  gap: 10px;
 }
 
 .popup-title {
@@ -246,6 +246,9 @@ page {
 }
 
 .popup-close {
+  position: absolute;
+  right: 0;
+  top: 0;
   width: 24px;
   height: 24px;
   display: flex;
