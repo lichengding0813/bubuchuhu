@@ -72,17 +72,23 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LENGTH
 
 # ==================== 速率限制 ====================
+# 注意：云托管环境下所有请求经过同一代理，get_remote_address() 对所有人相同。
+# 因此 default_limits 使用全局配额会导致误伤，改为仅对特定路由精确限流。
+# 使用 X-Forwarded-For 获取真实客户端 IP（云托管代理会设置此头）。
 try:
     from flask_limiter import Limiter
     from flask_limiter.util import get_remote_address
 
     def get_openid_key():
-        return request.headers.get('X-Wx-OpenId') or get_remote_address()
+        """优先使用 openId 区分用户，否则用真实 IP（云托管代理提供的 X-Forwarded-For）"""
+        return (request.headers.get('X-Wx-OpenId')
+                or request.headers.get('X-Forwarded-For')
+                or get_remote_address())
 
     limiter = Limiter(
         key_func=get_openid_key,
         app=app,
-        default_limits=["200 per day", "50 per hour"],
+        default_limits=[],  # 不设全局默认限制，仅对关键路由精确限流
         storage_uri="memory://",
     )
     logging.info("速率限制器已启用")
@@ -276,7 +282,6 @@ def rate_limit(limit_string):
 
 # ==================== 登录/注册 ====================
 @app.route('/login', methods=['POST'])
-@rate_limit("10 per minute")
 def login():
     data = request.get_json()
     code = data.get('code')
