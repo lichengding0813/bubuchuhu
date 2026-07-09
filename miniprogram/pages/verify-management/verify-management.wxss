@@ -226,16 +226,31 @@ page {
 
 /* 编辑弹窗 */
 .edit-popup {
-  padding: 24px 20px;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.popup-header {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin-bottom: 20px;
+  gap: 10px;
 }
 
 .popup-title {
   font-size: 18px;
   font-weight: 600;
   color: #1e4d7c;
-  text-align: right;
-  margin-bottom: 20px;
-  padding-right: 4px;
+}
+
+.popup-close {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
 .form-item {
@@ -250,10 +265,10 @@ page {
   margin-bottom: 8px;
 }
 
-.form-item van-field {
+.custom-field {
   background-color: #f0f7ff;
   border-radius: 10px;
-  padding: 8px 12px;
+  overflow: hidden;
 }
 
 .form-hint {
@@ -261,10 +276,15 @@ page {
   color: #7f9fbf;
   margin-top: 6px;
   display: block;
+  line-height: 1.4;
 }
 
 .popup-btns {
   display: flex;
   gap: 12px;
   margin-top: 20px;
+}
+
+.popup-btn {
+  flex: 1;
 }

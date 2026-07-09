@@ -61,24 +61,29 @@
   </view>
 
   <!-- 新增/编辑弹窗 -->
-  <van-popup show="{{showEditPopup}}" bindclose="onEditPopupClose" round closeable close-icon="close" custom-style="width: 85%; max-width: 340px;">
+  <van-popup show="{{showEditPopup}}" bindclose="onEditPopupClose" round custom-style="width: 82%; max-width: 320px;">
     <view class="edit-popup">
-      <view class="popup-title">{{editingId ? '编辑问题' : '新增问题'}}</view>
+      <view class="popup-header">
+        <text class="popup-title">{{editingId ? '编辑问题' : '新增问题'}}</text>
+        <view class="popup-close" bindtap="onEditPopupClose">
+          <van-icon name="cross" size="20px" color="#999" />
+        </view>
+      </view>
 
       <view class="form-item">
         <text class="form-label">问题文本</text>
-        <van-field value="{{editQuestion}}" bind:input="onQuestionInput" type="textarea" placeholder="请输入验证问题" autosize border="{{false}}" />
+        <van-field class="custom-field" value="{{editQuestion}}" bind:input="onQuestionInput" type="textarea" placeholder="请输入验证问题" autosize border="{{false}}" label-width="0" />
       </view>
 
       <view class="form-item">
         <text class="form-label">可接受的答案</text>
-        <van-field value="{{editAnswers}}" bind:input="onAnswersInput" placeholder="多个答案用逗号分隔，如：怪兽,温尚翊" border="{{false}}" />
+        <van-field class="custom-field" value="{{editAnswers}}" bind:input="onAnswersInput" placeholder="多个答案用逗号分隔，如：怪兽,温尚翊" border="{{false}}" label-width="0" />
         <text class="form-hint">用户输入的答案匹配其中任意一个即算正确（不区分大小写）</text>
       </view>
 
       <view class="popup-btns">
-        <van-button plain block bindtap="onEditPopupClose">取消</van-button>
-        <van-button type="info" block bindtap="onSaveQuestion">保存</van-button>
+        <van-button class="popup-btn" plain bindtap="onEditPopupClose">取消</van-button>
+        <van-button class="popup-btn" type="info" bindtap="onSaveQuestion">保存</van-button>
       </view>
     </view>
   </van-popup>
