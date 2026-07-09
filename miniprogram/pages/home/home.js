@@ -63,82 +63,105 @@ Page({
 
   // 登录并获取用户信息
   async loginAndGetUser() {
-    this.setData({
-      isLoading: true
-    });
+    this.setData({ isLoading: true });
 
-    try {
-      const loginRes = await this.wxPromise('login');
-      if (!loginRes.code) throw new Error('登录失败');
-
-      wx.cloud.init();
-      const result = await wx.cloud.callContainer({
-        config: {
-          env: "prod-3gktwx67d1dd1e76"
-        },
-        path: "/login",
-        header: {
-          "X-WX-SERVICE": "flask-mysql-login",
-          "content-type": "application/json"
-        },
-        method: "POST",
-        data: {
-          code: loginRes.code
-        }
-      });
-
-      if (result.data && result.data.code === 200) {
-        const userData = result.data.data;
-        // 将验证问题信息合并到 userData 中，方便跨页面使用
-        if (result.data.verifyQuestion) {
-          userData.verifyQuestion = result.data.verifyQuestion;
-          userData.verifyQuestionIdx = result.data.verifyQuestionIdx;
-        }
-        getApp().globalData.userInfo = userData;
-        wx.setStorageSync('userInfo', userData);
-
-        this.setData({
-          userInfo: userData,
-          isLoading: false
-        });
-
-        if (result.data.isNew) {
-          wx.showToast({
-            title: '欢迎新用户',
-            icon: 'none'
-          });
-        }
-
-        if (userData.needVerify === 1 && userData.isBlacklist === 0) {
-          // 存储验证问题
-          if (result.data.verifyQuestion) {
-            this.setData({
-              verifyQuestion: result.data.verifyQuestion,
-              verifyQuestionIdx: result.data.verifyQuestionIdx
-            });
-          }
-          this.showCustomVerifyDialog();
-        } else if (userData.isBlacklist === 1) {
-          this.setData({
-            showLockedDialog: true,
-            isBlacklisted: true
-          });
-        }
-
-        // 登录成功后获取活动列表
-        this.getActivityList();
-      } else {
-        throw new Error(result.data?.msg || '登录失败');
-      }
-    } catch (error) {
-      console.error('登录失败：', error);
-      wx.showToast({
-        title: '登录失败',
-        icon: 'error'
-      });
+    // 优先检查是否有缓存的用户信息（其他页面已登录过）
+    const cachedUserInfo = wx.getStorageSync('userInfo');
+    if (cachedUserInfo && cachedUserInfo.openId) {
+      // 有缓存：直接恢复用户状态，只刷新活动列表，不重新登录
+      getApp().globalData.userInfo = cachedUserInfo;
       this.setData({
+        userInfo: cachedUserInfo,
         isLoading: false
       });
+      // 异步后台刷新登录态（更新登录次数等），不阻塞页面展示
+      this.doBackgroundLogin();
+      // 恢复验证/黑名单状态
+      this.applyUserState(cachedUserInfo);
+      this.getActivityList();
+      return;
+    }
+
+    // 无缓存：必须完整登录
+    try {
+      await this.doLogin();
+    } catch (error) {
+      console.error('登录失败：', error);
+      // 兜底：再次检查缓存（可能在并发场景下被其他页面写入）
+      const fallbackUserInfo = wx.getStorageSync('userInfo');
+      if (fallbackUserInfo && fallbackUserInfo.openId) {
+        console.log('登录失败，使用缓存用户数据兜底');
+        getApp().globalData.userInfo = fallbackUserInfo;
+        this.setData({ userInfo: fallbackUserInfo, isLoading: false });
+        this.applyUserState(fallbackUserInfo);
+        this.getActivityList();
+        return;
+      }
+      wx.showToast({ title: '登录失败，请重试', icon: 'error' });
+      this.setData({ isLoading: false });
+    }
+  },
+
+  // 核心登录流程：wx.login + 后端 /login
+  async doLogin() {
+    const loginRes = await this.wxPromise('login');
+    if (!loginRes.code) throw new Error('wx.login 未返回 code');
+
+    const result = await wx.cloud.callContainer({
+      config: { env: "prod-3gktwx67d1dd1e76" },
+      path: "/login",
+      header: {
+        "X-WX-SERVICE": "flask-mysql-login",
+        "content-type": "application/json"
+      },
+      method: "POST",
+      data: { code: loginRes.code }
+    });
+
+    if (!result.data || result.data.code !== 200) {
+      const serverMsg = result.data?.msg;
+      console.error('后端登录返回非200:', result.data);
+      throw new Error(serverMsg || '登录失败');
+    }
+
+    const userData = result.data.data;
+    if (result.data.verifyQuestion) {
+      userData.verifyQuestion = result.data.verifyQuestion;
+      userData.verifyQuestionIdx = result.data.verifyQuestionIdx;
+    }
+    getApp().globalData.userInfo = userData;
+    wx.setStorageSync('userInfo', userData);
+
+    this.setData({ userInfo: userData, isLoading: false });
+
+    if (result.data.isNew) {
+      wx.showToast({ title: '欢迎新用户', icon: 'none' });
+    }
+    this.applyUserState(userData);
+    this.getActivityList();
+  },
+
+  // 后台静默刷新登录态（不阻塞页面）
+  async doBackgroundLogin() {
+    try {
+      await this.doLogin();
+    } catch (e) {
+      console.log('后台刷新登录态失败（可忽略）:', e.message || e);
+    }
+  },
+
+  // 根据用户状态显示对应UI
+  applyUserState(userData) {
+    if (userData.isBlacklist === 1) {
+      this.setData({ showLockedDialog: true, isBlacklisted: true });
+    } else if (userData.needVerify === 1) {
+      if (userData.verifyQuestion) {
+        this.setData({
+          verifyQuestion: userData.verifyQuestion,
+          verifyQuestionIdx: userData.verifyQuestionIdx
+        });
+      }
+      this.showCustomVerifyDialog();
     }
   },
 
