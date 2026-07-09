@@ -1,14 +1,4 @@
 <view class="detail-container">
-  <!-- 顶部返回栏 -->
-  <view class="nav-bar">
-    <view class="back-btn" bindtap="onBackClick">
-      <van-icon name="arrow-left" />
-      <text>返回</text>
-    </view>
-    <text class="nav-title">活动审核</text>
-    <view class="placeholder"></view>
-  </view>
-
   <!-- 活动封面图 -->
   <view class="cover-section">
     <image class="cover-image" src="{{activityDetail.cover_url || activityDetail.cover}}" mode="aspectFill"></image>

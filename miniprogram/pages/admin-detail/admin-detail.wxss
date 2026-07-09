@@ -1,5 +1,4 @@
 /* pages/admin-detail/admin-detail.wxss */
-/* 蓝色主题，与 details 页保持一致 */
 page {
   background-color: #f0faff;
 }
@@ -8,41 +7,6 @@ page {
   padding-bottom: 100px;
   min-height: 100vh;
   background-color: #f0faff;
-}
-
-/* 顶部导航栏 */
-.nav-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 100rpx 16px 12px 16px;
-  background-color: #f0faff;
-  position: sticky;
-  top: 0;
-  z-index: 100;
-}
-
-.back-btn {
-  display: flex;
-  align-items: center;
-  padding: 8px 0;
-  color: #1e4d7c;
-  font-size: 16px;
-}
-
-.back-btn van-icon {
-  margin-right: 4px;
-  font-size: 18px;
-}
-
-.nav-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: #1e4d7c;
-}
-
-.placeholder {
-  width: 60px;
 }
 
 /* 封面图 */

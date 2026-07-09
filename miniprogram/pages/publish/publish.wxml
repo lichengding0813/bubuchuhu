@@ -1,14 +1,4 @@
 <view class="publish-container">
-  <!-- 顶部返回栏 -->
-  <view class="nav-bar">
-    <view class="back-btn" bindtap="onBackClick">
-      <van-icon name="arrow-left" />
-      <text>返回</text>
-    </view>
-    <text class="nav-title">发起活动</text>
-    <view class="placeholder"></view>
-  </view>
-
   <form catchsubmit="onSubmit">
     <!-- 基本信息卡片 -->
     <view class="form-card">
