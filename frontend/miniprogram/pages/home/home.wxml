@@ -1,0 +1,149 @@
+<!-- 顶部介绍的banner (图片形式展现) -->
+<view class="banner-section">
+  <view class="banner-image">
+    <image src="cloud://prod-3gktwx67d1dd1e76.7072-prod-3gktwx67d1dd1e76-1392222183/banner.jpg" mode="widthFix" />
+  </view>
+</view>
+
+<!-- 发布活动按钮 (使用vant-weapp的van-button) -->
+<view class="publish-section">
+  <van-button type="default" custom-class="custom-publish-btn" bindtap="onPublishClick">
+    + 发布活动
+  </van-button>
+</view>
+
+<!-- 已发布活动列表 -->
+<view class="list-section" wx:if="{{ongoingList.length > 0}}">
+  <!-- 标题行: 最新活动(数量) -->
+  <view class="section-header">
+    <text class="section-title">最新活动({{ongoingCount}})</text>
+  </view>
+
+  <!-- 活动卡片列表 -->
+  <block wx:for="{{ongoingList}}" wx:key="index">
+    <view class="activity-card" data-id="{{item.id}}" bindtap="onActivityClick" wx:if="{{(showAll || index < 3)}}">
+      <view class="card-left">
+        <image 
+          class="cover-image" 
+          src="{{item.coverUrl || '/assets/default-cover.png'}}" 
+          mode="aspectFill"
+          wx:if="{{item.coverUrl}}"
+        />
+        <view class="default-cover" wx:else>
+          <van-icon name="photo-o" size="40" color="#ccc" />
+        </view>
+      </view>
+      <view class="card-right">
+        <view class="activity-name">
+          {{item.name}}
+        </view>
+        <view class="info-row">
+          <view class="info-item">
+            <van-icon name="clock-o" />
+            <text>{{item.time}}</text>
+          </view>
+          <view class="info-item">
+            <van-icon name="location-o" />
+            <text>{{item.location}}</text>
+          </view>
+        </view>
+        <view class="info-row">
+          <view class="info-item">
+            <van-icon name="user-o" />
+            <text class="remain-count {{item.remainCount < 5 ? 'warning' : ''}}">{{item.remainCount}}/{{item.totalCount}} 剩余</text>
+          </view>
+          <text class="tag-difficulty">{{item.difficulty}}</text>
+          <text class="status-badge {{item.has_registered ? 'registered-badge' : item.statusClass}}">{{item.statusBadge}}</text>
+        </view>
+      </view>
+    </view>
+  </block>
+
+  <!-- 查看全部/收起按钮 -->
+  <view class="expand-btn" bindtap="onToggleExpand" wx:if="{{ongoingList.length > 3}}">
+    <text>{{showAll ? '收起' : '查看全部'}}</text>
+    <van-icon name="{{showAll ? 'arrow-up' : 'arrow-down'}}" />
+  </view>
+</view>
+
+<!-- 已结束活动板块 -->
+<view class="list-section ended-section" wx:if="{{endedList.length > 0}}">
+  <view class="section-header">
+    <text class="section-title ended-title">已结束活动({{endedCount}})</text>
+  </view>
+
+  <block wx:for="{{endedList}}" wx:key="index">
+    <view class="activity-card ended-card" data-id="{{item.id}}" bindtap="onActivityClick" wx:if="{{(showAllEnded || index < 2)}}">
+      <view class="card-left">
+        <image 
+          class="cover-image ended-cover" 
+          src="{{item.coverUrl || '/assets/default-cover.png'}}" 
+          mode="aspectFill"
+          wx:if="{{item.coverUrl}}"
+        />
+        <view class="default-cover" wx:else>
+          <van-icon name="photo-o" size="40" color="#ccc" />
+        </view>
+      </view>
+      <view class="card-right">
+        <view class="activity-name ended-name">
+          {{item.name}}
+          <text class="status-badge ended">{{item.statusBadge}}</text>
+        </view>
+        <view class="info-row">
+          <view class="info-item">
+            <van-icon name="clock-o" />
+            <text>{{item.time}}</text>
+          </view>
+          <view class="info-item">
+            <van-icon name="location-o" />
+            <text>{{item.location}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+  </block>
+
+  <view class="expand-btn" bindtap="onToggleEndedExpand" wx:if="{{endedList.length > 2}}">
+    <text>{{showAllEnded ? '收起' : '查看全部'}}</text>
+    <van-icon name="{{showAllEnded ? 'arrow-up' : 'arrow-down'}}" />
+  </view>
+</view>
+
+
+<!-- ========== 自定义验证弹窗 ========== -->
+<view class="custom-dialog" wx:if="{{showVerifyDialog}}">
+  <view class="dialog-mask" catchtouchmove="preventTouchMove"></view>
+  <view class="dialog-container">
+    <!-- 顶部图片 -->
+    <view class="dialog-title">验证问题</view>
+    <image class="dialog-image" src="cloud://prod-3gktwx67d1dd1e76.7072-prod-3gktwx67d1dd1e76-1392222183/verify.png" mode="widthFix" />
+    <view class="dialog-content">
+      <view class="question">{{verifyQuestion || '兽妈准备宵夜是？'}}</view>
+
+      <input class="dialog-input" type="text" placeholder="请输入答案" value="{{verifyAnswer}}" bindinput="onAnswerInput" focus="{{autoFocus}}" confirm-type="done" bindconfirm="onVerifyConfirm" />
+      <view class="error-tip" wx:if="{{verifyError}}">{{verifyError}}</view>
+    </view>
+    <view class="dialog-buttons">
+      <!-- <view class="dialog-btn dialog-btn-cancel" bindtap="onVerifyCancel">取消</view> -->
+      <view class="dialog-btn dialog-btn-confirm" bindtap="onVerifyConfirm">确认</view>
+    </view>
+  </view>
+</view>
+
+<!-- ========== 黑名单全屏遮罩 + 锁定弹窗 ========== -->
+<view class="blacklist-mask" wx:if="{{isBlacklisted}}" catchtouchmove="preventTouchMove" bindtap="onMaskTap"></view>
+
+<!-- ========== 自定义锁定提示弹窗 ========== -->
+<view class="custom-dialog" wx:if="{{showLockedDialog}}">
+  <view class="dialog-mask" catchtouchmove="preventTouchMove"></view>
+  <view class="dialog-container">
+    <view class="dialog-title">账户已锁定</view>
+    <view class="dialog-content">
+      <view class="plain-text">由于多次验证失败，您的账户已被锁定。</view>
+    </view>
+    <view class="dialog-buttons">
+      <view class="dialog-btn dialog-btn-confirm" bindtap="onLockedConfirm">知道了</view>
+    </view>
+  </view>
+</view>

@@ -1,0 +1,16 @@
+<!-- 黑名单全屏遮罩 -->
+<view class="blacklist-mask" wx:if="{{showMask}}" catchtouchmove="preventTouchMove" bindtap="onMaskTap"></view>
+
+<!-- 锁定提示弹窗 -->
+<view class="custom-dialog" wx:if="{{showDialog}}" catchtouchmove="preventTouchMove">
+  <view class="dialog-mask"></view>
+  <view class="dialog-container">
+    <view class="dialog-title">账户已锁定</view>
+    <view class="dialog-content">
+      <view class="plain-text">由于多次验证失败，您的账户已被锁定。</view>
+    </view>
+    <view class="dialog-buttons">
+      <view class="dialog-btn dialog-btn-confirm" bindtap="onConfirm">知道了</view>
+    </view>
+  </view>
+</view>

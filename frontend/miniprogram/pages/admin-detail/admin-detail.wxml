@@ -1,0 +1,146 @@
+<view class="detail-container">
+  <!-- 活动封面图 -->
+  <view class="cover-section">
+    <image class="cover-image" src="{{activityDetail.cover_url || activityDetail.cover}}" mode="aspectFill"></image>
+    <view class="cover-tag" wx:if="{{statusText}}">{{statusText}}</view>
+  </view>
+
+  <!-- 活动基本信息卡片 -->
+  <view class="info-card">
+    <view class="activity-title">{{activityDetail.name}}</view>
+    <view class="activity-meta">
+      <view class="meta-item">
+        <van-icon name="clock-o" />
+        <text>{{activityDetail.activity_time_formatted || activityDetail.time}}</text>
+      </view>
+      <view class="meta-item">
+        <van-icon name="location-o" />
+        <text>{{activityDetail.location}}</text>
+      </view>
+    </view>
+    <view class="activity-stats">
+      <view class="stat-item">
+        <text class="stat-label">难度</text>
+        <text class="stat-value">{{difficultyText}}</text>
+      </view>
+      <view class="stat-item">
+        <text class="stat-label">里程</text>
+        <text class="stat-value">{{activityDetail.distance || 0}}km</text>
+      </view>
+      <view class="stat-item">
+        <text class="stat-label">爬升</text>
+        <text class="stat-value">{{activityDetail.climb || 0}}m</text>
+      </view>
+      <view class="stat-item">
+        <text class="stat-label">名额</text>
+        <text class="stat-value">{{participantCount}}/{{activityDetail.max_participants}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 发起人信息卡片 -->
+  <view class="info-card">
+    <view class="card-title">发起人信息</view>
+    <view class="organizer-info">
+      <view class="organizer-avatar">
+        <image src="{{activityDetail.creator_avatar || activityDetail.creatorAvatar}}" mode="aspectFill"></image>
+      </view>
+      <view class="organizer-detail">
+        <text class="organizer-name">{{activityDetail.creator_name || activityDetail.organizer}}</text>
+        <text class="organizer-wechat">微信号：{{activityDetail.wechat_id || activityDetail.wechat}}</text>
+      </view>
+    </view>
+    <view class="qr-section" wx:if="{{activityDetail.group_qr_url || activityDetail.groupQR}}">
+      <view class="qr-item">
+        <text class="qr-label">活动群</text>
+        <image class="qr-image" src="{{activityDetail.group_qr_url || activityDetail.groupQR}}" mode="aspectFill"></image>
+      </view>
+    </view>
+  </view>
+
+  <!-- 活动详情卡片 -->
+  <view class="info-card">
+    <view class="card-title">活动详情</view>
+    <view class="travel-options">
+      <view class="travel-tag" wx:for="{{travelOptions}}" wx:key="index">
+        <text wx:if="{{item === 'bus'}}">🚌 大巴</text>
+        <text wx:elif="{{item === 'train'}}">🚄 高铁</text>
+        <text wx:elif="{{item === 'self'}}">🚗 自驾</text>
+      </view>
+    </view>
+    <view class="detail-content">
+      <text class="detail-text">{{activityDetail.description}}</text>
+    </view>
+  </view>
+
+  <!-- 路线信息卡片 -->
+  <view class="info-card" style="margin-bottom: 200rpx;">
+    <view class="card-title">路线信息</view>
+    <view class="route-info">
+      <text class="route-text">{{activityDetail.route || activityDetail.routes}}</text>
+    </view>
+
+    <!-- 集合点列表 -->
+    <view class="meeting-points-section" wx:if="{{meetingPoints && meetingPoints.length > 0}}">
+      <view class="section-subtitle">集合点信息</view>
+      <view class="meeting-points-list">
+        <view class="meeting-point-item" wx:for="{{meetingPoints}}" wx:key="index" wx:for-index="idx">
+          <view class="meeting-point-order">集合点 {{idx + 1}}</view>
+          <view class="meeting-point-detail">
+            <view class="meeting-point-time">
+              <van-icon name="clock-o" size="14px" />
+              <text>{{item.meeting_time || item.time}}</text>
+            </view>
+            <view class="meeting-point-location">
+              <van-icon name="location-o" size="14px" />
+              <text>{{item.location}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="route-meta">
+      <text>报名截止：{{activityDetail.deadline_formatted || activityDetail.deadline}}</text>
+    </view>
+  </view>
+
+  <!-- 底部审核按钮（仅待审核状态显示） -->
+  <view class="bottom-actions" wx:if="{{activityDetail.status === 0}}">
+    <button class="reject-btn" bindtap="onRejectClick">驳回</button>
+    <button class="approve-btn" bindtap="onApproveClick">通过</button>
+  </view>
+
+  <!-- 已驳回状态显示原因 -->
+  <view class="reject-reason-section" wx:elif="{{activityDetail.status === 2 && activityDetail.reject_reason}}">
+    <view class="reject-reason-card">
+      <van-icon name="warning-o" size="20" color="#ff6b6b" />
+      <text class="reject-reason-title">驳回原因：</text>
+      <text class="reject-reason-text">{{activityDetail.reject_reason}}</text>
+    </view>
+  </view>
+
+  <!-- ========== 驳回弹窗 ========== -->
+  <view class="custom-dialog" wx:if="{{showRejectDialog}}">
+    <view class="dialog-mask" catchtouchmove="preventTouchMove"></view>
+    <view class="dialog-container">
+      <view class="dialog-title">驳回活动</view>
+      <view class="dialog-content">
+        <view class="reject-tip">请填写驳回原因：</view>
+        <textarea 
+          class="reject-textarea" 
+          placeholder="请输入驳回原因（选填）" 
+          value="{{rejectReason}}" 
+          bindinput="onRejectReasonInput"
+          maxlength="200"
+          auto-focus
+        />
+        <view class="char-count">{{rejectReason.length}}/200</view>
+      </view>
+      <view class="dialog-buttons">
+        <view class="dialog-btn dialog-btn-cancel" bindtap="cancelReject">取消</view>
+        <view class="dialog-btn dialog-btn-confirm" bindtap="confirmReject">确认驳回</view>
+      </view>
+    </view>
+  </view>
+</view>

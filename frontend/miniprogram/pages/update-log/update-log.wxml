@@ -1,0 +1,26 @@
+<!-- pages/update-log/update-log.wxml -->
+<view class="container">
+  <!-- 版本列表 -->
+  <view class="update-list">
+    <block wx:for="{{updateList}}" wx:key="version">
+      <view class="update-card">
+        <!-- 卡片头部：版本号 + 日期 -->
+        <view class="card-header">
+          <view class="version-badge">v{{item.version}}</view>
+          <view class="version-date">{{item.date}}</view>
+        </view>
+
+        <!-- 更新内容列表，每一条类似 admin-review 的 .info-row 布局 -->
+        <view class="change-list">
+          <block wx:for="{{item.changes}}" wx:key="index">
+            <view class="change-row">
+              <!-- 左侧图标，不同变更类型使用不同图标 -->
+              <view class="change-icon-emoji">{{item.emoji}}</view>
+              <text class="change-text">{{item.text}}</text>
+            </view>
+          </block>
+        </view>
+      </view>
+    </block>
+  </view>
+</view>

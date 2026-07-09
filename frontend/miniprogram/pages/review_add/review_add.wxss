@@ -1,0 +1,470 @@
+/* pages/review_add/review_add.wxss */
+page {
+  background-color: #f0faff;
+}
+
+/* 顶部导航栏 */
+.nav-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 100rpx 16px 12px 16px;
+  background-color: #f0faff;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.new-container {
+  padding: 0 16px 40px 16px;
+}
+
+.back-btn {
+  display: flex;
+  align-items: center;
+  padding: 8px 0;
+  color: #1e4d7c;
+  font-size: 16px;
+}
+
+.back-btn van-icon {
+  margin-right: 4px;
+  font-size: 18px;
+}
+
+.nav-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1e4d7c;
+}
+
+.placeholder {
+  width: 60px;
+}
+
+/* 表单卡片 */
+.form-card {
+  background-color: white;
+  border-radius: 20px;
+  padding: 20px 16px;
+  margin-bottom: 16px;
+  box-shadow: 0 4px 12px rgba(0, 130, 210, 0.08);
+  border: 1px solid rgba(160, 200, 255, 0.4);
+}
+
+.card-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1e4d7c;
+  margin-bottom: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.required-star {
+  color: #ff6b6b;
+  margin-left: 4px;
+}
+
+.form-item {
+  margin-bottom: 16px;
+}
+
+.form-item:last-child {
+  margin-bottom: 0;
+}
+
+.item-label {
+  font-size: 15px;
+  color: #2e4d73;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.form-row {
+  display: flex;
+  gap: 12px;
+}
+
+.form-item.half {
+  flex: 1;
+}
+
+/* 上传区域 */
+.upload-area {
+  width: 100px;
+  height: 100px;
+  background-color: #f0f7ff;
+  border: 2px dashed #96c9ff;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #5faee3;
+}
+
+.upload-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.upload-placeholder text {
+  font-size: 12px;
+}
+
+.uploaded-image {
+  width: 100%;
+  height: 100%;
+  border-radius: 10px;
+}
+
+/* 照片墙 */
+.photo-grid-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.photo-item-form {
+  position: relative;
+  width: calc(33.33% - 8px);
+  aspect-ratio: 1 / 1;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #f0faff;
+  border: 1px solid #e2edf7;
+}
+
+.photo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.del-icon {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 50%;
+  padding: 4px;
+  color: white !important;
+}
+
+.add-photo-btn {
+  width: calc(33.33% - 8px);
+  aspect-ratio: 1 / 1;
+  background: #fafeff;
+  border: 1px dashed #b7daf9;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  color: #5faee3;
+}
+
+/* 提交按钮区域 */
+.submit-section {
+  background-color: white;
+  border-radius: 20px 20px 0 0;
+  padding: 16px;
+  margin-top: 16px;
+  border: 1px solid rgba(160, 200, 255, 0.4);
+  box-shadow: 0 -4px 12px rgba(0, 130, 210, 0.04);
+}
+
+.submit-btn {
+  margin-top: 0;
+}
+
+.submit-btn van-button {
+  --button-primary-background-color: #96c9ff;
+  --button-primary-border-color: #96c9ff;
+  border-radius: 30px !important;
+  height: 48px !important;
+  line-height: 48px !important;
+  font-weight: 500 !important;
+}
+
+/* 日期选择器头部 */
+.date-picker-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 30rpx;
+  border-bottom: 2rpx solid #f5f5f5;
+}
+
+.date-picker-title {
+  font-size: 32rpx;
+  font-weight: 500;
+  color: #333;
+}
+
+/* 添加按钮样式 */
+.add-btn {
+  display: flex;
+  align-items: center;
+  color: #5faee3;
+  font-size: 14px;
+  padding: 4px 8px;
+  background-color: rgba(95, 174, 227, 0.1);
+  border-radius: 16px;
+}
+
+/* pages/review_add/review_add.wxss */
+page {
+  background-color: #f0faff;
+}
+
+/* 顶部导航栏 */
+.nav-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 100rpx 16px 12px 16px;
+  background-color: #f0faff;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.new-container {
+  padding: 0 16px 40px 16px;
+}
+
+.back-btn {
+  display: flex;
+  align-items: center;
+  padding: 8px 0;
+  color: #1e4d7c;
+  font-size: 16px;
+}
+
+.back-btn van-icon {
+  margin-right: 4px;
+  font-size: 18px;
+}
+
+.nav-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1e4d7c;
+}
+
+.placeholder {
+  width: 60px;
+}
+
+/* 表单卡片 */
+.form-card {
+  background-color: white;
+  border-radius: 20px;
+  padding: 20px 16px;
+  margin-bottom: 16px;
+  box-shadow: 0 4px 12px rgba(0, 130, 210, 0.08);
+  border: 1px solid rgba(160, 200, 255, 0.4);
+}
+
+.card-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1e4d7c;
+  margin-bottom: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.required-star {
+  color: #ff6b6b;
+  margin-left: 4px;
+}
+
+/* ========== 新增：编辑模式下输入框样式 ========== */
+.edit-field {
+  margin-bottom: 16px;
+}
+
+.edit-label {
+  font-size: 14px;
+  color: #1e4d7c;
+  font-weight: 500;
+  margin-bottom: 6px;
+}
+
+.edit-input {
+  width: 100%;
+  background: #fafeff;
+  border: 1px solid #e2edf7;
+  border-radius: 12px;
+  padding: 12px;           /* 上下左右内边距一致 */
+  font-size: 14px;
+  line-height: 1.4;        /* 明确行高，避免截断 */
+  color: #134579;
+  box-sizing: border-box;
+  min-height: 44px;        /* 保证最小高度足够显示单行文本 */
+  height: auto;            /* 高度自适应内容 */
+}
+.edit-input:focus {
+  border-color: #5faee3;
+}
+
+
+.edit-textarea {
+  width: 100%;
+  min-height: 200rpx;
+  padding: 24rpx;
+  font-size: 30rpx;
+  line-height: 1.5;
+  background-color: #fafeff;
+  color: #134579;
+  border-radius: 16rpx;
+  box-sizing: border-box;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+
+
+.edit-row {
+  display: flex;
+  gap: 12px;
+}
+
+.edit-field.half {
+  flex: 1;
+}
+/* ========== 新增样式结束 ========== */
+
+/* 上传区域 */
+.upload-area {
+  width: 100px;
+  height: 100px;
+  background-color: #f0f7ff;
+  border: 2px dashed #96c9ff;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #5faee3;
+}
+
+.upload-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.upload-placeholder text {
+  font-size: 12px;
+}
+
+.uploaded-image {
+  width: 100%;
+  height: 100%;
+  border-radius: 10px;
+}
+
+/* 照片墙 */
+.photo-grid-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.photo-item-form {
+  position: relative;
+  width: calc(30.33% - 8px);
+  aspect-ratio: 1 / 1;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #f0faff;
+  border: 1px solid #e2edf7;
+}
+
+.photo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.del-icon {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 50%;
+  padding: 4px;
+  color: white !important;
+}
+
+.add-photo-btn {
+  width: calc(30.33% - 8px);
+  aspect-ratio: 1 / 1;
+  background: #fafeff;
+  border: 1px dashed #b7daf9;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  color: #5faee3;
+}
+
+/* 提交按钮区域 */
+.submit-section {
+  background-color: white;
+  border-radius: 20px 20px 0 0;
+  padding: 16px;
+  margin-top: 16px;
+  border: 1px solid rgba(160, 200, 255, 0.4);
+  box-shadow: 0 -4px 12px rgba(0, 130, 210, 0.04);
+}
+
+.submit-btn {
+  margin-top: 0;
+}
+
+.submit-btn van-button {
+  --button-primary-background-color: #96c9ff;
+  --button-primary-border-color: #96c9ff;
+  border-radius: 30px !important;
+  height: 48px !important;
+  line-height: 48px !important;
+  font-weight: 500 !important;
+}
+
+/* 日期选择器头部 */
+.date-picker-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 30rpx;
+  border-bottom: 2rpx solid #f5f5f5;
+}
+
+.date-picker-title {
+  font-size: 32rpx;
+  font-weight: 500;
+  color: #333;
+}
+
+/* 添加按钮样式 */
+.add-btn {
+  display: flex;
+  align-items: center;
+  color: #5faee3;
+  font-size: 14px;
+  padding: 4px 8px;
+  background-color: rgba(95, 174, 227, 0.1);
+  border-radius: 16px;
+}

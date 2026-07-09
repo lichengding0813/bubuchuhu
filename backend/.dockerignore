@@ -1,0 +1,13 @@
+venv/
+__pycache__/
+*.pyc
+.idea/
+*.docx
+.env
+.git
+.gitignore
+.dockerignore
+static/uploads/*
+!.gitkeep
+.temp/
+*.md
