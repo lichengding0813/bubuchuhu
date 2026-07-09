@@ -4,7 +4,11 @@
   <view class="stats-section">
     <view class="stat-card">
       <view class="stat-number">{{totalCount}}</view>
-      <view class="stat-label">总报名人数</view>
+      <view class="stat-label">实际占用名额</view>
+    </view>
+    <view class="stat-card">
+      <view class="stat-number">{{participants.length}}</view>
+      <view class="stat-label">报名人数</view>
     </view>
   </view>
 
@@ -12,7 +16,7 @@
   <view class="list-section">
     <view class="section-header">
       <text class="section-title">报名人员列表</text>
-      <view class="total-badge">共 {{totalCount}} 人</view>
+      <view class="total-badge">共 {{totalCount}} 人（含同行）</view>
     </view>
 
     <!-- 加载状态 -->
@@ -39,9 +43,16 @@
               <text class="join-time">报名时间：{{item.created_at_formatted}}</text>
             </view>
           </view>
+          <view class="companion-badge" wx:if="{{item.companion_count > 0}}">
+            +{{item.companion_count}}同行
+          </view>
         </view>
 
         <view class="card-content">
+          <view class="info-row" wx:if="{{item.companion_count > 0}}">
+            <van-icon name="friends-o" />
+            <text>同行人数：{{item.companion_count}}人（不含本人）</text>
+          </view>
           <view class="info-row" wx:if="{{item.phone}}">
             <van-icon name="phone-o" />
             <text>手机号：{{item.phone}}</text>

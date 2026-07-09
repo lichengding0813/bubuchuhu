@@ -39,9 +39,12 @@ Page({
 
       if (result.data && result.data.code === 200) {
         const { total, list } = result.data.data;
+        const participants = list || [];
+        // 总占用名额 = 每人(1 + companion_count)之和
+        const totalOccupied = participants.reduce((sum, p) => sum + 1 + (p.companion_count || 0), 0);
         this.setData({
-          totalCount: total,
-          participants: list || [],
+          totalCount: totalOccupied,
+          participants: participants,
         });
       } else {
         wx.showToast({ title: result.data?.msg || '获取失败', icon: 'none' });

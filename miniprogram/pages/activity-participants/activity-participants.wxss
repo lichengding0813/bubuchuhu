@@ -29,14 +29,14 @@ page {
 }
 
 .stat-number {
-  font-size: 32px;
+  font-size: 28px;
   font-weight: bold;
   color: #5faee3;
   line-height: 1.2;
 }
 
 .stat-label {
-  font-size: 14px;
+  font-size: 13px;
   color: #7a9ec2;
   margin-top: 8px;
 }
@@ -126,6 +126,16 @@ page {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+.companion-badge {
+  background-color: #e3f0ff;
+  color: #5faee3;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 20px;
+  white-space: nowrap;
 }
 
 .avatar van-icon {

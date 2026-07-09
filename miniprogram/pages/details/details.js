@@ -38,7 +38,9 @@ Page({
     noticeViewed: { participant: false, bus: false, self: false },
     canCloseNotice: true,
     noticeCountdown: 0,
-    pendingAgreeField: ''
+    pendingAgreeField: '',
+    companionCount: 0,
+    maxCompanion: 3
   },
 
   onLoad(options) {
@@ -477,6 +479,17 @@ Page({
     }
   },
 
+  onCompanionChange(e) {
+    const count = parseInt(e.detail) || 0;
+    // 确保不超过剩余名额
+    const remain = this.data.activityDetail.remainCount;
+    const maxAllowed = Math.min(3, remain - 1);
+    const finalCount = Math.max(0, Math.min(count, maxAllowed));
+    this.setData({ companionCount: finalCount, maxCompanion: Math.max(0, maxAllowed) }, () => {
+      this.checkSignUpStatus();
+    });
+  },
+
   async signUpActivity() {
     wx.showLoading({ title: '报名中...' });
     try {
@@ -496,7 +509,8 @@ Page({
           phone: userInfo?.phoneNumber || '',
           wechat_id: userInfo?.wechatId || '',
           travel_option: null,
-          remark: ''
+          remark: '',
+          companion_count: this.data.companionCount
         }
       });
       wx.hideLoading();
