@@ -228,6 +228,7 @@ page {
 .edit-popup {
   padding: 20px;
   box-sizing: border-box;
+  overflow: hidden;
 }
 
 .popup-header {
@@ -280,11 +281,10 @@ page {
 }
 
 .popup-btns {
-  display: flex;
-  gap: 12px;
   margin-top: 20px;
 }
 
 .popup-btn {
-  flex: 1;
+  width: 100% !important;
+  box-sizing: border-box;
 }

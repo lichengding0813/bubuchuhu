@@ -82,8 +82,7 @@
       </view>
 
       <view class="popup-btns">
-        <van-button class="popup-btn" plain bindtap="onEditPopupClose">取消</van-button>
-        <van-button class="popup-btn" type="info" bindtap="onSaveQuestion">保存</van-button>
+        <van-button class="popup-btn" type="info" block bindtap="onSaveQuestion">保存</van-button>
       </view>
     </view>
   </van-popup>
