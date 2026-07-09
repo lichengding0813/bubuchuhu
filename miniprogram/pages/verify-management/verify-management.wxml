@@ -1,0 +1,85 @@
+<view class="container">
+  <!-- 说明 -->
+  <view class="tip-card">
+    <van-icon name="info-o" size="14px" color="#5faee3" />
+    <text>验证问题在新用户登录和全员重新验证后生效，用户需答对才能使用小程序</text>
+  </view>
+
+  <!-- 问题列表 -->
+  <view class="list-section">
+    <view class="section-header">
+      <text class="section-title">验证问题列表</text>
+      <view class="add-btn" bindtap="onAddQuestion">
+        <van-icon name="plus" size="14px" /> 新增
+      </view>
+    </view>
+
+    <view wx:if="{{isLoading}}" class="loading-container">
+      <van-loading size="40px" vertical>加载中...</van-loading>
+    </view>
+
+    <view wx:elif="{{questionList.length === 0}}" class="empty-container">
+      <van-icon name="question-o" size="80" color="#ccc" />
+      <text class="empty-text">暂无验证问题</text>
+    </view>
+
+    <view wx:else>
+      <view wx:for="{{questionList}}" wx:key="id" class="question-card {{item.is_active ? '' : 'disabled'}}">
+        <view class="card-top">
+          <view class="question-order">{{index + 1}}</view>
+          <view class="question-content">
+            <text class="question-text">{{item.question}}</text>
+            <view class="answers-row">
+              <van-icon name="success" size="12px" color="#4caf50" />
+              <text class="answers-text">{{item.answers_text}}</text>
+            </view>
+          </view>
+        </view>
+
+        <view class="card-bottom">
+          <view class="status-tag {{item.is_active ? 'active' : 'inactive'}}" bindtap="onToggleActive" data-id="{{item.id}}" data-active="{{item.is_active}}">
+            {{item.is_active ? '已启用' : '已禁用'}}
+          </view>
+          <view class="action-btns">
+            <view class="action-btn edit" data-id="{{item.id}}" data-question="{{item.question}}" data-answers="{{item.answers_text}}" bindtap="onEditQuestion">编辑</view>
+            <view class="action-btn delete" data-id="{{item.id}}" bindtap="onDeleteQuestion">删除</view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 全员重新验证按钮 -->
+  <view class="bottom-section">
+    <view class="reset-tip">
+      <van-icon name="warning-o" size="14px" color="#ff9800" />
+      <text>点击后将重置所有非管理员用户的验证状态，用户下次进入需重新答题</text>
+    </view>
+    <van-button type="danger" block bindtap="onResetAllVerification">
+      全员重新验证
+    </van-button>
+  </view>
+
+  <!-- 新增/编辑弹窗 -->
+  <van-popup show="{{showEditPopup}}" bindclose="onEditPopupClose" round closeable close-icon="close" custom-style="width: 85%; max-width: 340px;">
+    <view class="edit-popup">
+      <view class="popup-title">{{editingId ? '编辑问题' : '新增问题'}}</view>
+
+      <view class="form-item">
+        <text class="form-label">问题文本</text>
+        <van-field value="{{editQuestion}}" bind:input="onQuestionInput" type="textarea" placeholder="请输入验证问题" autosize border="{{false}}" />
+      </view>
+
+      <view class="form-item">
+        <text class="form-label">可接受的答案</text>
+        <van-field value="{{editAnswers}}" bind:input="onAnswersInput" placeholder="多个答案用逗号分隔，如：怪兽,温尚翊" border="{{false}}" />
+        <text class="form-hint">用户输入的答案匹配其中任意一个即算正确（不区分大小写）</text>
+      </view>
+
+      <view class="popup-btns">
+        <van-button plain block bindtap="onEditPopupClose">取消</van-button>
+        <van-button type="info" block bindtap="onSaveQuestion">保存</van-button>
+      </view>
+    </view>
+  </van-popup>
+</view>

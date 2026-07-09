@@ -137,8 +137,8 @@ Page({
       });
       menuList.push({
         icon: 'replay',
-        text: '全员重新验证',
-        action: 'resetVerification'
+        text: '验证问题管理',
+        url: '/pages/verify-management/verify-management'
       });
     }
     

@@ -1,0 +1,262 @@
+page {
+  background-color: #e6f7ff;
+}
+
+.container {
+  padding: 16px;
+  padding-bottom: 120px;
+}
+
+/* 提示卡片 */
+.tip-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  background-color: #e3f0ff;
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  color: #1e4d7c;
+  line-height: 1.5;
+}
+
+/* 列表 */
+.list-section {
+  margin-bottom: 20px;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding: 0 4px;
+}
+
+.section-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1e4d7c;
+  position: relative;
+  padding-left: 12px;
+}
+
+.section-title::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 4px;
+  bottom: 4px;
+  width: 4px;
+  background-color: #5faee3;
+  border-radius: 4px;
+}
+
+.add-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #5faee3;
+  font-size: 14px;
+  padding: 6px 12px;
+  background-color: rgba(95, 174, 227, 0.1);
+  border-radius: 20px;
+}
+
+/* 加载/空状态 */
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 60px 0;
+}
+
+.empty-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 60px 0;
+}
+
+.empty-text {
+  color: #7a9ec2;
+  font-size: 14px;
+  margin-top: 16px;
+}
+
+/* 问题卡片 */
+.question-card {
+  background-color: white;
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 4px 12px rgba(0, 130, 210, 0.08);
+  border: 1px solid rgba(160, 200, 255, 0.4);
+}
+
+.question-card.disabled {
+  opacity: 0.6;
+}
+
+.card-top {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.question-order {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background-color: #5faee3;
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.question-content {
+  flex: 1;
+}
+
+.question-text {
+  font-size: 15px;
+  color: #1e4d7c;
+  font-weight: 500;
+  line-height: 1.5;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.answers-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.answers-text {
+  font-size: 13px;
+  color: #4caf50;
+}
+
+/* 卡片底部 */
+.card-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 10px;
+  border-top: 1px solid #e8f0f8;
+}
+
+.status-tag {
+  font-size: 12px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-weight: 500;
+}
+
+.status-tag.active {
+  background-color: #e8f5e9;
+  color: #4caf50;
+}
+
+.status-tag.inactive {
+  background-color: #f5f5f5;
+  color: #9e9e9e;
+}
+
+.action-btns {
+  display: flex;
+  gap: 8px;
+}
+
+.action-btn {
+  font-size: 13px;
+  padding: 4px 14px;
+  border-radius: 20px;
+  font-weight: 500;
+}
+
+.action-btn.edit {
+  background-color: #fff3e0;
+  color: #ff9800;
+  border: 1px solid #ff9800;
+}
+
+.action-btn.delete {
+  background-color: #fff0f0;
+  color: #ff6b6b;
+  border: 1px solid #ff6b6b;
+}
+
+/* 底部区域 */
+.bottom-section {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: white;
+  padding: 16px;
+  padding-bottom: calc(16px + constant(safe-area-inset-bottom));
+  padding-bottom: calc(16px + env(safe-area-inset-bottom));
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.04);
+  border-top: 1px solid rgba(160, 200, 255, 0.4);
+}
+
+.reset-tip {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 12px;
+  color: #ff9800;
+  margin-bottom: 10px;
+  line-height: 1.5;
+}
+
+/* 编辑弹窗 */
+.edit-popup {
+  padding: 24px 20px;
+}
+
+.popup-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1e4d7c;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.form-item {
+  margin-bottom: 16px;
+}
+
+.form-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1e4d7c;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.form-item van-field {
+  background-color: #f0f7ff;
+  border-radius: 10px;
+  padding: 8px 12px;
+}
+
+.form-hint {
+  font-size: 12px;
+  color: #7f9fbf;
+  margin-top: 6px;
+  display: block;
+}
+
+.popup-btns {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+}
