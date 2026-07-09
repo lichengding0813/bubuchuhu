@@ -40,7 +40,12 @@ Page({
     noticeCountdown: 0,
     pendingAgreeField: '',
     companionCount: 0,
-    maxCompanion: 3
+    maxCompanion: 3,
+    bottomExpanded: false
+  },
+
+  toggleBottom() {
+    this.setData({ bottomExpanded: !this.data.bottomExpanded });
   },
 
   onLoad(options) {
@@ -419,7 +424,20 @@ Page({
       return;
     }
     if (!this.data.canSignUp) {
-      wx.showToast({ title: '当前不可报名', icon: 'none' });
+      // 未就绪：自动展开底部区域让用户看到需要操作的内容
+      if (!this.data.bottomExpanded) {
+        this.setData({ bottomExpanded: true });
+      }
+      const { agreeNotice, agreeBus, agreeSelf, activityDetail } = this.data;
+      let tip = '当前不可报名';
+      if (!agreeNotice) {
+        tip = '请先阅读并同意《报名参与者须知》';
+      } else if (activityDetail.travel && activityDetail.travel[0] === 'bus' && !agreeBus) {
+        tip = '请先阅读并同意《大巴行程免责声明》';
+      } else if (activityDetail.travel && (activityDetail.travel[0] === 'train' || activityDetail.travel[1] === 'train' || activityDetail.travel[0] === 'self' || activityDetail.travel[1] === 'self' || activityDetail.travel[2] === 'self') && !agreeSelf) {
+        tip = '请先阅读并同意《自驾/高铁行程免责声明》';
+      }
+      wx.showToast({ title: tip, icon: 'none' });
       return;
     }
     wx.showModal({

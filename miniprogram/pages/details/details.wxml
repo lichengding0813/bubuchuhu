@@ -86,7 +86,7 @@
   </view>
 
   <!-- 路线信息卡片 -->
-  <view class="info-card" style="margin-bottom: 200rpx;">
+  <view class="info-card" style="margin-bottom: 120rpx;">
     <view class="card-title">路线信息</view>
     <view class="route-info">
       <text class="route-text">{{activityDetail.route}}</text>
@@ -119,58 +119,80 @@
 
   <!-- 底部固定区域 -->
   <view class="bottom-fixed">
-    <!-- 同意条款区域 -->
-    <view class="agree-section">
-      <!-- 报名参与者须知 - 始终显示 -->
-      <view class="agree-item">
-        <van-checkbox value="{{agreeNotice}}" bindchange="onAgreeNoticeChange" disabled="{{isRegistered}}" shape="square" size="18px">
-          <text class="agree-text">我已阅读并同意</text>
-        </van-checkbox>
-        <text class="notice-link" bindtap="onNoticeClick" data-type="participant">《报名参与者须知》</text>
+    <!-- 已报名：直接显示按钮，不需要折叠 -->
+    <block wx:if="{{isRegistered}}">
+      <view class="submit-btn-group">
+        <van-button type="info" block bindtap="onViewRegistration">已报名，查看报名信息</van-button>
+        <van-button plain type="default" block bindtap="onCancelSignUpClick" custom-class="cancel-btn">取消报名</van-button>
+      </view>
+    </block>
+
+    <!-- 未报名：折叠式 -->
+    <block wx:else>
+      <!-- 折叠/展开切换栏 -->
+      <view class="bottom-toggle" bindtap="toggleBottom">
+        <view class="toggle-left">
+          <van-icon name="{{bottomExpanded ? 'arrow-up' : 'arrow-down'}}" size="14px" color="#5faee3" />
+          <text class="toggle-text">{{bottomExpanded ? '收起' : '报名选项'}}</text>
+          <view class="toggle-status" wx:if="{{!bottomExpanded}}">
+            <text wx:if="{{canSignUp}}" class="status-ready">已就绪</text>
+            <text wx:else class="status-pending">待同意须知</text>
+          </view>
+        </view>
+        <text class="toggle-hint" wx:if="{{!bottomExpanded}}">点击展开</text>
       </view>
 
-      <!-- 大巴免责声明 - 直接用数组判断 -->
-      <view class="agree-item" wx:if="{{activityDetail.travel && activityDetail.travel[0] === 'bus'}}">
-        <van-checkbox value="{{agreeBus}}" bindchange="onAgreeBusChange" disabled="{{isRegistered}}" shape="square" size="18px">
-          <text class="agree-text">我已阅读并同意</text>
-        </van-checkbox>
-        <text class="notice-link" bindtap="onNoticeClick" data-type="bus">《大巴行程免责声明》</text>
+      <!-- 可折叠内容区 -->
+      <view class="bottom-collapsible {{bottomExpanded ? 'expanded' : 'collapsed'}}">
+        <view class="collapsible-inner">
+          <!-- 同意条款区域 -->
+          <view class="agree-section">
+            <view class="agree-item">
+              <van-checkbox value="{{agreeNotice}}" bindchange="onAgreeNoticeChange" shape="square" size="18px">
+                <text class="agree-text">我已阅读并同意</text>
+              </van-checkbox>
+              <text class="notice-link" bindtap="onNoticeClick" data-type="participant">《报名参与者须知》</text>
+            </view>
+
+            <view class="agree-item" wx:if="{{activityDetail.travel && activityDetail.travel[0] === 'bus'}}">
+              <van-checkbox value="{{agreeBus}}" bindchange="onAgreeBusChange" shape="square" size="18px">
+                <text class="agree-text">我已阅读并同意</text>
+              </van-checkbox>
+              <text class="notice-link" bindtap="onNoticeClick" data-type="bus">《大巴行程免责声明》</text>
+            </view>
+
+            <view class="agree-item" wx:if="{{activityDetail.travel && (activityDetail.travel[0] === 'train'|| activityDetail.travel[1] === 'train' || activityDetail.travel[0] === 'self' || activityDetail.travel[1] === 'self' || activityDetail.travel[2] === 'self')}}">
+              <van-checkbox value="{{agreeSelf}}" bindchange="onAgreeSelfChange" shape="square" size="18px">
+                <text class="agree-text">我已阅读并同意</text>
+              </van-checkbox>
+              <text class="notice-link" bindtap="onNoticeClick" data-type="self">《自驾/高铁行程免责声明》</text>
+            </view>
+          </view>
+
+          <!-- 同行人选择 -->
+          <view class="companion-section" wx:if="{{activityDetail.rawStatus === 1 || activityDetail.rawStatus === 3}}">
+            <view class="companion-label">
+              <text class="companion-title">同行人数</text>
+              <text class="companion-hint">不含本人，最多3人</text>
+            </view>
+            <van-stepper value="{{companionCount}}" min="0" max="{{maxCompanion}}" integer button-size="28px" bindchange="onCompanionChange" />
+          </view>
+
+          <!-- 保险提示 -->
+          <view class="insurance-notice" wx:if="{{activityDetail.is_force_insurance == 1}}">
+            <van-icon name="warning-o" size="14px" color="#e6a23c" />
+            <text>参与本活动需要自行购买户外保险</text>
+          </view>
+        </view>
       </view>
 
-      <!-- 自驾/高铁免责声明 -->
-      <view class="agree-item" wx:if="{{activityDetail.travel && (activityDetail.travel[0] === 'train'|| activityDetail.travel[1] === 'train' || activityDetail.travel[0] === 'self' || activityDetail.travel[1] === 'self' || activityDetail.travel[2] === 'self')}}">
-        <van-checkbox value="{{agreeSelf}}" bindchange="onAgreeSelfChange" disabled="{{isRegistered}}" shape="square" size="18px">
-          <text class="agree-text">我已阅读并同意</text>
-        </van-checkbox>
-        <text class="notice-link" bindtap="onNoticeClick" data-type="self">《自驾/高铁行程免责声明》</text>
+      <!-- 报名按钮（始终显示） -->
+      <view class="submit-btn">
+        <van-button type="info" block bindtap="onSignUpClick" disabled="{{!canSignUp}}">
+          立即报名（{{companionCount + 1}}人）
+        </van-button>
       </view>
-    </view>
-
-    <!-- 同行人选择（仅未报名时显示） -->
-    <view class="companion-section" wx:if="{{!isRegistered && activityDetail.rawStatus === 1 || !isRegistered && activityDetail.rawStatus === 3}}">
-      <view class="companion-label">
-        <text class="companion-title">同行人数</text>
-        <text class="companion-hint">不含本人，最多3人</text>
-      </view>
-      <van-stepper value="{{companionCount}}" min="0" max="{{maxCompanion}}" integer button-size="28px" bindchange="onCompanionChange" />
-    </view>
-
-    <!-- 保险提示 -->
-    <view class="insurance-notice" wx:if="{{activityDetail.is_force_insurance == 1}}">
-      <van-icon name="warning-o" size="14px" color="#e6a23c" />
-      <text>参与本活动需要自行购买户外保险</text>
-    </view>
-
-    <!-- 报名/取消按钮 -->
-    <view class="submit-btn" wx:if="{{!isRegistered}}">
-      <van-button type="info" block bindtap="onSignUpClick" disabled="{{!canSignUp}}">
-        立即报名（{{companionCount + 1}}人）
-      </van-button>
-    </view>
-    <view class="submit-btn-group" wx:if="{{isRegistered}}">
-      <van-button type="info" block bindtap="onViewRegistration">已报名，查看报名信息</van-button>
-      <van-button plain type="default" block bindtap="onCancelSignUpClick" custom-class="cancel-btn">取消报名</van-button>
-    </view>
+    </block>
   </view>
 
   <!-- 报名成功弹窗 -->
