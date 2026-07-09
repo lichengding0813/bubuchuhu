@@ -304,10 +304,14 @@ Page({
         }
         break;
       default:
-        wx.showToast({
-          title: `点击${menu.text}`,
-          icon: 'none'
-        });
+        if (menu.url) {
+          wx.navigateTo({ url: menu.url });
+        } else {
+          wx.showToast({
+            title: `点击${menu.text}`,
+            icon: 'none'
+          });
+        }
     }
   },
 
