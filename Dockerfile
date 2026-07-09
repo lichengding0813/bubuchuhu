@@ -1,6 +1,9 @@
 # 使用官方 Python 轻量级镜像
 FROM python:3.9-slim
 
+# 安装 CA 证书（python:3.9-slim 可能缺少，导致 requests SSL 失败）
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && rm -rf /var/lib/apt/lists/*
+
 # 创建非 root 用户
 RUN groupadd -r appuser && useradd -r -g appuser appuser
 

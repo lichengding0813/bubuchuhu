@@ -298,14 +298,23 @@ def login():
             'js_code': code,
             'grant_type': 'authorization_code'
         }
-        res = requests.get(url, params=params)
+        res = requests.get(url, params=params, timeout=10)
         wx_data = res.json()
 
         if 'openid' not in wx_data:
-            logging.error(f"微信登录失败: {wx_data}")
+            logging.error(f"微信登录失败: errcode={wx_data.get('errcode')}, errmsg={wx_data.get('errmsg')}")
             return jsonify({'code': 401, 'msg': '微信登录失败，请重试'})
 
         openid = wx_data['openid']
+    except requests.exceptions.SSLError as e:
+        logging.error(f"微信API SSL证书验证失败（Docker镜像可能缺少CA证书）: {e}")
+        return jsonify({'code': 500, 'msg': '服务暂时不可用，请稍后重试'})
+    except requests.exceptions.Timeout:
+        logging.error("微信API请求超时")
+        return jsonify({'code': 500, 'msg': '服务暂时不可用，请稍后重试'})
+    except requests.exceptions.ConnectionError as e:
+        logging.error(f"微信API连接失败（网络/DNS问题）: {e}")
+        return jsonify({'code': 500, 'msg': '服务暂时不可用，请稍后重试'})
     except Exception:
         logging.exception("调用微信接口失败")
         return jsonify({'code': 500, 'msg': '服务暂时不可用，请稍后重试'})
