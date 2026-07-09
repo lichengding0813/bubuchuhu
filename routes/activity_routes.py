@@ -205,7 +205,7 @@ def get_activity_list():
 
             # 获取报名人数
             cursor.execute(
-                "SELECT COUNT(*) as count FROM activity_participants WHERE activity_id = %s AND status = 1",
+                "SELECT COALESCE(SUM(companion_count + 1), 0) as count FROM activity_participants WHERE activity_id = %s AND status = 1",
                 (activity['id'],)
             )
             activity['participant_count'] = cursor.fetchone()['count']
@@ -280,7 +280,7 @@ def get_activity_detail():
         activity['meeting_points'] = cursor.fetchall()
 
         # 获取报名人数
-        cursor.execute("SELECT COUNT(*) as count FROM activity_participants WHERE activity_id = %s AND status = 1",
+        cursor.execute("SELECT COALESCE(SUM(companion_count + 1), 0) as count FROM activity_participants WHERE activity_id = %s AND status = 1",
                        (activity_id,))
         activity['participant_count'] = cursor.fetchone()['count']
 
@@ -320,6 +320,11 @@ def participate_activity():
     data = request.get_json()
     activity_id = data.get('activity_id')
 
+    # 同行人数校验：0-3
+    companion_count = int(data.get('companion_count', 0) or 0)
+    if companion_count < 0 or companion_count > 3:
+        return jsonify({'code': 400, 'msg': '同行人数需在0-3之间'})
+
     conn = None
     cursor = None
 
@@ -346,15 +351,17 @@ def participate_activity():
         if cursor.fetchone():
             return jsonify({'code': 400, 'msg': '您已报名该活动'})
 
-        # 检查人数限制
+        # 检查人数限制：已占用名额 = SUM(companion_count + 1)
         cursor.execute(
-            "SELECT COUNT(*) as count FROM activity_participants WHERE activity_id = %s AND status = 1",
+            "SELECT COALESCE(SUM(companion_count + 1), 0) as occupied FROM activity_participants WHERE activity_id = %s AND status = 1",
             (activity_id,)
         )
-        current_count = cursor.fetchone()['count']
+        current_occupied = cursor.fetchone()['occupied']
+        slots_needed = companion_count + 1
 
-        if current_count >= activity['max_participants']:
-            return jsonify({'code': 400, 'msg': '报名人数已满'})
+        if current_occupied + slots_needed > activity['max_participants']:
+            remain = activity['max_participants'] - current_occupied
+            return jsonify({'code': 400, 'msg': f'名额不足，当前剩余{remain}个，本次报名需{slots_needed}个'})
 
         # 检查是否有已取消的报名记录，有则恢复
         cursor.execute(
@@ -366,17 +373,17 @@ def participate_activity():
         if cancelled_record:
             # 恢复已取消的记录
             cursor.execute(
-                "UPDATE activity_participants SET status = 1, nickname = %s, phone = %s, wechat_id = %s, travel_option = %s, remark = %s WHERE id = %s",
+                "UPDATE activity_participants SET status = 1, nickname = %s, phone = %s, wechat_id = %s, travel_option = %s, remark = %s, companion_count = %s WHERE id = %s",
                 (data.get('nickname'), data.get('phone'), data.get('wechat_id'),
-                 data.get('travel_option'), data.get('remark'), cancelled_record['id'])
+                 data.get('travel_option'), data.get('remark'), companion_count, cancelled_record['id'])
             )
         else:
             # 插入新报名记录
             cursor.execute("""
                 INSERT INTO activity_participants (
                     activity_id, user_openid, nickname, phone, wechat_id, 
-                    travel_option, remark, status, created_at
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, 1, NOW())
+                    travel_option, remark, companion_count, status, created_at
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 1, NOW())
             """, (
                 activity_id,
                 openid,
@@ -385,6 +392,7 @@ def participate_activity():
                 data.get('wechat_id'),
                 data.get('travel_option'),
                 data.get('remark'),
+                companion_count,
             ))
 
         conn.commit()
@@ -482,7 +490,7 @@ def get_my_activities():
         # SELECT a.* 会自动包含 is_force_insurance 字段
         cursor.execute("""
             SELECT a.*, 
-                   (SELECT COUNT(*) FROM activity_participants WHERE activity_id = a.id AND status = 1) as participant_count,
+                   (SELECT COALESCE(SUM(companion_count + 1), 0) FROM activity_participants WHERE activity_id = a.id AND status = 1) as participant_count,
                    u.nickName as creator_name, u.avatarUrl as creator_avatar
             FROM activities a
             LEFT JOIN users u ON a.created_by = u.openId
@@ -689,7 +697,7 @@ def get_my_activities_with_audit():
         # SELECT a.* 会自动包含 is_force_insurance 字段
         cursor.execute("""
             SELECT a.*, 
-                   (SELECT COUNT(*) FROM activity_participants WHERE activity_id = a.id AND status = 1) as participant_count,
+                   (SELECT COALESCE(SUM(companion_count + 1), 0) FROM activity_participants WHERE activity_id = a.id AND status = 1) as participant_count,
                    (SELECT reason FROM activity_audit_logs 
                     WHERE activity_id = a.id AND action = 3 
                     ORDER BY created_at DESC LIMIT 1) as last_reject_reason,
@@ -812,7 +820,7 @@ def update_activities_status():
             SELECT a.id, a.max_participants, IFNULL(p.cnt, 0) as current_count
             FROM activities a
             LEFT JOIN (
-                SELECT activity_id, COUNT(*) as cnt
+                SELECT activity_id, SUM(companion_count + 1) as cnt
                 FROM activity_participants
                 WHERE status = 1
                 GROUP BY activity_id
@@ -868,7 +876,7 @@ def get_activity_participants():
                 IFNULL(p.nickname, u.nickName) AS nickname,
                 u.avatarUrl,
                 p.phone, p.wechat_id, 
-                p.travel_option, p.remark, p.created_at
+                p.travel_option, p.remark, p.companion_count, p.created_at
             FROM activity_participants p
             LEFT JOIN users u ON p.user_openid = u.openId
             WHERE p.activity_id = %s
