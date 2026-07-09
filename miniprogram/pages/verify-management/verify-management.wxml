@@ -77,7 +77,20 @@
 
       <view class="form-item">
         <text class="form-label">可接受的答案</text>
-        <van-field class="custom-field" value="{{editAnswers}}" bind:input="onAnswersInput" placeholder="多个答案用逗号分隔，如：怪兽,温尚翊" border="{{false}}" label-width="0" />
+        <view class="answer-tags" wx:if="{{editAnswerList.length > 0}}">
+          <view wx:for="{{editAnswerList}}" wx:key="index" class="answer-tag">
+            <text class="answer-tag-text">{{item}}</text>
+            <view class="answer-tag-close" data-index="{{index}}" bindtap="onRemoveAnswer">
+              <van-icon name="cross" size="12px" color="#999" />
+            </view>
+          </view>
+        </view>
+        <view class="answer-input-row">
+          <van-field class="custom-field answer-input" value="{{answerInput}}" bind:input="onAnswerInput" placeholder="输入一个答案" border="{{false}}" label-width="0" confirm-type="done" bind:confirm="onAddAnswer" />
+          <view class="add-answer-btn" bindtap="onAddAnswer">
+            <van-icon name="plus" size="14px" color="#5faee3" /> 添加
+          </view>
+        </view>
         <text class="form-hint">用户输入的答案匹配其中任意一个即算正确（不区分大小写）</text>
       </view>
 

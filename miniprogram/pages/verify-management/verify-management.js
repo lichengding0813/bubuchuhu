@@ -6,7 +6,8 @@ Page({
     showEditPopup: false,
     editingId: null,
     editQuestion: '',
-    editAnswers: ''
+    editAnswerList: [],
+    answerInput: ''
   },
 
   onLoad() {
@@ -52,7 +53,8 @@ Page({
       showEditPopup: true,
       editingId: null,
       editQuestion: '',
-      editAnswers: ''
+      editAnswerList: [],
+      answerInput: ''
     });
   },
 
@@ -62,7 +64,8 @@ Page({
       showEditPopup: true,
       editingId: id,
       editQuestion: question,
-      editAnswers: answers
+      editAnswerList: answers ? answers.split(',').map(s => s.trim()).filter(s => s) : [],
+      answerInput: ''
     });
   },
 
@@ -70,8 +73,28 @@ Page({
     this.setData({ editQuestion: e.detail });
   },
 
-  onAnswersInput(e) {
-    this.setData({ editAnswers: e.detail });
+  onAnswerInput(e) {
+    this.setData({ answerInput: e.detail });
+  },
+
+  onAddAnswer() {
+    const val = (this.data.answerInput || '').trim();
+    if (!val) return;
+    if (this.data.editAnswerList.includes(val)) {
+      wx.showToast({ title: '该答案已存在', icon: 'none' });
+      return;
+    }
+    this.setData({
+      editAnswerList: [...this.data.editAnswerList, val],
+      answerInput: ''
+    });
+  },
+
+  onRemoveAnswer(e) {
+    const { index } = e.currentTarget.dataset;
+    const list = [...this.data.editAnswerList];
+    list.splice(index, 1);
+    this.setData({ editAnswerList: list });
   },
 
   onEditPopupClose() {
@@ -79,16 +102,17 @@ Page({
   },
 
   async onSaveQuestion() {
-    const { editQuestion, editAnswers, editingId } = this.data;
+    const { editQuestion, editAnswerList, editingId } = this.data;
     if (!editQuestion.trim()) {
       wx.showToast({ title: '请输入问题', icon: 'none' });
       return;
     }
-    if (!editAnswers.trim()) {
-      wx.showToast({ title: '请输入答案', icon: 'none' });
+    if (editAnswerList.length === 0) {
+      wx.showToast({ title: '请至少添加一个答案', icon: 'none' });
       return;
     }
 
+    const answersStr = editAnswerList.join(',');
     wx.showLoading({ title: '保存中...' });
     try {
       const userInfo = wx.getStorageSync('userInfo');
@@ -108,7 +132,7 @@ Page({
         },
         data: {
           question: editQuestion.trim(),
-          answers: editAnswers.trim()
+          answers: answersStr
         }
       });
 

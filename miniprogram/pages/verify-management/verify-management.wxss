@@ -283,6 +283,62 @@ page {
   line-height: 1.4;
 }
 
+/* 答案标签 */
+.answer-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.answer-tag {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background-color: #e8f5e9;
+  border: 1px solid #c8e6c9;
+  border-radius: 20px;
+  padding: 4px 8px 4px 12px;
+}
+
+.answer-tag-text {
+  font-size: 13px;
+  color: #2e7d32;
+  line-height: 1.4;
+}
+
+.answer-tag-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+}
+
+.answer-input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.answer-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.add-answer-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  font-size: 14px;
+  color: #5faee3;
+  padding: 8px 12px;
+  background-color: rgba(95, 174, 227, 0.1);
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
 .popup-btns {
   margin-top: 20px;
 }
