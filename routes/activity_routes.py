@@ -149,7 +149,7 @@ def get_activity_list():
         cursor = conn.cursor()
 
         # 构建查询条件
-        where_clause = "WHERE a.status != 0"  # 默认不展示待审核活动
+        where_clause = "WHERE a.status NOT IN (0, -1)"  # 不展示待审核和草稿活动
         params = []
 
         if status is not None:
@@ -486,7 +486,7 @@ def get_my_activities():
                    u.nickName as creator_name, u.avatarUrl as creator_avatar
             FROM activities a
             LEFT JOIN users u ON a.created_by = u.openId
-            WHERE a.created_by = %s 
+            WHERE a.created_by = %s AND a.status != -1
             ORDER BY a.created_at DESC
         """, (openid,))
 
@@ -696,7 +696,7 @@ def get_my_activities_with_audit():
                    u.nickName as creator_name, u.avatarUrl as creator_avatar
             FROM activities a
             LEFT JOIN users u ON a.created_by = u.openId
-            WHERE a.created_by = %s 
+            WHERE a.created_by = %s AND a.status != -1
             ORDER BY a.created_at DESC
         """, (openid,))
 
@@ -897,6 +897,294 @@ def get_activity_participants():
         })
 
     except Exception as e:
+        return jsonify({'code': 500, 'msg': '服务器内部错误，请稍后重试'})
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+
+# ==================== 草稿箱功能 ====================
+
+@activity_bp.route('/save-draft', methods=['POST'])
+@check_verified_and_blacklist
+def save_draft():
+    """保存活动草稿（新建或更新）"""
+    openid = g.openid
+    data = request.get_json()
+    draft_id = data.get('draft_id')
+
+    conn = None
+    cursor = None
+
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+
+        if draft_id:
+            # 更新已有草稿 —— 先校验归属和状态
+            cursor.execute(
+                "SELECT id FROM activities WHERE id = %s AND created_by = %s AND status = -1",
+                (draft_id, openid)
+            )
+            if not cursor.fetchone():
+                return jsonify({'code': 403, 'msg': '草稿不存在或无权限'})
+
+            cursor.execute("""
+                UPDATE activities SET
+                    name = %s, description = %s, activity_time = %s, location = %s,
+                    route = %s, distance = %s, climb = %s, difficulty = %s,
+                    max_participants = %s, deadline = %s, cover_url = %s,
+                    group_qr_url = %s, wechat_id = %s, is_force_insurance = %s,
+                    updated_at = NOW()
+                WHERE id = %s
+            """, (
+                data.get('name', ''),
+                data.get('description', ''),
+                data.get('activityTime', None),
+                data.get('location', ''),
+                data.get('route', ''),
+                data.get('distance', 0) or 0,
+                data.get('climb', 0) or 0,
+                data.get('difficulty', 1) or 1,
+                data.get('maxParticipants', 2) or 2,
+                data.get('deadline', None),
+                data.get('cover', ''),
+                data.get('groupQR', ''),
+                data.get('wechat', ''),
+                data.get('mandatoryInsurance', 0) or 0,
+                draft_id
+            ))
+
+            # 删除旧的出行方式和集合点，重新插入
+            cursor.execute("DELETE FROM activity_travel_options WHERE activity_id = %s", (draft_id,))
+            cursor.execute("DELETE FROM activity_meeting_points WHERE activity_id = %s", (draft_id,))
+
+            for travel_type in (data.get('travelOptions') or []):
+                cursor.execute(
+                    "INSERT INTO activity_travel_options (activity_id, travel_type, bus_qr_url) VALUES (%s, %s, %s)",
+                    (draft_id, travel_type, None)
+                )
+
+            for index, point in enumerate(data.get('meetingPoints') or []):
+                cursor.execute(
+                    "INSERT INTO activity_meeting_points (activity_id, point_order, meeting_time, location) VALUES (%s, %s, %s, %s)",
+                    (draft_id, index + 1, point.get('time'), point.get('location'))
+                )
+
+            conn.commit()
+            return jsonify({'code': 200, 'msg': '草稿已更新', 'data': {'draft_id': draft_id}})
+        else:
+            # 新建草稿
+            activity_no = generate_activity_no()
+            cursor.execute("""
+                INSERT INTO activities (
+                    activity_no, name, description, activity_time, location,
+                    route, distance, climb, difficulty, max_participants,
+                    deadline, cover_url, group_qr_url, wechat_id, created_by,
+                    status, is_force_insurance, created_at
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, -1, %s, NOW())
+            """, (
+                activity_no,
+                data.get('name', ''),
+                data.get('description', ''),
+                data.get('activityTime', None),
+                data.get('location', ''),
+                data.get('route', ''),
+                data.get('distance', 0) or 0,
+                data.get('climb', 0) or 0,
+                data.get('difficulty', 1) or 1,
+                data.get('maxParticipants', 2) or 2,
+                data.get('deadline', None),
+                data.get('cover', ''),
+                data.get('groupQR', ''),
+                data.get('wechat', ''),
+                openid,
+                data.get('mandatoryInsurance', 0) or 0
+            ))
+
+            new_id = cursor.lastrowid
+
+            for travel_type in (data.get('travelOptions') or []):
+                cursor.execute(
+                    "INSERT INTO activity_travel_options (activity_id, travel_type, bus_qr_url) VALUES (%s, %s, %s)",
+                    (new_id, travel_type, None)
+                )
+
+            for index, point in enumerate(data.get('meetingPoints') or []):
+                cursor.execute(
+                    "INSERT INTO activity_meeting_points (activity_id, point_order, meeting_time, location) VALUES (%s, %s, %s, %s)",
+                    (new_id, index + 1, point.get('time'), point.get('location'))
+                )
+
+            conn.commit()
+            return jsonify({'code': 200, 'msg': '草稿已保存', 'data': {'draft_id': new_id}})
+
+    except Exception:
+        if conn:
+            conn.rollback()
+        logging.exception("保存草稿失败")
+        return jsonify({'code': 500, 'msg': '服务器内部错误，请稍后重试'})
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+
+@activity_bp.route('/my-drafts', methods=['GET'])
+@check_verified_and_blacklist
+def get_my_drafts():
+    """获取我的草稿列表"""
+    openid = g.openid
+
+    conn = None
+    cursor = None
+
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            SELECT id, activity_no, name, description, activity_time, location,
+                   difficulty, max_participants, cover_url, created_at, updated_at
+            FROM activities
+            WHERE created_by = %s AND status = -1
+            ORDER BY updated_at DESC
+        """, (openid,))
+
+        drafts = cursor.fetchall()
+
+        return jsonify({'code': 200, 'data': drafts})
+
+    except Exception:
+        logging.exception("获取草稿列表失败")
+        return jsonify({'code': 500, 'msg': '服务器内部错误，请稍后重试'})
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+
+@activity_bp.route('/delete-draft', methods=['POST'])
+@check_verified_and_blacklist
+def delete_draft():
+    """删除草稿"""
+    openid = g.openid
+    data = request.get_json()
+    draft_id = data.get('draft_id')
+
+    if not draft_id:
+        return jsonify({'code': 400, 'msg': '缺少草稿ID'})
+
+    conn = None
+    cursor = None
+
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+
+        # 校验归属和状态
+        cursor.execute(
+            "SELECT id FROM activities WHERE id = %s AND created_by = %s AND status = -1",
+            (draft_id, openid)
+        )
+        if not cursor.fetchone():
+            return jsonify({'code': 403, 'msg': '草稿不存在或无权限'})
+
+        # 删除关联数据
+        cursor.execute("DELETE FROM activity_travel_options WHERE activity_id = %s", (draft_id,))
+        cursor.execute("DELETE FROM activity_meeting_points WHERE activity_id = %s", (draft_id,))
+        cursor.execute("DELETE FROM activity_audit_logs WHERE activity_id = %s", (draft_id,))
+        cursor.execute("DELETE FROM activities WHERE id = %s", (draft_id,))
+
+        conn.commit()
+        return jsonify({'code': 200, 'msg': '草稿已删除'})
+
+    except Exception:
+        if conn:
+            conn.rollback()
+        logging.exception("删除草稿失败")
+        return jsonify({'code': 500, 'msg': '服务器内部错误，请稍后重试'})
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+
+@activity_bp.route('/publish-draft', methods=['POST'])
+@check_verified_and_blacklist
+def publish_draft():
+    """将草稿提交为正式活动（status: -1 -> 0）"""
+    openid = g.openid
+    data = request.get_json()
+    draft_id = data.get('draft_id')
+
+    if not draft_id:
+        return jsonify({'code': 400, 'msg': '缺少草稿ID'})
+
+    conn = None
+    cursor = None
+
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+
+        # 校验归属和状态
+        cursor.execute(
+            "SELECT id, name, description, activity_time, location, wechat_id, group_qr_url FROM activities WHERE id = %s AND created_by = %s AND status = -1",
+            (draft_id, openid)
+        )
+        activity = cursor.fetchone()
+        if not activity:
+            return jsonify({'code': 403, 'msg': '草稿不存在或无权限'})
+
+        # 校验必填字段
+        missing = []
+        if not activity.get('name'): missing.append('活动名称')
+        if not activity.get('description'): missing.append('活动描述')
+        if not activity.get('activity_time'): missing.append('活动时间')
+        if not activity.get('location'): missing.append('活动地点')
+        if not activity.get('wechat_id'): missing.append('发起人微信号')
+        if not activity.get('group_qr_url'): missing.append('微信群二维码')
+        if missing:
+            return jsonify({'code': 400, 'msg': f'草稿信息不完整，缺少：{"、".join(missing)}'})
+
+        # 内容安全检测
+        from app import check_text_security
+        texts_to_check = [
+            ('name', activity.get('name', ''), '活动名称'),
+            ('description', activity.get('description', ''), '活动描述'),
+            ('location', activity.get('location', ''), '活动地点'),
+        ]
+        for field_name, text, field_label in texts_to_check:
+            if text and text.strip():
+                is_safe, msg = check_text_security(text, openid, scene=1, title=activity.get('name', ''))
+                if not is_safe:
+                    return jsonify({'code': 400, 'msg': f'{field_label}{msg}'})
+
+        # 更新状态为待审核
+        cursor.execute(
+            "UPDATE activities SET status = 0, updated_at = NOW() WHERE id = %s",
+            (draft_id,)
+        )
+
+        # 插入审核记录
+        cursor.execute(
+            "INSERT INTO activity_audit_logs (activity_id, action, created_at) VALUES (%s, 1, NOW())",
+            (draft_id,)
+        )
+
+        conn.commit()
+        return jsonify({'code': 200, 'msg': '活动已提交审核', 'data': {'activity_id': draft_id}})
+
+    except Exception:
+        if conn:
+            conn.rollback()
+        logging.exception("发布草稿失败")
         return jsonify({'code': 500, 'msg': '服务器内部错误，请稍后重试'})
     finally:
         if cursor:
