@@ -89,7 +89,7 @@
         <view class="item-label difficulty-label">难度等级<text class="required-star">*</text></view>
         <view class="difficulty-dropdown">
           <van-dropdown-menu active-color="#5faee3">
-            <van-dropdown-item value="{{difficulty}}" bindchange="onDifficultyChange" options="{{difficultyOptions}}" />
+            <van-dropdown-item value="{{difficulty}}" bindchange="onDifficultyChange" options="{{difficultyOptions}}" popup-style="width: 120px; left: auto; right: 16px;" />
           </van-dropdown-menu>
         </view>
       </view>

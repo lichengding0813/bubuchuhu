@@ -812,13 +812,23 @@ page {
 }
 
 .difficulty-dropdown {
-  flex: 0 0 auto;
-  width: 120px;
+  flex: 1;
+  min-width: 0;
 }
 
 .difficulty-dropdown van-dropdown-menu {
   --dropdown-menu-height: 40px;
+  --dropdown-menu-title-font-size: 15px;
+  --dropdown-menu-title-inactive-text-color: #9e9e9e;
+  --dropdown-menu-title-active-text-color: #2e4d73;
+  --dropdown-menu-title-padding: 0 12px;
   box-shadow: none;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.difficulty-dropdown van-dropdown-menu van-dropdown-item {
+  border-radius: 10px;
 }
 
 /* 强制保险单选框 - 样式修复 */
