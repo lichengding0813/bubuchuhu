@@ -221,12 +221,12 @@
   </van-popup>
 
   <!-- 须知弹窗 -->
-  <van-popup show="{{showNotice}}" bindclose="onNoticeClose" position="bottom" round closeable close-icon="close" custom-style="height: 80%;">
+  <van-popup show="{{showNotice}}" bindclose="onNoticeClose" position="bottom" round closeable close-icon="close" custom-style="height: 80%; overflow: hidden;">
     <view class="notice-popup">
       <view class="popup-title">{{noticeTitle}}
         <view class="popup-countdown" wx:if="{{noticeCountdown > 0}}">请阅读 {{noticeCountdown}} 秒后可关闭</view>
       </view>
-      <scroll-view scroll-y class="popup-content" scroll-top="{{noticeScrollTop}}">
+      <scroll-view scroll-y enhanced bounces="{{false}}" class="popup-content" scroll-top="{{noticeScrollTop}}">
         <!-- 报名参与者须知 -->
         <block wx:if="{{noticeType === 'participant'}}">
           <text class="subtitle">【最新发布日期：】</text>
