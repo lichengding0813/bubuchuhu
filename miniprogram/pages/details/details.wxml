@@ -194,6 +194,14 @@
       <view class="success-title">报名成功</view>
       <view class="success-subtitle">请及时加入活动群联系发起人</view>
       
+      <view class="companion-reminder" wx:if="{{registeredCompanionCount > 0}}">
+        <van-icon name="friends-o" size="20px" color="#ff9800" />
+        <view class="companion-reminder-text">
+          <text class="companion-reminder-title">您报名时选择了 {{registeredCompanionCount}} 位同行人</text>
+          <text class="companion-reminder-desc">请告知同行人活动信息，并将其拉入下方活动群</text>
+        </view>
+      </view>
+
       <view class="success-qr" wx:if="{{activityDetail.groupQR}}" bindtap="onPreviewGroupQR">
         <text class="success-label">活动群二维码</text>
         <image class="success-qr-image" src="{{activityDetail.groupQR}}" mode="aspectFit" />

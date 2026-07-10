@@ -41,6 +41,7 @@ Page({
     pendingAgreeField: '',
     companionCount: 0,
     maxCompanion: 3,
+    registeredCompanionCount: 0,
     bottomExpanded: false
   },
 
@@ -533,7 +534,7 @@ Page({
       });
       wx.hideLoading();
       if (result.data && result.data.code === 200) {
-        this.setData({ showSuccessPopup: true, isRegistered: true });
+        this.setData({ showSuccessPopup: true, isRegistered: true, registeredCompanionCount: this.data.companionCount });
       } else {
         wx.showToast({ title: result.data?.msg || '报名失败', icon: 'none' });
       }
