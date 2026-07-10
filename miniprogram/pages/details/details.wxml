@@ -226,7 +226,7 @@
       <view class="popup-title">{{noticeTitle}}
         <view class="popup-countdown" wx:if="{{noticeCountdown > 0}}">请阅读 {{noticeCountdown}} 秒后可关闭</view>
       </view>
-      <view class="popup-content">
+      <scroll-view scroll-y class="popup-content" scroll-top="{{noticeScrollTop}}">
         <!-- 报名参与者须知 -->
         <block wx:if="{{noticeType === 'participant'}}">
           <text class="subtitle">【最新发布日期：】</text>
@@ -383,7 +383,7 @@
             <text>祝我们都快乐出行，平安回家！</text>
           </view>
         </block>
-      </view>
+      </scroll-view>
     </view>
   </van-popup>
 </view>

@@ -397,7 +397,6 @@ page {
 
 .popup-content {
   flex: 1;
-  overflow-y: auto;
   padding: 0 4px;
   font-size: 14px;
   color: #2e4d73;
