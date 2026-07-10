@@ -226,7 +226,8 @@
       <view class="popup-title">{{noticeTitle}}
         <view class="popup-countdown" wx:if="{{noticeCountdown > 0}}">请阅读 {{noticeCountdown}} 秒后可关闭</view>
       </view>
-      <scroll-view scroll-y enhanced bounces="{{false}}" class="popup-content" scroll-top="{{noticeScrollTop}}">
+      <scroll-view scroll-y enhanced bounces="{{false}}" class="popup-content" scroll-into-view="{{noticeScrollIntoView}}">
+        <view id="notice-top"></view>
         <!-- 报名参与者须知 -->
         <block wx:if="{{noticeType === 'participant'}}">
           <text class="subtitle">【最新发布日期：】</text>

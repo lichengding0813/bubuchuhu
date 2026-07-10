@@ -43,7 +43,7 @@ Page({
     maxCompanion: 3,
     registeredCompanionCount: 0,
     bottomExpanded: false,
-    noticeScrollTop: 0
+    noticeScrollIntoView: ''
   },
 
   toggleBottom() {
@@ -350,9 +350,9 @@ Page({
       noticeCountdown: 3,
       pendingAgreeField: agreeField,
       [agreeField]: false,
-      noticeScrollTop: 1
+      noticeScrollIntoView: ''
     }, () => {
-      this.setData({ noticeScrollTop: 0 });
+      this.setData({ noticeScrollIntoView: 'notice-top' });
     });
     this.startNoticeCountdown(type, true);
   },
@@ -370,9 +370,9 @@ Page({
       noticeType: type,
       noticeTitle: title,
       pendingAgreeField: '',
-      noticeScrollTop: 1
+      noticeScrollIntoView: ''
     }, () => {
-      this.setData({ noticeScrollTop: 0 });
+      this.setData({ noticeScrollIntoView: 'notice-top' });
     });
     // 如果还未阅读过，开始倒计时
     if (!this.data.noticeViewed[type]) {
