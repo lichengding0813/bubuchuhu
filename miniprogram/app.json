@@ -15,7 +15,8 @@
     "pages/my-created-activities/my-created-activities",
     "pages/my-joined-activities/my-joined-activities",
     "pages/activity-participants/activity-participants",
-    "pages/verify-management/verify-management"
+    "pages/verify-management/verify-management",
+    "pages/notice/notice"
   ],
   "tabBar": {
     "color": "#7f8c8d",

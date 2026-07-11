@@ -28,22 +28,15 @@ Page({
     agreeBus: false,
     agreeSelf: false,
     canSignUp: false,
-    showNotice: false,
-    noticeType: 'participant',
-    noticeTitle: '报名参与者须知',
     userInfo: null,
     isRegistered: false,
     showSuccessPopup: false,
     // 协议强制阅读相关
     noticeViewed: { participant: false, bus: false, self: false },
-    canCloseNotice: true,
-    noticeCountdown: 0,
-    pendingAgreeField: '',
     companionCount: 0,
     maxCompanion: 3,
     registeredCompanionCount: 0,
-    bottomExpanded: false,
-    noticeScrollIntoView: ''
+    bottomExpanded: false
   },
 
   toggleBottom() {
@@ -318,7 +311,7 @@ Page({
   onAgreeNoticeChange(e) {
     const checked = e.detail;
     if (checked && !this.data.noticeViewed.participant) {
-      this.openNoticeForAgree('participant', '报名参与者须知', 'agreeNotice');
+      this.openNoticeForAgree('participant', 'agreeNotice');
       return;
     }
     this.setData({ agreeNotice: checked }, () => this.checkSignUpStatus());
@@ -326,7 +319,7 @@ Page({
   onAgreeBusChange(e) {
     const checked = e.detail;
     if (checked && !this.data.noticeViewed.bus) {
-      this.openNoticeForAgree('bus', '大巴行程免责声明', 'agreeBus');
+      this.openNoticeForAgree('bus', 'agreeBus');
       return;
     }
     this.setData({ agreeBus: checked }, () => this.checkSignUpStatus());
@@ -334,85 +327,47 @@ Page({
   onAgreeSelfChange(e) {
     const checked = e.detail;
     if (checked && !this.data.noticeViewed.self) {
-      this.openNoticeForAgree('self', '自驾/高铁行程免责声明', 'agreeSelf');
+      this.openNoticeForAgree('self', 'agreeSelf');
       return;
     }
     this.setData({ agreeSelf: checked }, () => this.checkSignUpStatus());
   },
 
-  // 勾选协议时强制弹出须知并开始倒计时
-  openNoticeForAgree(type, title, agreeField) {
-    this.setData({
-      showNotice: true,
-      noticeType: type,
-      noticeTitle: title,
-      canCloseNotice: false,
-      noticeCountdown: 3,
-      pendingAgreeField: agreeField,
-      [agreeField]: false,
-      noticeScrollIntoView: ''
-    }, () => {
-      this.setData({ noticeScrollIntoView: 'notice-top' });
+  // 勾选协议时跳转须知页面
+  openNoticeForAgree(type, agreeField) {
+    wx.navigateTo({
+      url: `/pages/notice/notice?type=${type}`,
+      events: {
+        viewed: (data) => {
+          if (data.type) {
+            this.setData({ ['noticeViewed.' + data.type]: true });
+          }
+          if (data.agreeField) {
+            this.setData({ [data.agreeField]: true }, () => this.checkSignUpStatus());
+          }
+        }
+      },
+      success: (res) => {
+        res.eventChannel.emit('init', { agreeField });
+      }
     });
-    this.startNoticeCountdown(type, true);
   },
 
   onNoticeClick(e) {
     const { type } = e.currentTarget.dataset;
-    let title = '';
-    switch (type) {
-      case 'participant': title = '报名参与者须知'; break;
-      case 'bus': title = '大巴行程免责声明'; break;
-      case 'self': title = '自驾/高铁行程免责声明'; break;
-    }
-    this.setData({
-      showNotice: true,
-      noticeType: type,
-      noticeTitle: title,
-      pendingAgreeField: '',
-      noticeScrollIntoView: ''
-    }, () => {
-      this.setData({ noticeScrollIntoView: 'notice-top' });
-    });
-    // 如果还未阅读过，开始倒计时
-    if (!this.data.noticeViewed[type]) {
-      this.setData({ canCloseNotice: false, noticeCountdown: 3 });
-      this.startNoticeCountdown(type, false);
-    }
-  },
-
-  // 开始3秒倒计时
-  startNoticeCountdown(type, autoCheck) {
-    if (this.countdownTimer) clearInterval(this.countdownTimer);
-    let count = 3;
-    this.countdownTimer = setInterval(() => {
-      count--;
-      if (count > 0) {
-        this.setData({ noticeCountdown: count });
-      } else {
-        clearInterval(this.countdownTimer);
-        // 3秒到了：解锁关闭按钮，标记已阅读，但不自动关闭
-        this.setData({
-          canCloseNotice: true,
-          noticeCountdown: 0,
-          ['noticeViewed.' + type]: true
-        });
+    wx.navigateTo({
+      url: `/pages/notice/notice?type=${type}`,
+      events: {
+        viewed: (data) => {
+          if (data.type) {
+            this.setData({ ['noticeViewed.' + data.type]: true });
+          }
+        }
+      },
+      success: (res) => {
+        res.eventChannel.emit('init', { agreeField: '' });
       }
-    }, 1000);
-  },
-
-  onNoticeClose() {
-    if (!this.data.canCloseNotice) {
-      wx.showToast({ title: `请等待${this.data.noticeCountdown}秒后再关闭`, icon: 'none' });
-      return;
-    }
-    // 用户手动关闭弹窗后，如果有待勾选的协议，自动勾选
-    const updateData = { showNotice: false };
-    if (this.data.pendingAgreeField) {
-      updateData[this.data.pendingAgreeField] = true;
-      updateData.pendingAgreeField = '';
-    }
-    this.setData(updateData, () => this.checkSignUpStatus());
+    });
   },
 
   onSignUpClick() {
