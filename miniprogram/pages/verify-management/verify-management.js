@@ -1,7 +1,15 @@
+// 示例数据：后端暂无验证问题时兜底展示，保存后写入真实数据
+const SAMPLE_QUESTIONS = [
+  { id: 'sample-1', question: '玛莎的全名是？', answers_text: '蔡昇晏', is_active: 1 },
+  { id: 'sample-2', question: '本次活动的集合地点通常在哪个区？', answers_text: '松江区', is_active: 1 },
+  { id: 'sample-3', question: '步步出沪的发起城市是？', answers_text: '上海', is_active: 1 }
+];
+
 Page({
   data: {
     questionList: [],
     isLoading: false,
+    isSampleData: false,
     // 编辑弹窗
     showEditPopup: false,
     editingId: null,
@@ -34,7 +42,13 @@ Page({
       });
 
       if (result.data && result.data.code === 200) {
-        this.setData({ questionList: result.data.data || [] });
+        const list = result.data.data || [];
+        if (list.length === 0) {
+          // 后端无数据时展示示例数据，避免页面空白
+          this.setData({ questionList: SAMPLE_QUESTIONS, isSampleData: true });
+        } else {
+          this.setData({ questionList: list, isSampleData: false });
+        }
       } else {
         wx.showToast({ title: result.data?.msg || '加载失败', icon: 'none' });
       }

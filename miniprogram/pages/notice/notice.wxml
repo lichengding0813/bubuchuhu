@@ -1,4 +1,5 @@
-<scroll-view scroll-y class="notice-container">
+<view class="notice-page">
+  <scroll-view scroll-y class="notice-container">
   <!-- 报名参与者须知 -->
   <block wx:if="{{noticeType === 'participant'}}">
     <text class="subtitle">【最新发布日期：】</text>
@@ -156,4 +157,11 @@
   </block>
 
   <view class="notice-bottom-spacer"></view>
-</scroll-view>
+  </scroll-view>
+
+  <view class="notice-footer">
+    <van-button type="info" block round disabled="{{!canBack}}" bindtap="onBackClick">
+      {{canBack ? '返回' : '返回（' + countdown + 's）'}}
+    </van-button>
+  </view>
+</view>

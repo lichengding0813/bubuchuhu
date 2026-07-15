@@ -7,6 +7,11 @@
 
   <!-- 问题列表 -->
   <view class="list-section">
+    <view wx:if="{{isSampleData}}" class="sample-banner">
+      <van-icon name="info-o" size="14px" color="#ff9800" />
+      <text>当前为示例数据（后端暂无验证问题），保存后将写入真实数据</text>
+    </view>
+
     <view class="section-header">
       <text class="section-title">验证问题列表</text>
       <view class="add-btn" bindtap="onAddQuestion">

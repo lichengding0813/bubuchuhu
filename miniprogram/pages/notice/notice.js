@@ -2,7 +2,8 @@ Page({
   data: {
     noticeType: 'participant',
     noticeTitle: '须知',
-    countdown: 3
+    countdown: 3,
+    canBack: false
   },
 
   onLoad(options) {
@@ -27,30 +28,25 @@ Page({
 
   startCountdown() {
     let count = 3;
-    this.setData({ countdown: count });
-    wx.setNavigationBarTitle({ title: `请阅读 ${count}s` });
-    wx.enableAlertBeforeUnload({
-      enable: true,
-      title: '提示',
-      content: '请阅读3秒后再返回'
-    });
+    this.setData({ countdown: count, canBack: false });
     this.timer = setInterval(() => {
       count--;
       if (count > 0) {
         this.setData({ countdown: count });
-        wx.setNavigationBarTitle({ title: `请阅读 ${count}s` });
       } else {
         clearInterval(this.timer);
-        this.setData({ countdown: 0 });
-        wx.setNavigationBarTitle({ title: this.data.noticeTitle });
-        wx.enableAlertBeforeUnload({ enable: false });
+        this.setData({ countdown: 0, canBack: true });
       }
     }, 1000);
   },
 
+  onBackClick() {
+    if (!this.data.canBack) return;
+    wx.navigateBack();
+  },
+
   onUnload() {
     if (this.timer) clearInterval(this.timer);
-    wx.enableAlertBeforeUnload({ enable: false });
     if (this.eventChannel) {
       this.eventChannel.emit('viewed', {
         type: this.data.noticeType,
