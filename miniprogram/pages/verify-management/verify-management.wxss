@@ -3,6 +3,7 @@ page {
 }
 
 .container {
+  display: block;
   padding: 16px;
   padding-bottom: 120px;
 }
