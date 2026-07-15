@@ -48,6 +48,16 @@ page {
   height: 46px !important;
   line-height: 46px !important;
   font-weight: 500 !important;
+}
+
+.notice-back-btn.van-button--disabled {
+  --button-info-background-color: #c4d4e6;
+  --button-info-border-color: #c4d4e6;
+  --button-disabled-opacity: 1;
+  color: #ffffff;
+}
+
+.notice-back-btn:not(.van-button--disabled) {
   --button-info-background-color: #96c9ff;
   --button-info-border-color: #96c9ff;
 }

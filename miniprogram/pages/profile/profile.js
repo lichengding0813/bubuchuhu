@@ -136,7 +136,7 @@ Page({
         showRedDot: needVerify === 1
       });
       menuList.push({
-        icon: 'shield-o',
+        icon: 'certificate',
         text: '验证问题管理',
         url: '/pages/verify-management/verify-management'
       });

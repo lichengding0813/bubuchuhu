@@ -43,18 +43,18 @@ Page({
 
       if (result.data && result.data.code === 200) {
         const list = result.data.data || [];
-        if (list.length === 0) {
-          // 后端无数据时展示示例数据，避免页面空白
-          this.setData({ questionList: SAMPLE_QUESTIONS, isSampleData: true });
-        } else {
-          this.setData({ questionList: list, isSampleData: false });
-        }
+        // 正常返回：即使为空也按真实数据展示（空状态由页面提示，不展示示例数据）
+        this.setData({ questionList: list, isSampleData: false });
       } else {
+        // 加载失败：兜底展示示例数据
         wx.showToast({ title: result.data?.msg || '加载失败', icon: 'none' });
+        this.setData({ questionList: SAMPLE_QUESTIONS, isSampleData: true });
       }
     } catch (error) {
+      // 请求异常：兜底展示示例数据
       console.error('加载验证问题失败:', error);
       wx.showToast({ title: '网络错误', icon: 'error' });
+      this.setData({ questionList: SAMPLE_QUESTIONS, isSampleData: true });
     } finally {
       this.setData({ isLoading: false });
     }
