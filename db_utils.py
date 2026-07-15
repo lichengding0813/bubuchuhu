@@ -72,18 +72,9 @@ def close_db(e=None):
     db = g.pop('db', None)
     if db is not None:
         try:
-            if hasattr(db, 'open') and db.open:
-                db.close()
-            elif hasattr(db, '_closed') and not db._closed:
-                db.close()
-            else:
-                try:
-                    db.close()
-                except pymysql.err.Error as err:
-                    if "Already closed" not in str(err):
-                        logging.error(f"关闭数据库连接时出错: {err}")
-        except Exception as err:
-            logging.error(f"关闭数据库连接时未知错误: {err}")
+            db.close()
+        except Exception:
+            pass  # 连接可能已被路由内的 conn.close() 归还到池中，忽略
 
 
 def execute_query(sql, params=None, fetch_one=False):

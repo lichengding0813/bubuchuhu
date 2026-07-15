@@ -64,8 +64,8 @@ def get_verify_questions():
     finally:
         if cursor:
             cursor.close()
-        if conn:
-            conn.close()
+        # 不关闭 conn —— 由 Flask 请求级 teardown (close_db) 统一归还连接池
+        # 提前 close 会导致 g.db 指向已归还的失效连接，后续 get_db() 拿到的是坏连接
 
 # ==================== 导入路由蓝图 ====================
 from routes.activity_routes import activity_bp
