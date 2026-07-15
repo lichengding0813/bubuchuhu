@@ -136,9 +136,14 @@ Page({
         showRedDot: needVerify === 1
       });
       menuList.push({
-        icon: 'certificate',
+        icon: 'checked',
         text: '验证问题管理',
         url: '/pages/verify-management/verify-management'
+      });
+      menuList.push({
+        icon: 'warn-o',
+        text: '黑名单管理',
+        url: '/pages/blacklist/blacklist'
       });
     }
     

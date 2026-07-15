@@ -16,7 +16,8 @@
     "pages/my-joined-activities/my-joined-activities",
     "pages/activity-participants/activity-participants",
     "pages/verify-management/verify-management",
-    "pages/notice/notice"
+    "pages/notice/notice",
+    "pages/blacklist/blacklist"
   ],
   "tabBar": {
     "color": "#7f8c8d",
