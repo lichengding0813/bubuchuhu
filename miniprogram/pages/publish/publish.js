@@ -461,6 +461,21 @@ Page({
       wx.showToast({ title: '请阅读并同意发起者须知', icon: 'none' });
       return;
     }
+    // 校验报名截止时间不能晚于活动开始时间
+    if (this.data.deadline && this.data.activityTime) {
+      const deadlineTs = new Date(this.data.deadline.replace(/-/g, '/')).getTime();
+      const activityTs = new Date(this.data.activityTime.replace(/-/g, '/')).getTime();
+      if (deadlineTs > activityTs) {
+        wx.showModal({
+          title: '时间冲突',
+          content: '报名截止时间不能晚于活动开始时间，请修改后再提交',
+          showCancel: false,
+          confirmText: '我知道了',
+          confirmColor: '#5faee3'
+        });
+        return;
+      }
+    }
 
     // 根据是否有 editActivityId 判断编辑还是新建
     if (this.data.editActivityId) {

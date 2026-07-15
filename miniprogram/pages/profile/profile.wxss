@@ -218,11 +218,18 @@ page {
   font-size: 32rpx !important;
 }
 
-/* 红点提示 */
-.menu-right .van-badge {
-  background-color: #ff8a8a !important;
-  border: 2rpx solid #ffffff;
-  box-shadow: 0 2rpx 6rpx rgba(255, 100, 100, 0.4);
+/* 待审核数量徽标 */
+.menu-badge {
+  min-width: 36rpx;
+  height: 36rpx;
+  line-height: 36rpx;
+  padding: 0 10rpx;
+  border-radius: 18rpx;
+  background-color: #ff4d4f;
+  color: #ffffff;
+  font-size: 22rpx;
+  text-align: center;
+  box-shadow: 0 2rpx 6rpx rgba(255, 77, 79, 0.4);
 }
 
 /* 退出登录按钮 */
