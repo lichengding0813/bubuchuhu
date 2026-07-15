@@ -28,6 +28,7 @@ Page({
     remainingAttempts: 2,
     openId: '',
     isLoading: false,
+    pendingCount: 0,
     menuList: [{
         icon: 'setting',
         text: '个人信息设置',
@@ -56,6 +57,7 @@ Page({
     // 每次显示页面时刷新统计数据（如果已登录）
     if (this.data.userInfo.isLogin) {
       this.loadUserStats();
+      this.loadPendingCount();
     }
   },
 
@@ -73,8 +75,8 @@ Page({
           },
           openId: storageUserInfo.openId || ''
         });
-        this.updatePendingRedDot(storageUserInfo.needVerify);
         this.buildMenuList();
+        this.loadPendingCount();
         // 检查黑名单状态
         if (storageUserInfo.isBlacklist === 1) {
           this.setData({ isBlacklisted: true, showLockedDialog: true });
@@ -133,12 +135,18 @@ Page({
         icon: 'records',
         text: '待审核',
         url: '/pages/admin-review/admin-review',
-        showRedDot: needVerify === 1
+        showRedDot: this.data.pendingCount > 0,
+        badgeCount: this.data.pendingCount
       });
       menuList.push({
-        icon: 'replay',
-        text: '全员重新验证',
-        action: 'resetVerification'
+        icon: 'checked',
+        text: '验证问题管理',
+        url: '/pages/verify-management/verify-management'
+      });
+      menuList.push({
+        icon: 'lock',
+        text: '黑名单管理',
+        url: '/pages/blacklist/blacklist'
       });
     }
     
@@ -160,18 +168,29 @@ Page({
     this.setData({ menuList });
   },
 
-  // 更新待审核红点状态
-  updatePendingRedDot(needVerify) {
-    const menuList = this.data.menuList.map(item => {
-      if (item.text === '待审核') {
-        return {
-          ...item,
-          showRedDot: needVerify === 1
-        };
+  // 加载待审核活动数量（管理员）
+  async loadPendingCount() {
+    const { isAdmin, isLogin, openId } = this.data.userInfo;
+    if (!isLogin || !openId || isAdmin !== 1) return;
+    try {
+      const result = await wx.cloud.callContainer({
+        config: { env: "prod-3gktwx67d1dd1e76" },
+        path: "/api/admin/pending-activities",
+        header: {
+          "X-WX-SERVICE": "flask-mysql-login",
+          "X-Wx-OpenId": openId,
+          "content-type": "application/json"
+        },
+        method: "GET",
+        data: { page: 1, size: 1 }
+      });
+      if (result.data && result.data.code === 200) {
+        const total = result.data.data?.total || 0;
+        this.setData({ pendingCount: total }, () => this.buildMenuList());
       }
-      return item;
-    });
-    this.setData({ menuList });
+    } catch (e) {
+      console.error('加载待审核数量失败', e);
+    }
   },
 
   // 加载用户统计数据（调用后端接口）
@@ -304,10 +323,14 @@ Page({
         }
         break;
       default:
-        wx.showToast({
-          title: `点击${menu.text}`,
-          icon: 'none'
-        });
+        if (menu.url) {
+          wx.navigateTo({ url: menu.url });
+        } else {
+          wx.showToast({
+            title: `点击${menu.text}`,
+            icon: 'none'
+          });
+        }
     }
   },
 

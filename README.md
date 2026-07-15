@@ -9,15 +9,23 @@
 
 ## 版本历史
 
-### v1.2.0（2026-07-10）
+### v1.2.0（2026-07-15）
+- 🔧 修复登录偶发失败的问题
+- 🔧 修复报名截止时间可能晚于活动开始时间的问题，提交时增加校验
+- 🔧 修复条款须知页未读完即可返回的问题，改为必须划到底部
+- 🔧 修复后端时间字段差 8 小时问题（Dockerfile 设置 TZ=Asia/Shanghai）
+- ⚡ 报名区域改为可折叠设计，不再遮挡活动信息
+- ⚡ 活动详情、发起活动等页面回归微信原生导航栏
+- ⚡ 首页进入更快，不再每次重新登录
+- ⚡ 数据库查询性能优化（连接池 + 中间件缓存 + 索引优化）
+- ⚡ 草稿箱加载失败时展示示例数据，避免页面空白
 - ✨ 草稿箱功能：发起活动时可暂存草稿，稍后继续编辑或删除
 - ✨ 同行人功能：报名时可选择同行人数（不含本人，最多3人），名额自动扣减
 - ✨ 发起人可在报名人员列表中查看每位报名者的同行人数
-- 🔧 报名区域改为可折叠设计，不再遮挡活动信息
-- 🔧 活动详情、发起活动等页面回归微信原生导航栏
-- ⚡ 首页进入更快，不再每次重新登录
-- ⚡ 修复登录偶发失败的问题
-- ⚡ 数据库查询性能优化
+- ✨ 黑名单管理：管理员可查看黑名单用户并一键解封，解封后用户可重新答题
+- ✨ 验证问题动态管理：管理员可增删改查验证问题，支持启用/禁用
+- ✨ 待审核菜单显示待审核活动数量徽标
+- ✨ 条款须知独立页面，支持滚动阅读 + 下拉提示
 
 ### v1.0.2（2026-06-25）
 - ✨ 发布/报名前校验用户资料（需填写手机号或微信号）
@@ -79,12 +87,13 @@
 │   ├── requirements.txt        # Python 依赖
 │   ├── .env.example            # 环境变量模板
 │   ├── migration.sql           # 数据库迁移脚本（索引优化等）
-│   └── migration_companion.sql # 同行人功能迁移脚本
+│   ├── migration_companion.sql # 同行人功能迁移脚本
+│   └── migration_verify_questions.sql # 验证问题表迁移脚本
 ├── database/           # 数据库建表语句
 │   ├── users.sql
 │   ├── activities.sql
 │   ├── activity_participants.sql
-│   └── ...（共 9 个表）
+│   └── ...（共 10 个表）
 ├── README.md
 └── miniprogram-code.jpg
 ```
@@ -119,7 +128,9 @@
 - **新建回顾**：管理员可创建活动回顾，上传图片
 
 ### 管理员功能
-- **活动审核**：查看待审核活动，通过或拒绝
+- **活动审核**：查看待审核活动，通过或拒绝（待审核菜单显示数量徽标）
+- **黑名单管理**：查看黑名单用户列表，一键解封（重置答错次数，用户可重新答题）
+- **验证问题管理**：增删改查验证问题，支持启用/禁用、多答案
 - **全员重新验证**：一键重置所有用户的验证状态
 - **参与人员查看**：查看活动报名人员列表
 
@@ -135,8 +146,9 @@
 | `activity_travel_options` | 出行方式表 | id, activity_id, travel_type (1=大巴, 2=高铁, 3=自驾), bus_qr_url |
 | `activity_participants` | 报名记录表 | id, activity_id, user_openid, nickname, phone, wechat_id, status, remark, companion_count |
 | `activity_reviews` | 活动回顾表 | id, activity_id, name, cover, time, location, participants, content |
+| `verify_questions` | 验证问题表 | id, question, answers, sort_order, is_active |
 
-> 建表语句详见 `database/` 目录。数据库迁移脚本详见 `backend/migration.sql` 和 `backend/migration_companion.sql`。
+> 建表语句详见 `database/` 目录。数据库迁移脚本详见 `backend/migration.sql`、`backend/migration_companion.sql` 和 `backend/migration_verify_questions.sql`。
 
 ## 部署信息
 
@@ -148,7 +160,7 @@
 ### 后端部署
 
 1. 后端代码通过微信云托管控制台手动上传代码包部署
-2. Dockerfile 基于 `python:3.9-slim`，使用 Gunicorn 启动
+2. Dockerfile 基于 `python:3.9-slim`，设置 `TZ=Asia/Shanghai` 修正时区，使用 Gunicorn 启动
 3. 环境变量通过 Dockerfile 的 ENV 指令或 .env 文件配置（DB_HOST、DB_PORT、DB_USER、DB_PASSWORD、DB_NAME、WX_APPID、WX_SECRET 等），详见 `.env.example`
 4. 微信 API 调用使用 `https://api.weixin.qq.com`
 
@@ -207,8 +219,13 @@ python app.py
 | GET | `/api/activity/my-activities-with-audit` | 我发起的活动 |
 | GET | `/api/activity/my-participations-grouped` | 我报名的活动 |
 | POST | `/api/admin/review` | 管理员审核活动 |
-| POST | `/api/admin/blacklist` | 黑名单管理 |
+| GET | `/api/admin/blacklist` | 获取黑名单用户列表 |
+| POST | `/api/admin/remove-blacklist` | 解封黑名单用户 |
 | POST | `/api/admin/reset-all-verification` | 全员重新验证 |
+| GET | `/api/admin/verify-questions` | 获取验证问题列表 |
+| POST | `/api/admin/verify-questions` | 添加验证问题 |
+| PUT | `/api/admin/verify-questions/<id>` | 更新验证问题 |
+| DELETE | `/api/admin/verify-questions/<id>` | 删除验证问题 |
 | GET | `/api/reviews` | 活动回顾列表 |
 | GET | `/api/reviews/<id>` | 活动回顾详情 |
 | POST | `/api/reviews` | 新建活动回顾 |

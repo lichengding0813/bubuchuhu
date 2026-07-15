@@ -2,30 +2,30 @@
   <form catchsubmit="onSubmit">
     <!-- 基本信息卡片 -->
     <view class="form-card">
-      <view class="card-title">基本信息<text class="required-star">*</text></view>
+      <view class="card-title">基本信息</view>
 
       <!-- 活动名称 -->
       <view class="form-item">
         <view class="item-label">活动名称<text class="required-star">*</text></view>
-        <van-field value="{{name}}" bind:input="onInput" data-field="name" placeholder="请输入活动名称（最多30字）" maxlength="30" border="{{false}}" required />
+        <van-field value="{{name}}" bind:input="onInput" data-field="name" placeholder="请输入活动名称（最多30字）" maxlength="30" border="{{false}}" />
       </view>
 
       <!-- 活动描述 -->
       <view class="form-item">
         <view class="item-label">活动描述<text class="required-star">*</text></view>
-        <van-field value="{{description}}" bind:input="onInput" data-field="description" type="textarea" placeholder="请描述活动详情" autosize border="{{false}}" required />
+        <van-field value="{{description}}" bind:input="onInput" data-field="description" type="textarea" placeholder="请描述活动详情" autosize border="{{false}}" />
       </view>
 
       <!-- 活动时间 -->
       <view class="form-item">
         <view class="item-label">活动时间<text class="required-star">*</text></view>
-        <van-field value="{{activityTime}}" bind:click-input="onTimePickerClick" data-field="activityTime" placeholder="请选择活动时间" readonly right-icon="arrow" border="{{false}}" required />
+        <van-field value="{{activityTime}}" bind:click-input="onTimePickerClick" data-field="activityTime" placeholder="请选择活动时间" readonly right-icon="arrow" border="{{false}}" />
       </view>
 
       <!-- 活动地点 -->
       <view class="form-item">
         <view class="item-label">活动地点<text class="required-star">*</text></view>
-        <van-field value="{{location}}" bind:input="onInput" data-field="location" placeholder="请输入活动地点" border="{{false}}" required />
+        <van-field value="{{location}}" bind:input="onInput" data-field="location" placeholder="请输入活动地点" border="{{false}}" />
       </view>
     </view>
 
@@ -38,6 +38,7 @@
           {{item.label}}
         </van-checkbox>
       </view>
+      <text class="field-hint">请至少选择一项</text>
 
     </view>
 
@@ -57,29 +58,29 @@
         </view>
         <van-cell-group>
           <!-- 集合时间 -->
-          <van-field value="{{item.time}}" bind:click-input="onMeetingTimePickerClick" data-index="{{index}}" placeholder="集合时间" readonly right-icon="arrow" />
+          <van-field value="{{item.time}}" bind:click-input="onMeetingTimePickerClick" data-index="{{index}}" placeholder="集合时间 *" readonly right-icon="arrow" />
           <!-- 集合地点 - 修复版本 -->
-          <van-field value="{{item.location}}" bind:input="onMeetingLocationInput" data-index="{{index}}" placeholder="集合地点" bindconfirm="onMeetingLocationConfirm" />
+          <van-field value="{{item.location}}" bind:input="onMeetingLocationInput" data-index="{{index}}" placeholder="集合地点 *" bindconfirm="onMeetingLocationConfirm" />
         </van-cell-group>
       </view>
     </view>
 
     <!-- 路线信息卡片 -->
     <view class="form-card">
-      <view class="card-title">路线信息<text class="required-star">*</text></view>
+      <view class="card-title">路线信息</view>
 
       <view class="form-item">
-        <view class="item-label">路线简介</view>
+        <view class="item-label">路线简介<text class="required-star">*</text></view>
         <van-field value="{{route}}" bind:input="onInput" data-field="route" type="textarea" placeholder="起点 → 途径点 → 终点，行程安排等" autosize border="{{false}}" />
       </view>
 
       <view class="form-row">
         <view class="form-item half">
-          <view class="item-label">预计里程(km)</view>
+          <view class="item-label">预计里程(km)<text class="field-optional">选填</text></view>
           <van-field value="{{distance}}" bind:input="onInput" data-field="distance" type="number" placeholder="例如：10" border="{{false}}" />
         </view>
         <view class="form-item half">
-          <view class="item-label">累计爬升(m)</view>
+          <view class="item-label">累计爬升(m)<text class="field-optional">选填</text></view>
           <van-field value="{{climb}}" bind:input="onInput" data-field="climb" type="number" placeholder="例如：500" border="{{false}}" />
         </view>
       </view>
@@ -88,7 +89,7 @@
         <view class="item-label difficulty-label">难度等级<text class="required-star">*</text></view>
         <view class="difficulty-dropdown">
           <van-dropdown-menu active-color="#5faee3">
-            <van-dropdown-item value="{{difficulty}}" bindchange="onDifficultyChange" options="{{difficultyOptions}}" />
+            <van-dropdown-item value="{{difficulty}}" bindchange="onDifficultyChange" options="{{difficultyOptions}}" popup-style="width: 120px; left: auto; right: 16px;" />
           </van-dropdown-menu>
         </view>
       </view>
@@ -96,7 +97,7 @@
 
     <!-- 报名限制卡片 -->
     <view class="form-card">
-      <view class="card-title">报名限制<text class="required-star">*</text></view>
+      <view class="card-title">报名限制</view>
 
       <view class="form-item">
         <view class="item-label">人数限制</view>
@@ -113,14 +114,14 @@
 </view>
       <!-- 报名截止时间 -->
       <view class="form-item">
-        <view class="item-label">报名截止时间</view>
+        <view class="item-label">报名截止时间<text class="field-optional">选填</text></view>
         <van-field value="{{deadline}}" bind:click-input="onTimePickerClick" data-field="deadline" placeholder="默认活动开始前1小时" readonly right-icon="arrow" border="{{false}}" />
       </view>
     </view>
 
     <!-- 发起人信息卡片 -->
     <view class="form-card">
-      <view class="card-title">发起人信息<text class="required-star">*</text></view>
+      <view class="card-title">发起人信息</view>
 
       <view class="form-item">
         <view class="item-label">发起人微信号<text class="required-star">*</text></view>

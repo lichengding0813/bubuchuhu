@@ -1,3 +1,21 @@
+// 示例数据：后端加载失败时兜底展示草稿箱效果
+const SAMPLE_DRAFTS = [
+  {
+    id: 'sample-draft-1',
+    name: '示例草稿：松江森林公园徒步',
+    activity_time: '2026-07-20T09:00',
+    location: '松江森林公园',
+    updated_at: '2026-07-14T10:30'
+  },
+  {
+    id: 'sample-draft-2',
+    name: '示例草稿：辰山植物园半日游',
+    activity_time: '2026-07-22T08:00',
+    location: '辰山植物园',
+    updated_at: '2026-07-13T16:00'
+  }
+];
+
 Page({
   data: {
     pendingCount: 0,
@@ -6,7 +24,8 @@ Page({
     currentTab: 'pending',
     activityList: [],
     draftList: [],
-    isLoading: false
+    isLoading: false,
+    isSampleData: false
   },
 
   onLoad() {
@@ -116,11 +135,16 @@ Page({
         }));
         this.setData({
           draftList: formattedDrafts,
-          draftCount: formattedDrafts.length
+          draftCount: formattedDrafts.length,
+          isSampleData: false
         });
+      } else {
+        // 加载失败：兜底展示示例数据
+        this.applySampleDrafts();
       }
     } catch (error) {
       console.error('加载草稿失败:', error);
+      this.applySampleDrafts();
     }
   },
 
@@ -161,6 +185,10 @@ Page({
   // 编辑草稿
   onEditDraft(e) {
     const id = e.currentTarget.dataset.id;
+    if (this.data.isSampleData) {
+      wx.showToast({ title: '示例数据不可编辑', icon: 'none' });
+      return;
+    }
     wx.navigateTo({
       url: `/pages/publish/publish?draft=1&id=${id}`
     });
@@ -169,6 +197,10 @@ Page({
   // 删除草稿
   onDeleteDraft(e) {
     const id = e.currentTarget.dataset.id;
+    if (this.data.isSampleData) {
+      wx.showToast({ title: '示例数据不可删除', icon: 'none' });
+      return;
+    }
     wx.showModal({
       title: '确认删除',
       content: '删除后无法恢复，确定要删除这个草稿吗？',
@@ -212,6 +244,20 @@ Page({
     const id = e.currentTarget.dataset.id;
     wx.navigateTo({
       url: `/pages/activity-participants/activity-participants?activity_id=${id}`
+    });
+  },
+
+  // 兜底展示示例草稿数据
+  applySampleDrafts() {
+    const formatted = SAMPLE_DRAFTS.map(item => ({
+      ...item,
+      activity_time_formatted: this.formatDateTime(item.activity_time),
+      updated_at_formatted: this.formatDateTime(item.updated_at)
+    }));
+    this.setData({
+      draftList: formatted,
+      draftCount: formatted.length,
+      isSampleData: true
     });
   }
 });

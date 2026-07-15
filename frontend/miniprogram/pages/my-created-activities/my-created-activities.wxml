@@ -44,6 +44,12 @@
 
   <!-- 草稿箱列表 -->
   <block wx:if="{{currentTab === 'draft'}}">
+    <!-- 示例数据提示 -->
+    <view wx:if="{{isSampleData}}" class="sample-banner">
+      <van-icon name="info-o" size="14px" color="#d48806" />
+      <text>当前为示例数据，发布活动后草稿将在此展示</text>
+    </view>
+
     <view wx:for="{{draftList}}" wx:key="id" class="activity-card draft-card">
       <view class="card-header">
         <view class="activity-name">{{item.name || '未命名活动'}}</view>

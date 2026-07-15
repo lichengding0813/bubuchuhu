@@ -5,7 +5,7 @@
  Source Server Version : 50718 (5.7.18-cynos-2.1.14-log)
  Source Schema         : flask_demo
 
- 导出日期: 2026-06-25
+ 导出日期: 2026-07-15
 */
 
 SET NAMES utf8mb4;
@@ -25,12 +25,15 @@ CREATE TABLE `activity_participants` (
   `status` tinyint(4) DEFAULT '0' COMMENT '状态：0-已取消 1-已报名',
   `travel_option` tinyint(4) DEFAULT NULL COMMENT '选择的出行方式：1-大巴 2-高铁 3-自驾',
   `remark` varchar(255) DEFAULT NULL COMMENT '备注',
+  `companion_count` int(11) NOT NULL DEFAULT '0' COMMENT '同行人数（不含本人），0-3',
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_activity_user` (`activity_id`,`user_openid`),
   KEY `idx_activity_id` (`activity_id`),
   KEY `idx_user_openid` (`user_openid`),
+  KEY `idx_status` (`status`),
+  KEY `idx_companion_count` (`companion_count`),
   CONSTRAINT `activity_participants_ibfk_1` FOREIGN KEY (`activity_id`) REFERENCES `activities` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='活动报名表';
 

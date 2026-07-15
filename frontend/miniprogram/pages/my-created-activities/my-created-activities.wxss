@@ -110,6 +110,21 @@ page {
   margin-top: 16px;
 }
 
+/* 示例数据提示 */
+.sample-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  background-color: #fff7e6;
+  border: 1px solid #ffe7ba;
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  font-size: 12px;
+  color: #d48806;
+  line-height: 1.5;
+}
+
 /* 活动卡片 */
 .activity-card {
   background-color: white;
