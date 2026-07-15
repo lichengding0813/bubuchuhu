@@ -87,3 +87,24 @@ page {
 .notice-bottom-spacer {
   height: 40px;
 }
+
+/* 下拉提示悬浮条 */
+.scroll-hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex-shrink: 0;
+  padding: 10px 0;
+  background: linear-gradient(180deg, rgba(240,250,255,0.95), rgba(255,255,255,0.98));
+  border-top: 1px solid rgba(95,174,227,0.15);
+  font-size: 13px;
+  color: #5faee3;
+  opacity: 1;
+  transition: opacity 0.3s ease;
+}
+
+.scroll-hint.hidden {
+  opacity: 0;
+  pointer-events: none;
+}

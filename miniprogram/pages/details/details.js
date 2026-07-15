@@ -362,6 +362,9 @@ Page({
           if (data.type) {
             this.setData({ ['noticeViewed.' + data.type]: true });
           }
+          if (data.agreeField) {
+            this.setData({ [data.agreeField]: true }, () => this.checkSignUpStatus());
+          }
         }
       },
       success: (res) => {

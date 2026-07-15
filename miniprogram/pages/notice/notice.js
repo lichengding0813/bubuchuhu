@@ -2,7 +2,8 @@ Page({
   data: {
     noticeType: 'participant',
     noticeTitle: '须知',
-    hasScrolledToBottom: false
+    hasScrolledToBottom: false,
+    showScrollHint: true
   },
 
   onLoad(options) {
@@ -28,12 +29,19 @@ Page({
     });
   },
 
+  /** scroll-view 滚动：超过一定距离后隐藏下拉提示 */
+  onScroll(e) {
+    if (this.data.showScrollHint && e.detail.scrollTop > 60) {
+      this.setData({ showScrollHint: false });
+    }
+  },
+
   /** scroll-view 滚到底部触发 */
   onScrollToLower() {
     if (!this.data.hasScrolledToBottom) {
-      this.setData({ hasScrolledToBottom: true });
+      this.setData({ hasScrolledToBottom: true, showScrollHint: false });
       // 已读完，解除返回拦截
-      wx.enableAlertBeforeUnload({ message: '' });
+      wx.disableAlertBeforeUnload();
     }
   },
 
@@ -44,11 +52,18 @@ Page({
   },
 
   onUnload() {
-    wx.enableAlertBeforeUnload({ message: '' });
+    wx.disableAlertBeforeUnload();
+    // 无论从哪个入口进入，返回时都自动勾选对应条款
+    const agreeFieldMap = {
+      participant: 'agreeNotice',
+      bus: 'agreeBus',
+      self: 'agreeSelf'
+    };
+    const agreeField = this.agreeField || agreeFieldMap[this.data.noticeType] || '';
     if (this.eventChannel) {
       this.eventChannel.emit('viewed', {
         type: this.data.noticeType,
-        agreeField: this.agreeField || ''
+        agreeField: agreeField
       });
     }
   }

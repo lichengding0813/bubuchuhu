@@ -1,5 +1,5 @@
 <view class="notice-page">
-  <scroll-view scroll-y class="notice-container" bindscrolltolower="onScrollToLower" lower-threshold="50">
+  <scroll-view scroll-y class="notice-container" bindscroll="onScroll" bindscrolltolower="onScrollToLower" lower-threshold="50">
   <!-- 报名参与者须知 -->
   <block wx:if="{{noticeType === 'participant'}}">
     <text class="subtitle">【最新发布日期：】</text>
@@ -158,6 +158,12 @@
 
   <view class="notice-bottom-spacer"></view>
   </scroll-view>
+
+  <!-- 下拉提示（未滚动时悬浮在底部固定栏上方） -->
+  <view class="scroll-hint {{showScrollHint ? '' : 'hidden'}}">
+    <van-icon name="arrow-down" size="14px" color="#5faee3" />
+    <text>下拉阅读全部条款</text>
+  </view>
 
   <view class="notice-footer">
     <van-button class="notice-back-btn" type="info" block disabled="{{!hasScrolledToBottom}}" bindtap="onBackClick">
