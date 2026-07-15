@@ -1,16 +1,16 @@
 <!-- 统计卡片 -->
 <view class="stats-section">
   <view class="stat-card">
+    <view class="stat-number">{{approvedCount}}</view>
+    <view class="stat-label">已通过</view>
+  </view>
+  <view class="stat-card">
     <view class="stat-number">{{pendingCount}}</view>
     <view class="stat-label">待审核</view>
   </view>
   <view class="stat-card">
     <view class="stat-number">{{draftCount}}</view>
     <view class="stat-label">草稿箱</view>
-  </view>
-  <view class="stat-card">
-    <view class="stat-number">{{totalCount}}</view>
-    <view class="stat-label">总活动</view>
   </view>
 </view>
 
@@ -19,9 +19,9 @@
   <view class="section-header">
     <text class="section-title">我的活动</text>
     <view class="filter-tabs">
+      <text class="tab {{currentTab === 'approved' ? 'active' : ''}}" bindtap="switchTab" data-tab="approved">已通过</text>
       <text class="tab {{currentTab === 'pending' ? 'active' : ''}}" bindtap="switchTab" data-tab="pending">待审核</text>
       <text class="tab {{currentTab === 'draft' ? 'active' : ''}}" bindtap="switchTab" data-tab="draft">草稿箱</text>
-      <text class="tab {{currentTab === 'all' ? 'active' : ''}}" bindtap="switchTab" data-tab="all">全部</text>
     </view>
   </view>
 

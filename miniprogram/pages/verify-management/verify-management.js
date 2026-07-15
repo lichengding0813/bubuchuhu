@@ -1,8 +1,6 @@
 // 示例数据：后端暂无验证问题时兜底展示，保存后写入真实数据
 const SAMPLE_QUESTIONS = [
   { id: 'sample-1', question: '玛莎的全名是？', answers_text: '蔡昇晏', is_active: 1 },
-  { id: 'sample-2', question: '本次活动的集合地点通常在哪个区？', answers_text: '松江区', is_active: 1 },
-  { id: 'sample-3', question: '步步出沪的发起城市是？', answers_text: '上海', is_active: 1 }
 ];
 
 Page({
@@ -133,7 +131,7 @@ Page({
       const path = editingId
         ? `/api/admin/verify-questions/${editingId}`
         : '/api/admin/verify-questions';
-      const method = editingId ? 'PUT' : 'POST';
+      const method = 'POST';
 
       const result = await wx.cloud.callContainer({
         config: { env: "prod-3gktwx67d1dd1e76" },
@@ -181,7 +179,7 @@ Page({
       const result = await wx.cloud.callContainer({
         config: { env: "prod-3gktwx67d1dd1e76" },
         path: `/api/admin/verify-questions/${id}`,
-        method: "PUT",
+        method: "POST",
         header: {
           "X-WX-SERVICE": "flask-mysql-login",
           "X-Wx-OpenId": userInfo?.openId,
@@ -223,8 +221,8 @@ Page({
           const userInfo = wx.getStorageSync('userInfo');
           const result = await wx.cloud.callContainer({
             config: { env: "prod-3gktwx67d1dd1e76" },
-            path: `/api/admin/verify-questions/${id}`,
-            method: "DELETE",
+            path: `/api/admin/verify-questions/${id}/delete`,
+            method: "POST",
             header: {
               "X-WX-SERVICE": "flask-mysql-login",
               "X-Wx-OpenId": userInfo?.openId,

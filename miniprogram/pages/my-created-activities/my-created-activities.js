@@ -20,8 +20,8 @@ Page({
   data: {
     pendingCount: 0,
     draftCount: 0,
-    totalCount: 0,
-    currentTab: 'pending',
+    approvedCount: 0,
+    currentTab: 'approved',
     activityList: [],
     draftList: [],
     isLoading: false,
@@ -39,7 +39,6 @@ Page({
     } else {
       this.loadData();
     }
-    // 每次返回都刷新草稿数量
     this.loadDrafts();
   },
 
@@ -85,18 +84,19 @@ Page({
         }));
 
         const pendingList = formatted.filter(item => item.status === 0);
+        const approvedList = formatted.filter(item => item.status !== 0 && item.status !== -1);
         const totalCount = formatted.length;
 
         let displayList = [];
         if (this.data.currentTab === 'pending') {
           displayList = pendingList;
         } else {
-          displayList = formatted;
+          displayList = approvedList;
         }
 
         this.setData({
           pendingCount: pendingList.length,
-          totalCount: totalCount,
+          approvedCount: approvedList.length,
           activityList: displayList
         });
       } else {
