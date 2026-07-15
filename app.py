@@ -403,7 +403,6 @@ def login():
 
 # ==================== 验证答案接口 ====================
 @app.route('/verify', methods=['POST'])
-@rate_limit("10 per minute")
 def verify_answer():
     openid = request.headers.get('X-Wx-OpenId')
     if not openid:
