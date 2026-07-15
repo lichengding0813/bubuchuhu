@@ -10,6 +10,14 @@ import logging
 from dotenv import load_dotenv
 load_dotenv()
 
+# 强制进程时区为北京时间，与 db_utils 中 SET time_zone='+8:00' 对齐，
+# 避免 datetime.now() 使用容器默认 UTC 导致时间字段差 8 小时
+os.environ.setdefault('TZ', 'Asia/Shanghai')
+try:
+    time.tzset()
+except AttributeError:
+    pass  # Windows 无 tzset，部署环境为 Linux 不受影响
+
 # ==================== 集中配置 ====================
 from config import (
     DB_CONFIG, WX_APPID, WX_SECRET, WX_API_BASE,
