@@ -1,4 +1,12 @@
 <view class="notice-page">
+  <view class="custom-nav" style="padding-top: {{statusBarHeight}}px;">
+    <view class="custom-nav-back" bindtap="onTopBackClick">
+      <van-icon name="arrow-left" size="20px" color="#1e4d7c" />
+    </view>
+    <view class="custom-nav-title">{{noticeTitle}}</view>
+    <view class="custom-nav-placeholder"></view>
+  </view>
+
   <scroll-view scroll-y class="notice-container" bindscroll="onScroll" bindscrolltolower="onScrollToLower" lower-threshold="50">
   <!-- 报名参与者须知 -->
   <block wx:if="{{noticeType === 'participant'}}">

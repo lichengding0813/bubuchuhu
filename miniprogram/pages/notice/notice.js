@@ -2,6 +2,7 @@ Page({
   data: {
     noticeType: 'participant',
     noticeTitle: '须知',
+    statusBarHeight: 20,
     hasScrolledToBottom: false,
     showScrollHint: true
   },
@@ -13,19 +14,18 @@ Page({
       bus: '大巴行程免责声明',
       self: '自驾/高铁行程免责声明'
     };
-    this.setData({ noticeType: type, noticeTitle: titleMap[type] });
-    wx.setNavigationBarTitle({ title: titleMap[type] });
+    const sysInfo = wx.getSystemInfoSync();
+    this.setData({
+      noticeType: type,
+      noticeTitle: titleMap[type],
+      statusBarHeight: sysInfo.statusBarHeight || 20
+    });
 
     // 接收来自 details 页面的初始化数据
     const eventChannel = this.getOpenerEventChannel();
     this.eventChannel = eventChannel;
     eventChannel.on('init', (data) => {
       this.agreeField = data.agreeField || '';
-    });
-
-    // 未划到底部前拦截返回
-    wx.enableAlertBeforeUnload({
-      message: '请下拉并阅读知晓全部条款'
     });
   },
 
@@ -40,8 +40,21 @@ Page({
   onScrollToLower() {
     if (!this.data.hasScrolledToBottom) {
       this.setData({ hasScrolledToBottom: true, showScrollHint: false });
-      // 已读完，解除返回拦截
-      wx.disableAlertBeforeUnload();
+    }
+  },
+
+  /** 顶部返回按钮 */
+  onTopBackClick() {
+    if (this.data.hasScrolledToBottom) {
+      wx.navigateBack();
+    } else {
+      wx.showModal({
+        title: '温馨提示',
+        content: '请下拉并阅读知晓全部条款',
+        showCancel: false,
+        confirmText: '我知道了',
+        confirmColor: '#5faee3'
+      });
     }
   },
 
@@ -52,7 +65,6 @@ Page({
   },
 
   onUnload() {
-    wx.disableAlertBeforeUnload();
     // 无论从哪个入口进入，返回时都自动勾选对应条款
     const agreeFieldMap = {
       participant: 'agreeNotice',
