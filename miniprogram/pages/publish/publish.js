@@ -412,8 +412,16 @@ Page({
       wx.hideLoading();
       if (result.data && result.data.code === 200) {
         this.setData({ draftId: result.data.data.draft_id });
-        wx.showToast({ title: '草稿已保存', icon: 'success', duration: 1500 });
-        setTimeout(() => wx.navigateBack(), 1500);
+        wx.showModal({
+          title: '草稿已保存',
+          content: '您可在「我的 - 我发起的 - 草稿箱」中找到此草稿，随时继续编辑或发布',
+          showCancel: false,
+          confirmText: '我知道了',
+          confirmColor: '#5faee3',
+          success: () => {
+            wx.switchTab({ url: '/pages/home/home' });
+          }
+        });
       } else {
         wx.showToast({ title: result.data?.msg || '保存失败', icon: 'none' });
       }
@@ -474,6 +482,26 @@ Page({
           confirmColor: '#5faee3'
         });
         return;
+      }
+    }
+    // 校验集合点时间不能晚于活动开始时间
+    if (this.data.activityTime && this.data.meetingPoints && this.data.meetingPoints.length > 0) {
+      const activityTs = new Date(this.data.activityTime.replace(/-/g, '/')).getTime();
+      for (let i = 0; i < this.data.meetingPoints.length; i++) {
+        const mp = this.data.meetingPoints[i];
+        if (mp.time) {
+          const mpTs = new Date(mp.time.replace(/-/g, '/')).getTime();
+          if (mpTs > activityTs) {
+            wx.showModal({
+              title: '时间冲突',
+              content: `第${i + 1}个集合点的时间不能晚于活动开始时间，请修改后再提交`,
+              showCancel: false,
+              confirmText: '我知道了',
+              confirmColor: '#5faee3'
+            });
+            return;
+          }
+        }
       }
     }
 
@@ -849,15 +877,21 @@ Page({
   onAgreeChange(e) {
     const checked = e.detail;
     if (checked && !this.data.noticeViewed) {
-      // 强制弹出发起者须知并开始倒计时
-      this.setData({
-        showNotice: true,
-        canCloseNotice: false,
-        noticeCountdown: 3,
-        agree: false,
-        pendingAgree: true
+      // 跳转发起者须知页面
+      this.setData({ agree: false, pendingAgree: true });
+      wx.navigateTo({
+        url: '/pages/notice/notice?type=organizer',
+        events: {
+          viewed: (data) => {
+            if (data.type === 'organizer') {
+              this.setData({ noticeViewed: true, agree: true, pendingAgree: false }, () => this.checkCanSubmit());
+            }
+          }
+        },
+        success: (res) => {
+          res.eventChannel.emit('init', { agreeField: '' });
+        }
       });
-      this.startNoticeCountdown(true);
       return;
     }
     this.setData({ agree: checked }, () => this.checkCanSubmit());
@@ -879,45 +913,23 @@ Page({
   },
 
   onNoticeClick() {
-    this.setData({ showNotice: true });
-    if (!this.data.noticeViewed) {
-      this.setData({ canCloseNotice: false, noticeCountdown: 3 });
-      this.startNoticeCountdown(false);
-    }
-  },
-
-  // 开始3秒倒计时
-  startNoticeCountdown(autoCheck) {
-    if (this.countdownTimer) clearInterval(this.countdownTimer);
-    let count = 3;
-    this.countdownTimer = setInterval(() => {
-      count--;
-      if (count > 0) {
-        this.setData({ noticeCountdown: count });
-      } else {
-        clearInterval(this.countdownTimer);
-        // 3秒到了：解锁关闭按钮，标记已阅读，但不自动关闭
-        this.setData({
-          canCloseNotice: true,
-          noticeCountdown: 0,
-          noticeViewed: true
-        });
+    wx.navigateTo({
+      url: '/pages/notice/notice?type=organizer',
+      events: {
+        viewed: (data) => {
+          if (data.type === 'organizer') {
+            this.setData({ noticeViewed: true }, () => {
+              if (this.data.pendingAgree) {
+                this.setData({ agree: true, pendingAgree: false }, () => this.checkCanSubmit());
+              }
+            });
+          }
+        }
+      },
+      success: (res) => {
+        res.eventChannel.emit('init', { agreeField: '' });
       }
-    }, 1000);
-  },
-
-  onNoticeClose() {
-    if (!this.data.canCloseNotice) {
-      wx.showToast({ title: `请等待${this.data.noticeCountdown}秒后再关闭`, icon: 'none' });
-      return;
-    }
-    // 用户手动关闭弹窗后，如果有待勾选的协议，自动勾选
-    const updateData = { showNotice: false };
-    if (this.data.pendingAgree) {
-      updateData.agree = true;
-      updateData.pendingAgree = false;
-    }
-    this.setData(updateData, () => this.checkCanSubmit());
+    });
   },
 
   onUnload() {

@@ -117,6 +117,7 @@
         <block wx:if="{{item.status === 0}}">
           <button class="detail-btn" data-id="{{item.id}}" catchtap="onActivityClick">查看详情</button>
           <button class="edit-btn" data-id="{{item.id}}" catchtap="onEditActivity">编辑信息</button>
+          <button class="delete-btn" data-id="{{item.id}}" catchtap="onWithdraw">撤回</button>
         </block>
 
         <block wx:elif="{{item.status === 2}}">

@@ -167,6 +167,47 @@ Page({
     });
   },
 
+  // 撤回待审核活动
+  onWithdraw(e) {
+    const id = e.currentTarget.dataset.id;
+    wx.showModal({
+      title: '确认撤回',
+      content: '撤回后活动将存入草稿箱，您可以稍后修改并重新提交审核',
+      confirmText: '确认撤回',
+      cancelText: '取消',
+      confirmColor: '#ff9800',
+      success: async (res) => {
+        if (!res.confirm) return;
+        wx.showLoading({ title: '撤回中...' });
+        try {
+          const userInfo = wx.getStorageSync('userInfo');
+          const result = await wx.cloud.callContainer({
+            config: { env: "prod-3gktwx67d1dd1e76" },
+            path: "/api/activity/withdraw",
+            method: "POST",
+            header: {
+              "X-WX-SERVICE": "flask-mysql-login",
+              "X-Wx-OpenId": userInfo?.openId,
+              "Content-Type": "application/json"
+            },
+            data: { activity_id: id }
+          });
+          wx.hideLoading();
+          if (result.data && result.data.code === 200) {
+            wx.showToast({ title: '已撤回至草稿箱', icon: 'success' });
+            this.loadData();
+          } else {
+            wx.showToast({ title: result.data?.msg || '撤回失败', icon: 'none' });
+          }
+        } catch (err) {
+          wx.hideLoading();
+          console.error('撤回失败', err);
+          wx.showToast({ title: '网络错误', icon: 'error' });
+        }
+      }
+    });
+  },
+
   // 编辑活动（驳回后修改 或 审核通过后修改）
   onEditActivity(e) {
     const id = e.currentTarget.dataset.id;
