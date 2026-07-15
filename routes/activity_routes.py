@@ -149,7 +149,7 @@ def get_activity_list():
         cursor = conn.cursor()
 
         # 构建查询条件
-        where_clause = "WHERE a.status NOT IN (0, -1)"  # 不展示待审核和草稿活动
+        where_clause = "WHERE a.status NOT IN (0, -1, 2)"  # 不展示待审核、草稿、已拒绝的活动
         params = []
 
         if status is not None:
