@@ -300,6 +300,7 @@ Page({
         path: "/verify",
         header: {
           "X-WX-SERVICE": "flask-mysql-login",
+          "X-Wx-OpenId": wx.getStorageSync('userInfo')?.openId,
           "content-type": "application/json"
         },
         method: "POST",

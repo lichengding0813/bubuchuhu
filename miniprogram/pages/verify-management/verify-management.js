@@ -131,7 +131,7 @@ Page({
       const path = editingId
         ? `/api/admin/verify-questions/${editingId}`
         : '/api/admin/verify-questions';
-      const method = 'POST';
+      const method = editingId ? 'PUT' : 'POST';
 
       const result = await wx.cloud.callContainer({
         config: { env: "prod-3gktwx67d1dd1e76" },
@@ -179,7 +179,7 @@ Page({
       const result = await wx.cloud.callContainer({
         config: { env: "prod-3gktwx67d1dd1e76" },
         path: `/api/admin/verify-questions/${id}`,
-        method: "POST",
+        method: "PUT",
         header: {
           "X-WX-SERVICE": "flask-mysql-login",
           "X-Wx-OpenId": userInfo?.openId,
@@ -221,8 +221,8 @@ Page({
           const userInfo = wx.getStorageSync('userInfo');
           const result = await wx.cloud.callContainer({
             config: { env: "prod-3gktwx67d1dd1e76" },
-            path: `/api/admin/verify-questions/${id}/delete`,
-            method: "POST",
+            path: `/api/admin/verify-questions/${id}`,
+            method: "DELETE",
             header: {
               "X-WX-SERVICE": "flask-mysql-login",
               "X-Wx-OpenId": userInfo?.openId,
