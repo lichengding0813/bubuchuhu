@@ -3,7 +3,8 @@ Page({
     noticeType: 'participant',
     noticeTitle: '须知',
     countdown: 3,
-    canBack: false
+    canBack: false,
+    statusBarHeight: 20
   },
 
   onLoad(options) {
@@ -13,8 +14,12 @@ Page({
       bus: '大巴行程免责声明',
       self: '自驾/高铁行程免责声明'
     };
-    this.setData({ noticeType: type, noticeTitle: titleMap[type] });
-    wx.setNavigationBarTitle({ title: titleMap[type] });
+    const sysInfo = wx.getSystemInfoSync();
+    this.setData({
+      noticeType: type,
+      noticeTitle: titleMap[type],
+      statusBarHeight: sysInfo.statusBarHeight || 20
+    });
 
     // 接收来自 details 页面的初始化数据
     const eventChannel = this.getOpenerEventChannel();

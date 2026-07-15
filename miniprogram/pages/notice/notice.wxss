@@ -9,6 +9,23 @@ page {
   box-sizing: border-box;
 }
 
+.custom-nav {
+  flex-shrink: 0;
+  background-color: #e6f7ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.custom-nav-title {
+  height: 44px;
+  line-height: 44px;
+  font-size: 17px;
+  font-weight: 600;
+  color: #1e4d7c;
+  text-align: center;
+}
+
 .notice-container {
   flex: 1;
   min-height: 0;
@@ -24,6 +41,15 @@ page {
   background-color: #ffffff;
   box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.04);
   border-top: 1px solid #e8f0f8;
+}
+
+.notice-back-btn {
+  border-radius: 8px !important;
+  height: 46px !important;
+  line-height: 46px !important;
+  font-weight: 500 !important;
+  --button-info-background-color: #96c9ff;
+  --button-info-border-color: #96c9ff;
 }
 
 .notice-container text {
