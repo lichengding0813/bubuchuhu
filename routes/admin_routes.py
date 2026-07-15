@@ -348,7 +348,7 @@ def add_verify_question():
             conn.close()
 
 
-@admin_bp.route('/verify-questions/<int:qid>', methods=['PUT'])
+@admin_bp.route('/verify-questions/<int:qid>', methods=['POST'])
 @check_verified_and_blacklist
 @check_admin
 def update_verify_question(qid):
@@ -395,7 +395,7 @@ def update_verify_question(qid):
             conn.close()
 
 
-@admin_bp.route('/verify-questions/<int:qid>', methods=['DELETE'])
+@admin_bp.route('/verify-questions/<int:qid>/delete', methods=['POST'])
 @check_verified_and_blacklist
 @check_admin
 def delete_verify_question(qid):
