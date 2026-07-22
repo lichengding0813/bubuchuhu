@@ -525,6 +525,54 @@ def user_stats():
         if conn:
             conn.close()
 
+# ==================== 天气预报（代理心知天气） ====================
+WEATHER_API_KEY = os.environ.get('WEATHER_API_KEY', '')
+
+# 天气图标映射
+WEATHER_ICONS = {
+    '晴': 'sunny-o', '多云': 'cloud', '阴': 'cloud-o',
+    '雨': 'rain-o', '小雨': 'rain-o', '中雨': 'rain-o', '大雨': 'rain-o', '暴雨': 'rain-o',
+    '雪': 'snow-o', '小雪': 'snow-o', '中雪': 'snow-o', '大雪': 'snow-o',
+    '雾': 'warn-o', '霾': 'warn-o',
+}
+
+@app.route('/api/weather', methods=['GET'])
+def get_weather():
+    city = request.args.get('city', '上海')
+    if not WEATHER_API_KEY:
+        return jsonify({'code': 500, 'msg': '未配置天气API'})
+
+    try:
+        url = 'https://api.seniverse.com/v3/weather/daily.json'
+        resp = requests.get(url, params={
+            'key': WEATHER_API_KEY,
+            'location': city,
+            'start': 0, 'days': 7
+        }, timeout=5)
+        data = resp.json()
+        results = data.get('results', [])
+        if not results:
+            return jsonify({'code': 404, 'msg': '未找到该城市天气'})
+
+        daily_list = results[0].get('daily', [])
+        weather_list = [{
+            'date': d['date'],
+            'text_day': d.get('text_day', ''),
+            'high': d.get('high', ''),
+            'low': d.get('low', ''),
+            'icon': WEATHER_ICONS.get(d.get('text_day', ''), 'cloud-o')
+        } for d in daily_list]
+
+        return jsonify({'code': 200, 'data': {
+            'city': results[0].get('location', {}).get('name', city),
+            'daily': weather_list
+        }})
+    except requests.exceptions.Timeout:
+        return jsonify({'code': 500, 'msg': '天气服务超时'})
+    except Exception as e:
+        logging.exception("获取天气失败")
+        return jsonify({'code': 500, 'msg': '天气服务异常'})
+
 # ==================== 更新用户资料 ====================
 @app.route('/update_profile', methods=['POST'])
 def update_profile():
