@@ -7,6 +7,43 @@ from middleware import check_verified_and_blacklist, check_admin
 admin_bp = Blueprint('admin', __name__)
 
 
+@admin_bp.route('/dashboard', methods=['GET'])
+@check_verified_and_blacklist
+@check_admin
+def get_dashboard():
+    conn = None
+    cursor = None
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) as c FROM activities")
+        total_activities = cursor.fetchone()['c']
+        cursor.execute("SELECT COUNT(*) as c FROM activities WHERE status = 0")
+        pending = cursor.fetchone()['c']
+        cursor.execute("SELECT COUNT(*) as c FROM activities WHERE status IN (1,3,4)")
+        approved = cursor.fetchone()['c']
+        cursor.execute("SELECT COUNT(*) as c FROM users")
+        total_users = cursor.fetchone()['c']
+        cursor.execute("SELECT COUNT(DISTINCT user_openid) as c FROM activity_participants WHERE status = 1")
+        active_participants = cursor.fetchone()['c']
+        cursor.execute("SELECT COUNT(*) as c FROM activity_participants WHERE status = 1 AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)")
+        this_week_signups = cursor.fetchone()['c']
+        return jsonify({'code': 200, 'data': {
+            'total_activities': total_activities,
+            'pending_count': pending,
+            'approved_count': approved,
+            'total_users': total_users,
+            'active_participants': active_participants,
+            'this_week_signups': this_week_signups
+        }})
+    except Exception:
+        logging.exception("获取管理看板失败")
+        return jsonify({'code': 500, 'msg': '服务器内部错误'})
+    finally:
+        if cursor: cursor.close()
+        if conn: conn.close()
+
+
 @admin_bp.route('/pending-activities', methods=['GET'])
 @check_verified_and_blacklist
 @check_admin
