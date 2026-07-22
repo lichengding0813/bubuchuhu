@@ -79,12 +79,14 @@
 </view>
 
 <!-- 富文本编辑器底部固定工具栏 -->
-<view class="editor-toolbar-fixed show">
+<view class="editor-toolbar-fixed {{editorFocused ? 'show' : ''}}">
   <view class="editor-toolbar-inner">
     <view class="tool-btn {{formatStatus.bold ? 'active' : ''}}" bindtap="onFormat" data-name="bold"><text class="tool-icon-bold">B</text></view>
-    <picker class="tool-picker" mode="selector" range="{{fontSizeLabels}}" bindchange="onFontSizeChange">
-      <view class="tool-btn">字号 {{currentFontSize || '16'}}</view>
-    </picker>
+    <view bindtap="_cancelBlur">
+      <picker class="tool-picker" mode="selector" range="{{fontSizeLabels}}" bindchange="onFontSizeChange">
+        <view class="tool-btn">字号 {{currentFontSize || '16'}}</view>
+      </picker>
+    </view>
     <view class="tool-btn color-btn" bindtap="onToggleColorPicker">
       <view class="color-dot" style="background:{{currentTextColor || '#333'}}"></view>颜色
     </view>

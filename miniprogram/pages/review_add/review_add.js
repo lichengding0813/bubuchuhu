@@ -19,6 +19,7 @@ Page({
     },
     submitting: false,
     editorReady: false,
+    editorFocused: false,
     formatStatus: {},
     showColorPicker: false,
     currentTextColor: '#333333',
@@ -93,11 +94,21 @@ Page({
   },
 
   onEditorFocus() {
-    // 工具栏始终显示，不需要 focus 控制
+    this._cancelBlur();
+    this.setData({ editorFocused: true });
   },
 
   onEditorBlur() {
-    // 工具栏始终显示，不隐藏
+    this._blurTimer = setTimeout(() => {
+      this.setData({ editorFocused: false, showColorPicker: false });
+    }, 500);
+  },
+
+  _cancelBlur() {
+    if (this._blurTimer) {
+      clearTimeout(this._blurTimer);
+      this._blurTimer = null;
+    }
   },
 
   onEditorStatusChange(e) {
@@ -105,6 +116,7 @@ Page({
   },
 
   onFormat(e) {
+    this._cancelBlur();
     if (!this.editorCtx) return;
     const { name, value } = e.currentTarget.dataset;
     if (name === 'header') {
@@ -115,6 +127,7 @@ Page({
   },
 
   onFontSizeChange(e) {
+    this._cancelBlur();
     if (!this.editorCtx) return;
     const idx = e.detail.value;
     const size = this.data.fontSizeList[idx];
@@ -123,10 +136,12 @@ Page({
   },
 
   onToggleColorPicker() {
+    this._cancelBlur();
     this.setData({ showColorPicker: !this.data.showColorPicker });
   },
 
   onSetColor(e) {
+    this._cancelBlur();
     if (!this.editorCtx) return;
     const color = e.currentTarget.dataset.color;
     this.editorCtx.format('color', color);
@@ -134,6 +149,7 @@ Page({
   },
 
   onInsertDivider() {
+    this._cancelBlur();
     if (!this.editorCtx) return;
     this.editorCtx.insertDivider();
   },
