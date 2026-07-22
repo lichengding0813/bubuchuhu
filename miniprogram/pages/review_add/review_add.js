@@ -23,7 +23,7 @@ Page({
     formatStatus: {},
     showColorPicker: false,
     currentTextColor: '#333333',
-    colorList: ['#333333', '#ff4444', '#ff8800', '#4caf50', '#1989fa', '#722ed1'],
+    colorList: ['#333333', '#ff4444', '#1989fa', '#ff8800', '#4caf50'],
     fontSizeList: [12, 14, 16, 18, 24, 36],
     fontSizeLabels: ['12px', '14px', '16px', '18px', '24px', '36px'],
     currentFontSize: '16'
@@ -135,17 +135,12 @@ Page({
     this.setData({ currentFontSize: size });
   },
 
-  onToggleColorPicker() {
-    this._cancelBlur();
-    this.setData({ showColorPicker: !this.data.showColorPicker });
-  },
-
   onSetColor(e) {
     this._cancelBlur();
     if (!this.editorCtx) return;
     const color = e.currentTarget.dataset.color;
     this.editorCtx.format('color', color);
-    this.setData({ currentTextColor: color, showColorPicker: false });
+    this.setData({ currentTextColor: color });
   },
 
   onInsertDivider() {
