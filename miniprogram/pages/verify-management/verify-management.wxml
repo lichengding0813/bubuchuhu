@@ -1,17 +1,7 @@
 <view class="container">
-  <!-- 说明 -->
-  <view class="tip-card">
-    <van-icon name="info-o" size="14px" color="#5faee3" />
-    <text>验证问题在新用户登录和全员重新验证后生效，用户需答对才能使用小程序</text>
-  </view>
 
   <!-- 问题列表 -->
   <view class="list-section">
-    <view wx:if="{{isSampleData}}" class="sample-banner">
-      <van-icon name="info-o" size="14px" color="#ff9800" />
-      <text>当前为示例数据（后端暂无验证问题），保存后将写入真实数据</text>
-    </view>
-
     <view class="section-header">
       <text class="section-title">验证问题列表</text>
       <view class="add-btn" bindtap="onAddQuestion">
@@ -42,8 +32,11 @@
         </view>
 
         <view class="card-bottom">
-          <view class="status-tag {{item.is_active ? 'active' : 'inactive'}}" bindtap="onToggleActive" data-id="{{item.id}}" data-active="{{item.is_active}}">
-            {{item.is_active ? '已启用' : '已禁用'}}
+          <view class="switch-row" bindtap="onToggleActive" data-id="{{item.id}}" data-active="{{item.is_active}}">
+            <text class="switch-label {{item.is_active ? 'on' : 'off'}}">{{item.is_active ? '已启用' : '已禁用'}}</text>
+            <view class="switch-toggle {{item.is_active ? 'on' : ''}}">
+              <view class="switch-thumb"></view>
+            </view>
           </view>
           <view class="action-btns">
             <view class="action-btn edit" data-id="{{item.id}}" data-question="{{item.question}}" data-answers="{{item.answers_text}}" bindtap="onEditQuestion">编辑</view>
@@ -56,10 +49,6 @@
 
   <!-- 全员重新验证按钮 -->
   <view class="bottom-section">
-    <view class="reset-tip">
-      <van-icon name="warning-o" size="14px" color="#ff9800" />
-      <text>点击后将重置所有非管理员用户的验证状态，用户下次进入需重新答题</text>
-    </view>
     <van-button type="danger" block bindtap="onResetAllVerification">
       全员重新验证
     </van-button>
@@ -91,12 +80,11 @@
           </view>
         </view>
         <view class="answer-input-row">
-          <van-field class="custom-field answer-input" value="{{answerInput}}" bind:input="onAnswerInput" placeholder="输入一个答案" border="{{false}}" label-width="0" confirm-type="done" bind:confirm="onAddAnswer" />
+          <van-field class="custom-field answer-input" value="{{answerInput}}" bind:input="onAnswerInput" placeholder="添加一个答案" border="{{false}}" label-width="0" confirm-type="done" bind:confirm="onAddAnswer" />
           <view class="add-answer-btn" bindtap="onAddAnswer">
             <van-icon name="plus" size="14px" color="#5faee3" /> 添加
           </view>
         </view>
-        <text class="form-hint">用户输入的答案匹配其中任意一个即算正确（不区分大小写）</text>
       </view>
 
       <view class="popup-btns">
