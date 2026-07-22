@@ -118,8 +118,12 @@ Page({
   },
 
   onFormat(e) {
-    if (!this.editorCtx) return;
+    if (!this.editorCtx) {
+      console.warn('editorCtx 未就绪');
+      return;
+    }
     const { name, value } = e.currentTarget.dataset;
+    console.log('format:', name, value);
     if (name === 'header') {
       this.editorCtx.format(name, value === '' ? false : parseInt(value));
     } else {

@@ -79,22 +79,22 @@
 </view>
 
 <!-- 富文本编辑器底部固定工具栏 -->
-<view class="editor-toolbar-fixed {{editorFocused ? 'show' : ''}}" catchtouchstart="onToolbarTouch">
+<view class="editor-toolbar-fixed {{editorFocused ? 'show' : ''}}">
   <view class="editor-toolbar-inner">
-    <view class="tool-btn {{formatStatus.bold ? 'active' : ''}}" catchtap="onFormat" data-name="bold"><text class="tool-icon-bold">B</text></view>
-    <view class="tool-btn {{formatStatus.italic ? 'active' : ''}}" catchtap="onFormat" data-name="italic"><text class="tool-icon-italic">I</text></view>
-    <view class="tool-btn {{formatStatus.underline ? 'active' : ''}}" catchtap="onFormat" data-name="underline"><text class="tool-icon-underline">U</text></view>
+    <view class="tool-btn {{formatStatus.bold ? 'active' : ''}}" catchtouchstart="onToolbarTouch" catchtap="onFormat" data-name="bold"><text class="tool-icon-bold">B</text></view>
+    <view class="tool-btn {{formatStatus.italic ? 'active' : ''}}" catchtouchstart="onToolbarTouch" catchtap="onFormat" data-name="italic"><text class="tool-icon-italic">I</text></view>
+    <view class="tool-btn {{formatStatus.underline ? 'active' : ''}}" catchtouchstart="onToolbarTouch" catchtap="onFormat" data-name="underline"><text class="tool-icon-underline">U</text></view>
     <view class="tool-divider"></view>
-    <view class="tool-btn {{formatStatus.header === 1 ? 'active' : ''}}" catchtap="onFormat" data-name="header" data-value="1">大标题</view>
-    <view class="tool-btn {{formatStatus.header === 2 ? 'active' : ''}}" catchtap="onFormat" data-name="header" data-value="2">小标题</view>
-    <view class="tool-btn {{formatStatus.header === false ? 'active' : ''}}" catchtap="onFormat" data-name="header" data-value="">正文</view>
+    <view class="tool-btn {{formatStatus.header === 1 ? 'active' : ''}}" catchtouchstart="onToolbarTouch" catchtap="onFormat" data-name="header" data-value="1">大标题</view>
+    <view class="tool-btn {{formatStatus.header === 2 ? 'active' : ''}}" catchtouchstart="onToolbarTouch" catchtap="onFormat" data-name="header" data-value="2">小标题</view>
+    <view class="tool-btn {{formatStatus.header === false ? 'active' : ''}}" catchtouchstart="onToolbarTouch" catchtap="onFormat" data-name="header" data-value="">正文</view>
     <view class="tool-divider"></view>
-    <view class="tool-btn color-btn" catchtap="onToggleColorPicker">
+    <view class="tool-btn color-btn" catchtouchstart="onToolbarTouch" catchtap="onToggleColorPicker">
       <view class="color-dot" style="background:{{currentTextColor || '#333'}}"></view>颜色
     </view>
-    <view class="tool-btn" catchtap="onInsertDivider">分割线</view>
+    <view class="tool-btn" catchtouchstart="onToolbarTouch" catchtap="onInsertDivider">分割线</view>
   </view>
   <view class="color-panel" wx:if="{{showColorPicker}}">
-    <view wx:for="{{colorList}}" wx:key="*this" class="color-swatch {{currentTextColor === item ? 'selected' : ''}}" style="background:{{item}}" catchtap="onSetColor" data-color="{{item}}"></view>
+    <view wx:for="{{colorList}}" wx:key="*this" class="color-swatch {{currentTextColor === item ? 'selected' : ''}}" style="background:{{item}}" catchtouchstart="onToolbarTouch" catchtap="onSetColor" data-color="{{item}}"></view>
   </view>
 </view>
