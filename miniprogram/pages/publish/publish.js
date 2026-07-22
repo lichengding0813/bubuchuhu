@@ -73,6 +73,10 @@ Page({
     fontSizeList: [12, 14, 16, 18, 24, 36],
     fontSizeLabels: ['12px', '14px', '16px', '18px', '24px', '36px'],
     currentFontSize: '16',
+    // 地图选点
+    latitude: null,
+    longitude: null,
+    marker: null,
     distance: '',
     climb: '',
     difficulty: '',
@@ -741,6 +745,36 @@ Page({
     const { field } = e.currentTarget.dataset;
     const value = e.detail || '';
     this.setData({ [field]: value }, () => this.checkCanSubmit());
+  },
+
+  // 活动地点地图选点
+  onChooseActivityLocation() {
+    wx.chooseLocation({
+      success: (res) => {
+        this.setData({
+          location: res.name || res.address,
+          latitude: res.latitude,
+          longitude: res.longitude,
+          marker: { id: 1, latitude: res.latitude, longitude: res.longitude }
+        }, () => this.checkCanSubmit());
+      }
+    });
+  },
+
+  // 集合点地图选点
+  onChooseMeetingLocation(e) {
+    const index = e.currentTarget.dataset.index;
+    wx.chooseLocation({
+      success: (res) => {
+        const { meetingPoints } = this.data;
+        if (meetingPoints[index]) {
+          meetingPoints[index].location = res.name || res.address;
+          meetingPoints[index].latitude = res.latitude;
+          meetingPoints[index].longitude = res.longitude;
+          this.setData({ meetingPoints: [...meetingPoints] }, () => this.checkCanSubmit());
+        }
+      }
+    });
   },
 
   // ====== 富文本编辑器（路线简介） ======

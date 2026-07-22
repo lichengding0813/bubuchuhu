@@ -25,7 +25,10 @@
       <!-- 活动地点 -->
       <view class="form-item">
         <view class="item-label">活动地点<text class="required-star">*</text></view>
-        <van-field value="{{location}}" bind:input="onInput" data-field="location" placeholder="请输入活动地点" border="{{false}}" />
+        <van-field value="{{location}}" bind:input="onInput" data-field="location" placeholder="请输入或点击右侧地图选点" border="{{false}}" right-icon="location-o" bind:click-icon="onChooseActivityLocation" />
+        <view wx:if="{{latitude && longitude}}" class="map-preview">
+          <map latitude="{{latitude}}" longitude="{{longitude}}" markers="{{[marker]}}" style="width:100%;height:160rpx;border-radius:12rpx;" />
+        </view>
       </view>
     </view>
 
@@ -60,7 +63,7 @@
           <!-- 集合时间 -->
           <van-field value="{{item.time}}" bind:click-input="onMeetingTimePickerClick" data-index="{{index}}" placeholder="集合时间 *" readonly right-icon="arrow" />
           <!-- 集合地点 - 修复版本 -->
-          <van-field value="{{item.location}}" bind:input="onMeetingLocationInput" data-index="{{index}}" placeholder="集合地点 *" bindconfirm="onMeetingLocationConfirm" />
+          <van-field value="{{item.location}}" bind:input="onMeetingLocationInput" data-index="{{index}}" placeholder="集合地点 *" bindconfirm="onMeetingLocationConfirm" right-icon="location-o" bind:click-icon="onChooseMeetingLocation" data-index="{{index}}" />
         </van-cell-group>
       </view>
     </view>
