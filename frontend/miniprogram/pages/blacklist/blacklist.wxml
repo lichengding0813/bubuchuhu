@@ -1,9 +1,9 @@
 <view class="container">
   <!-- 说明 -->
-  <view class="tip-card">
+  <!-- <view class="tip-card">
     <van-icon name="warning-o" size="14px" color="#ff9800" />
     <text>被拉黑的用户无法使用小程序。解封后将重置答错次数，用户可重新答题验证，通过后恢复正常使用。</text>
-  </view>
+  </view> -->
 
   <!-- 黑名单列表 -->
   <view class="list-section">

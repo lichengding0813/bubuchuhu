@@ -35,7 +35,7 @@ def validate_config():
 # ==================== 微信配置 ====================
 WX_APPID = os.environ.get('WX_APPID')
 WX_SECRET = os.environ.get('WX_SECRET')
-WX_API_BASE = os.environ.get('WX_API_BASE', 'https://api.weixin.qq.com')
+WX_API_BASE = os.environ.get('WX_API_BASE', 'http://api.weixin.qq.com')
 
 # ==================== 应用配置 ====================
 DEFAULT_AVATAR = os.environ.get('DEFAULT_AVATAR', '')

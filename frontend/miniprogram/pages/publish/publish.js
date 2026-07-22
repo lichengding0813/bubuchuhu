@@ -65,6 +65,14 @@ Page({
     location: '',
     travel: [],
     route: '',
+    // 富文本编辑器
+    editorReady: false,
+    formatStatus: {},
+    currentTextColor: '#333333',
+    colorList: ['#333333', '#ff4444', '#1989fa', '#ff8800', '#4caf50'],
+    fontSizeList: [12, 14, 16, 18, 24, 36],
+    fontSizeLabels: ['12px', '14px', '16px', '18px', '24px', '36px'],
+    currentFontSize: '16',
     distance: '',
     climb: '',
     difficulty: '',
@@ -412,8 +420,16 @@ Page({
       wx.hideLoading();
       if (result.data && result.data.code === 200) {
         this.setData({ draftId: result.data.data.draft_id });
-        wx.showToast({ title: '草稿已保存', icon: 'success', duration: 1500 });
-        setTimeout(() => wx.navigateBack(), 1500);
+        wx.showModal({
+          title: '草稿已保存',
+          content: '您可在「我的 - 我发起的 - 草稿箱」中找到此草稿，随时继续编辑或发布',
+          showCancel: false,
+          confirmText: '我知道了',
+          confirmColor: '#5faee3',
+          success: () => {
+            wx.switchTab({ url: '/pages/home/home' });
+          }
+        });
       } else {
         wx.showToast({ title: result.data?.msg || '保存失败', icon: 'none' });
       }
@@ -476,12 +492,102 @@ Page({
         return;
       }
     }
+    // 校验集合点时间不能晚于活动开始时间
+    if (this.data.activityTime && this.data.meetingPoints && this.data.meetingPoints.length > 0) {
+      const activityTs = new Date(this.data.activityTime.replace(/-/g, '/')).getTime();
+      for (let i = 0; i < this.data.meetingPoints.length; i++) {
+        const mp = this.data.meetingPoints[i];
+        if (mp.time) {
+          const mpTs = new Date(mp.time.replace(/-/g, '/')).getTime();
+          if (mpTs > activityTs) {
+            wx.showModal({
+              title: '时间冲突',
+              content: `第${i + 1}个集合点的时间不能晚于活动开始时间，请修改后再提交`,
+              showCancel: false,
+              confirmText: '我知道了',
+              confirmColor: '#5faee3'
+            });
+            return;
+          }
+        }
+      }
+    }
 
-    // 根据是否有 editActivityId 判断编辑还是新建
+    // 根据模式判断提交方式
     if (this.data.editActivityId) {
       this.submitEditActivity();
+    } else if (this.data.draftId) {
+      this.publishDraft();
     } else {
       this.submitNewActivity();
+    }
+  },
+
+  async publishDraft() {
+    wx.showLoading({ title: '提交中...' });
+    const travelTypeMap = { 'bus': 1, 'train': 2, 'self': 3 };
+    const travelOptionsNumbers = (this.data.travel || []).map(item => travelTypeMap[item]).filter(v => v);
+    const formData = {
+      draft_id: this.data.draftId,
+      name: this.data.name,
+      description: this.data.description,
+      activityTime: this.data.activityTime,
+      location: this.data.location,
+      route: this.data.route,
+      distance: parseInt(this.data.distance) || 0,
+      climb: parseInt(this.data.climb) || 0,
+      difficulty: parseInt(this.data.difficulty) || 1,
+      maxParticipants: this.data.maxParticipants,
+      deadline: this.data.deadline,
+      cover: this.data.cover,
+      groupQR: this.data.groupQR,
+      wechat: this.data.wechat,
+      travelOptions: travelOptionsNumbers,
+      meetingPoints: this.data.meetingPoints,
+      mandatoryInsurance: this.data.forceInsurance,
+    };
+    try {
+      const userInfo = wx.getStorageSync('userInfo');
+      // 1. 先保存草稿内容
+      const saveResult = await wx.cloud.callContainer({
+        config: { env: "prod-3gktwx67d1dd1e76" },
+        path: "/api/activity/save-draft",
+        method: "POST",
+        header: {
+          "X-WX-SERVICE": "flask-mysql-login",
+          "X-Wx-OpenId": userInfo?.openId,
+          "Content-Type": "application/json"
+        },
+        data: formData
+      });
+      if (!saveResult.data || saveResult.data.code !== 200) {
+        wx.hideLoading();
+        wx.showToast({ title: saveResult.data?.msg || '保存失败', icon: 'none' });
+        return;
+      }
+      // 2. 再发布草稿（status -1 → 0）
+      const publishResult = await wx.cloud.callContainer({
+        config: { env: "prod-3gktwx67d1dd1e76" },
+        path: "/api/activity/publish-draft",
+        method: "POST",
+        header: {
+          "X-WX-SERVICE": "flask-mysql-login",
+          "X-Wx-OpenId": userInfo?.openId,
+          "Content-Type": "application/json"
+        },
+        data: { draft_id: this.data.draftId }
+      });
+      wx.hideLoading();
+      if (publishResult.data && publishResult.data.code === 200) {
+        wx.showToast({ title: '已提交审核', icon: 'success', duration: 2000 });
+        setTimeout(() => wx.navigateBack(), 2000);
+      } else {
+        const errMsg = publishResult.data?.msg || '提交失败';
+        wx.showModal({ title: '提交失败', content: errMsg, showCancel: false });
+      }
+    } catch (err) {
+      wx.hideLoading();
+      wx.showToast({ title: '网络错误', icon: 'error' });
     }
   },
 
@@ -637,6 +743,55 @@ Page({
     this.setData({ [field]: value }, () => this.checkCanSubmit());
   },
 
+  // ====== 富文本编辑器（路线简介） ======
+  onEditorReady() {
+    wx.createSelectorQuery().select('#editor-route').context((res) => {
+      this.editorCtx = res.context;
+      this.setData({ editorReady: true });
+      if (this.data.route) {
+        this.editorCtx.setContents({ html: this.data.route });
+      }
+    }).exec();
+  },
+
+  onEditorInput(e) {
+    this.setData({ route: e.detail.html }, () => this.checkCanSubmit());
+  },
+
+  onEditorStatusChange(e) {
+    this.setData({ formatStatus: e.detail });
+  },
+
+  onFormat(e) {
+    if (!this.editorCtx) return;
+    const { name, value } = e.currentTarget.dataset;
+    if (name === 'header') {
+      this.editorCtx.format(name, value === '' ? false : parseInt(value));
+    } else {
+      this.editorCtx.format(name);
+    }
+  },
+
+  onFontSizeChange(e) {
+    if (!this.editorCtx) return;
+    const idx = e.detail.value;
+    const size = this.data.fontSizeList[idx];
+    this.editorCtx.format('fontSize', size + 'px');
+    this.setData({ currentFontSize: size });
+  },
+
+  onSetColor(e) {
+    if (!this.editorCtx) return;
+    const color = e.currentTarget.dataset.color;
+    this.editorCtx.format('color', color);
+    this.setData({ currentTextColor: color });
+  },
+
+  onInsertDivider() {
+    if (!this.editorCtx) return;
+    this.editorCtx.insertDivider();
+  },
+
   onMeetingLocationInput(e) {
     const { index } = e.currentTarget.dataset;
     const value = e.detail.value || e.detail || '';
@@ -663,6 +818,10 @@ Page({
 
   onDifficultyChange(e) {
     this.setData({ difficulty: e.detail }, () => this.checkCanSubmit());
+  },
+
+  onDifficultyTap(e) {
+    this.setData({ difficulty: e.currentTarget.dataset.value }, () => this.checkCanSubmit());
   },
 
   onStepperChange(e) {
@@ -849,15 +1008,21 @@ Page({
   onAgreeChange(e) {
     const checked = e.detail;
     if (checked && !this.data.noticeViewed) {
-      // 强制弹出发起者须知并开始倒计时
-      this.setData({
-        showNotice: true,
-        canCloseNotice: false,
-        noticeCountdown: 3,
-        agree: false,
-        pendingAgree: true
+      // 跳转发起者须知页面
+      this.setData({ agree: false, pendingAgree: true });
+      wx.navigateTo({
+        url: '/pages/notice/notice?type=organizer',
+        events: {
+          viewed: (data) => {
+            if (data.type === 'organizer') {
+              this.setData({ noticeViewed: true, agree: true, pendingAgree: false }, () => this.checkCanSubmit());
+            }
+          }
+        },
+        success: (res) => {
+          res.eventChannel.emit('init', { agreeField: '' });
+        }
       });
-      this.startNoticeCountdown(true);
       return;
     }
     this.setData({ agree: checked }, () => this.checkCanSubmit());
@@ -879,45 +1044,23 @@ Page({
   },
 
   onNoticeClick() {
-    this.setData({ showNotice: true });
-    if (!this.data.noticeViewed) {
-      this.setData({ canCloseNotice: false, noticeCountdown: 3 });
-      this.startNoticeCountdown(false);
-    }
-  },
-
-  // 开始3秒倒计时
-  startNoticeCountdown(autoCheck) {
-    if (this.countdownTimer) clearInterval(this.countdownTimer);
-    let count = 3;
-    this.countdownTimer = setInterval(() => {
-      count--;
-      if (count > 0) {
-        this.setData({ noticeCountdown: count });
-      } else {
-        clearInterval(this.countdownTimer);
-        // 3秒到了：解锁关闭按钮，标记已阅读，但不自动关闭
-        this.setData({
-          canCloseNotice: true,
-          noticeCountdown: 0,
-          noticeViewed: true
-        });
+    wx.navigateTo({
+      url: '/pages/notice/notice?type=organizer',
+      events: {
+        viewed: (data) => {
+          if (data.type === 'organizer') {
+            this.setData({ noticeViewed: true }, () => {
+              if (this.data.pendingAgree) {
+                this.setData({ agree: true, pendingAgree: false }, () => this.checkCanSubmit());
+              }
+            });
+          }
+        }
+      },
+      success: (res) => {
+        res.eventChannel.emit('init', { agreeField: '' });
       }
-    }, 1000);
-  },
-
-  onNoticeClose() {
-    if (!this.data.canCloseNotice) {
-      wx.showToast({ title: `请等待${this.data.noticeCountdown}秒后再关闭`, icon: 'none' });
-      return;
-    }
-    // 用户手动关闭弹窗后，如果有待勾选的协议，自动勾选
-    const updateData = { showNotice: false };
-    if (this.data.pendingAgree) {
-      updateData.agree = true;
-      updateData.pendingAgree = false;
-    }
-    this.setData(updateData, () => this.checkCanSubmit());
+    });
   },
 
   onUnload() {

@@ -39,28 +39,47 @@
       <view class="edit-label">人合照</view>
       <view class="upload-area" bindtap="chooseCover" data-type="cover">
         <image wx:if="{{form.cover}}" src="{{form.cover}}" mode="aspectFill" class="uploaded-image"></image>
-        <view wx:else class="upload-placeholder"><van-icon name="plus" /> 上传图片</view>
+        <view wx:else class="upload-placeholder">
+          <van-icon name="plus" /> 上传图片
+        </view>
       </view>
     </view>
     <view class="edit-field">
       <view class="edit-label">卜合照</view>
       <view class="upload-area" bindtap="chooseCover" data-type="cover2">
         <image wx:if="{{form.cover2}}" src="{{form.cover2}}" mode="aspectFill" class="uploaded-image"></image>
-        <view wx:else class="upload-placeholder"><van-icon name="plus" /> 上传图片</view>
+        <view wx:else class="upload-placeholder">
+          <van-icon name="plus" /> 上传图片
+        </view>
       </view>
     </view>
     <view class="edit-field">
       <view class="edit-label">公益记录</view>
       <view class="upload-area" bindtap="chooseCover" data-type="cover3">
         <image wx:if="{{form.cover3}}" src="{{form.cover3}}" mode="aspectFill" class="uploaded-image"></image>
-        <view wx:else class="upload-placeholder"><van-icon name="plus" /> 上传图片</view>
+        <view wx:else class="upload-placeholder">
+          <van-icon name="plus" /> 上传图片
+        </view>
       </view>
     </view>
   </view>
 
   <view class="form-card">
     <view class="card-title">活动总结</view>
-    <textarea class="edit-textarea" maxlength="2000" model:value="{{form.summary}}" data-field="summary" bindinput="onInput" placeholder="请输入活动总结"  auto-height />
+    <!-- 富文本工具栏 -->
+    <view class="editor-toolbar">
+      <view class="tool-btn {{formatStatus.bold ? 'active' : ''}}" catchtap="onFormat" data-name="bold"><text class="tool-icon-bold">B</text></view>
+      <picker class="tool-picker" mode="selector" range="{{fontSizeLabels}}" bindchange="onFontSizeChange">
+        <view class="tool-btn">字号 {{currentFontSize || '16'}}</view>
+      </picker>
+      <view class="tool-btn" catchtap="onInsertDivider">分割线</view>
+    </view>
+    <view class="editor-toolbar">
+      <view wx:for="{{colorList}}" wx:key="*this" class="color-swatch-btn {{currentTextColor === item ? 'selected' : ''}}" style="background:{{item}}" catchtap="onSetColor" data-color="{{item}}"></view>
+    </view>
+
+    <!-- 编辑器 -->
+    <editor id="editor" class="ql-editor" placeholder="请输入活动总结" show-img-toolbar show-img-resize bind:ready="onEditorReady" bind:input="onEditorInput" bind:statuschange="onEditorStatusChange"></editor>
   </view>
 
   <view class="form-card">

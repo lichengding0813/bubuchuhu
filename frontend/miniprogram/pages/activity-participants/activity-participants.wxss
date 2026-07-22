@@ -214,3 +214,66 @@ page {
   height: 100%;
   object-fit: cover;
 }
+
+/* ====== 已取消报名折叠区 ====== */
+.cancelled-section {
+  margin-top: 24px;
+}
+
+.cancelled-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background-color: #f5f5f5;
+  border-radius: 12px;
+  margin-bottom: 8px;
+}
+
+.cancelled-title {
+  font-size: 14px;
+  color: #999;
+  font-weight: 500;
+}
+
+/* 已取消卡片样式 */
+.cancelled-card {
+  background-color: #fafafa;
+  border: 1px dashed #d0d0d0;
+  opacity: 0.75;
+}
+
+.cancelled-avatar {
+  filter: grayscale(1);
+}
+
+.nickname-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cancelled-nickname {
+  color: #999 !important;
+}
+
+.cancelled-tag {
+  font-size: 11px;
+  color: #fff;
+  background-color: #bbb;
+  padding: 2px 8px;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
+.cancelled-time {
+  color: #bbb !important;
+}
+
+.cancelled-info {
+  color: #aaa !important;
+}
+
+.cancelled-info van-icon {
+  color: #ccc !important;
+}

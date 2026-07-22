@@ -20,8 +20,8 @@ Page({
   data: {
     pendingCount: 0,
     draftCount: 0,
-    totalCount: 0,
-    currentTab: 'pending',
+    approvedCount: 0,
+    currentTab: 'approved',
     activityList: [],
     draftList: [],
     isLoading: false,
@@ -39,7 +39,6 @@ Page({
     } else {
       this.loadData();
     }
-    // 每次返回都刷新草稿数量
     this.loadDrafts();
   },
 
@@ -85,18 +84,19 @@ Page({
         }));
 
         const pendingList = formatted.filter(item => item.status === 0);
+        const approvedList = formatted.filter(item => item.status !== 0 && item.status !== -1);
         const totalCount = formatted.length;
 
         let displayList = [];
         if (this.data.currentTab === 'pending') {
           displayList = pendingList;
         } else {
-          displayList = formatted;
+          displayList = approvedList;
         }
 
         this.setData({
           pendingCount: pendingList.length,
-          totalCount: totalCount,
+          approvedCount: approvedList.length,
           activityList: displayList
         });
       } else {
@@ -167,6 +167,47 @@ Page({
     });
   },
 
+  // 撤回待审核活动
+  onWithdraw(e) {
+    const id = e.currentTarget.dataset.id;
+    wx.showModal({
+      title: '确认撤回',
+      content: '撤回后活动将存入草稿箱，您可以稍后修改并重新提交审核',
+      confirmText: '确认撤回',
+      cancelText: '取消',
+      confirmColor: '#ff9800',
+      success: async (res) => {
+        if (!res.confirm) return;
+        wx.showLoading({ title: '撤回中...' });
+        try {
+          const userInfo = wx.getStorageSync('userInfo');
+          const result = await wx.cloud.callContainer({
+            config: { env: "prod-3gktwx67d1dd1e76" },
+            path: "/api/activity/withdraw",
+            method: "POST",
+            header: {
+              "X-WX-SERVICE": "flask-mysql-login",
+              "X-Wx-OpenId": userInfo?.openId,
+              "Content-Type": "application/json"
+            },
+            data: { activity_id: id }
+          });
+          wx.hideLoading();
+          if (result.data && result.data.code === 200) {
+            wx.showToast({ title: '已撤回至草稿箱', icon: 'success' });
+            this.loadData();
+          } else {
+            wx.showToast({ title: result.data?.msg || '撤回失败', icon: 'none' });
+          }
+        } catch (err) {
+          wx.hideLoading();
+          console.error('撤回失败', err);
+          wx.showToast({ title: '网络错误', icon: 'error' });
+        }
+      }
+    });
+  },
+
   // 编辑活动（驳回后修改 或 审核通过后修改）
   onEditActivity(e) {
     const id = e.currentTarget.dataset.id;
@@ -203,7 +244,7 @@ Page({
     }
     wx.showModal({
       title: '确认删除',
-      content: '删除后无法恢复，确定要删除这个草稿吗？',
+      content: '删除后无法恢复，确定要删除吗？',
       confirmColor: '#ff6b6b',
       success: async (res) => {
         if (!res.confirm) return;

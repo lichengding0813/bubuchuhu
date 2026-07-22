@@ -149,7 +149,7 @@ def get_activity_list():
         cursor = conn.cursor()
 
         # 构建查询条件
-        where_clause = "WHERE a.status NOT IN (0, -1)"  # 不展示待审核和草稿活动
+        where_clause = "WHERE a.status NOT IN (0, -1, 2)"  # 不展示待审核、草稿、已拒绝的活动
         params = []
 
         if status is not None:
@@ -872,7 +872,7 @@ def get_activity_participants():
         # 查询所有报名记录，关联 users 表获取头像和昵称（使用报名时填写的昵称优先，若为空则取 users 表中的昵称）
         cursor.execute("""
             SELECT 
-                p.id, p.user_openid, 
+                p.id, p.user_openid, p.status,
                 IFNULL(p.nickname, u.nickName) AS nickname,
                 u.avatarUrl,
                 p.phone, p.wechat_id, 
@@ -950,14 +950,14 @@ def save_draft():
             """, (
                 data.get('name', ''),
                 data.get('description', ''),
-                data.get('activityTime', None),
+                data.get('activityTime') or None,
                 data.get('location', ''),
                 data.get('route', ''),
                 data.get('distance', 0) or 0,
                 data.get('climb', 0) or 0,
                 data.get('difficulty', 1) or 1,
                 data.get('maxParticipants', 2) or 2,
-                data.get('deadline', None),
+                data.get('deadline') or None,
                 data.get('cover', ''),
                 data.get('groupQR', ''),
                 data.get('wechat', ''),
@@ -997,14 +997,14 @@ def save_draft():
                 activity_no,
                 data.get('name', ''),
                 data.get('description', ''),
-                data.get('activityTime', None),
+                data.get('activityTime') or None,
                 data.get('location', ''),
                 data.get('route', ''),
                 data.get('distance', 0) or 0,
                 data.get('climb', 0) or 0,
                 data.get('difficulty', 1) or 1,
                 data.get('maxParticipants', 2) or 2,
-                data.get('deadline', None),
+                data.get('deadline') or None,
                 data.get('cover', ''),
                 data.get('groupQR', ''),
                 data.get('wechat', ''),
@@ -1193,6 +1193,59 @@ def publish_draft():
         if conn:
             conn.rollback()
         logging.exception("发布草稿失败")
+        return jsonify({'code': 500, 'msg': '服务器内部错误，请稍后重试'})
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+
+@activity_bp.route('/withdraw', methods=['POST'])
+@check_verified_and_blacklist
+def withdraw_activity():
+    """撤回待审核活动，将其状态从 0(待审核) 改为 -1(草稿)"""
+    openid = g.openid
+    data = request.get_json()
+    activity_id = data.get('activity_id')
+
+    if not activity_id:
+        return jsonify({'code': 400, 'msg': '缺少活动ID'})
+
+    conn = None
+    cursor = None
+
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+
+        # 校验归属和状态
+        cursor.execute(
+            "SELECT id FROM activities WHERE id = %s AND created_by = %s AND status = 0",
+            (activity_id, openid)
+        )
+        if not cursor.fetchone():
+            return jsonify({'code': 403, 'msg': '活动不存在或非待审核状态'})
+
+        # 更新状态为草稿
+        cursor.execute(
+            "UPDATE activities SET status = -1, updated_at = NOW() WHERE id = %s",
+            (activity_id,)
+        )
+
+        # 插入审核记录（action=5 表示撤回）
+        cursor.execute(
+            "INSERT INTO activity_audit_logs (activity_id, action, created_at) VALUES (%s, 5, NOW())",
+            (activity_id,)
+        )
+
+        conn.commit()
+        return jsonify({'code': 200, 'msg': '活动已撤回至草稿箱'})
+
+    except Exception:
+        if conn:
+            conn.rollback()
+        logging.exception("撤回活动失败")
         return jsonify({'code': 500, 'msg': '服务器内部错误，请稍后重试'})
     finally:
         if cursor:

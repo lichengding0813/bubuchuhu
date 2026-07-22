@@ -435,6 +435,7 @@ Page({
         path: "/verify",
         header: {
           "X-WX-SERVICE": "flask-mysql-login",
+          "X-Wx-OpenId": this.data.userInfo?.openId,
           "content-type": "application/json"
         },
         method: "POST",

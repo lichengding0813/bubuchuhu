@@ -12,7 +12,8 @@ Page({
     const titleMap = {
       participant: '报名参与者须知',
       bus: '大巴行程免责声明',
-      self: '自驾/高铁行程免责声明'
+      self: '自驾/高铁行程免责声明',
+      organizer: '发起者须知'
     };
     const sysInfo = wx.getSystemInfoSync();
     this.setData({
