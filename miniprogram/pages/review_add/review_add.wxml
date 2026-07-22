@@ -60,7 +60,27 @@
 
   <view class="form-card">
     <view class="card-title">活动总结</view>
-    <textarea class="edit-textarea" maxlength="2000" model:value="{{form.summary}}" data-field="summary" bindinput="onInput" placeholder="请输入活动总结"  auto-height />
+    <!-- 富文本编辑器工具栏 -->
+    <view class="editor-toolbar">
+      <view class="tool-btn {{formatStatus.bold ? 'active' : ''}}" bindtap="onFormat" data-name="bold"><text class="tool-icon-bold">B</text></view>
+      <view class="tool-btn {{formatStatus.italic ? 'active' : ''}}" bindtap="onFormat" data-name="italic"><text class="tool-icon-italic">I</text></view>
+      <view class="tool-btn {{formatStatus.underline ? 'active' : ''}}" bindtap="onFormat" data-name="underline"><text class="tool-icon-underline">U</text></view>
+      <view class="tool-divider"></view>
+      <view class="tool-btn {{formatStatus.header === 1 ? 'active' : ''}}" bindtap="onFormat" data-name="header" data-value="1">大标题</view>
+      <view class="tool-btn {{formatStatus.header === 2 ? 'active' : ''}}" bindtap="onFormat" data-name="header" data-value="2">小标题</view>
+      <view class="tool-btn {{formatStatus.header === false ? 'active' : ''}}" bindtap="onFormat" data-name="header" data-value="">正文</view>
+      <view class="tool-divider"></view>
+      <view class="tool-btn color-btn" bindtap="onToggleColorPicker">
+        <view class="color-dot" style="background:{{currentTextColor || '#333'}}"></view>颜色
+      </view>
+      <view class="tool-btn" bindtap="onInsertDivider">分割线</view>
+    </view>
+    <!-- 颜色选择面板 -->
+    <view class="color-panel" wx:if="{{showColorPicker}}">
+      <view wx:for="{{colorList}}" wx:key="*this" class="color-swatch {{currentTextColor === item ? 'selected' : ''}}" style="background:{{item}}" bindtap="onSetColor" data-color="{{item}}"></view>
+    </view>
+    <!-- 编辑器 -->
+    <editor id="editor" class="ql-editor" placeholder="请输入活动总结" show-img-toolbar show-img-resize bind:ready="onEditorReady" bind:input="onEditorInput" bind:statuschange="onEditorStatusChange"></editor>
   </view>
 
   <view class="form-card">

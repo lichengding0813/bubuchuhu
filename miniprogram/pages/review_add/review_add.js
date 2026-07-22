@@ -17,7 +17,12 @@ Page({
       summary: '',
       photos: []
     },
-    submitting: false
+    submitting: false,
+    editorReady: false,
+    formatStatus: {},
+    showColorPicker: false,
+    currentTextColor: '#333333',
+    colorList: ['#333333', '#ff4444', '#ff8800', '#4caf50', '#1989fa', '#722ed1']
   },
 
   onLoad(options) {
@@ -66,6 +71,49 @@ Page({
   onInput(e) {
     const field = e.currentTarget.dataset.field;
     this.setData({ [`form.${field}`]: e.detail.value });
+  },
+
+  // ====== 富文本编辑器 ======
+  onEditorReady() {
+    wx.createSelectorQuery().select('#editor').context((res) => {
+      this.editorCtx = res.context;
+      this.setData({ editorReady: true });
+      // 编辑模式：回填已有内容
+      if (this.data.form.summary) {
+        this.editorCtx.setContents({ html: this.data.form.summary });
+      }
+    }).exec();
+  },
+
+  onEditorInput(e) {
+    this.setData({ 'form.summary': e.detail.html });
+  },
+
+  onEditorStatusChange(e) {
+    this.setData({ formatStatus: e.detail });
+  },
+
+  onFormat(e) {
+    const { name, value } = e.currentTarget.dataset;
+    if (name === 'header') {
+      this.editorCtx.format(name, value === '' ? false : parseInt(value));
+    } else {
+      this.editorCtx.format(name);
+    }
+  },
+
+  onToggleColorPicker() {
+    this.setData({ showColorPicker: !this.data.showColorPicker });
+  },
+
+  onSetColor(e) {
+    const color = e.currentTarget.dataset.color;
+    this.editorCtx.format('color', color);
+    this.setData({ currentTextColor: color, showColorPicker: false });
+  },
+
+  onInsertDivider() {
+    this.editorCtx.insertDivider();
   },
 
   // 上传图片后检测是否合规，违规时将图片存到 flagged/ 文件夹供人工复核

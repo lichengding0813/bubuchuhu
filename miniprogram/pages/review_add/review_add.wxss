@@ -330,6 +330,111 @@ page {
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
 
+/* ====== 富文本编辑器 ====== */
+.editor-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background-color: #f5faff;
+  border-radius: 12px 12px 0 0;
+  border: 1px solid #d8e8f5;
+  border-bottom: none;
+}
+
+.tool-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 6px 10px;
+  font-size: 13px;
+  color: #5f7fa3;
+  background-color: #fff;
+  border-radius: 8px;
+  border: 1px solid #e0e8f0;
+  min-width: 32px;
+  white-space: nowrap;
+}
+
+.tool-btn.active {
+  background-color: #5faee3;
+  color: #fff;
+  border-color: #5faee3;
+}
+
+.tool-icon-bold {
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.tool-icon-italic {
+  font-style: italic;
+  font-size: 14px;
+}
+
+.tool-icon-underline {
+  text-decoration: underline;
+  font-size: 14px;
+}
+
+.tool-divider {
+  width: 1px;
+  height: 20px;
+  background-color: #d0dce8;
+  margin: 0 2px;
+}
+
+.color-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.color-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1px solid #ddd;
+}
+
+/* 颜色选择面板 */
+.color-panel {
+  display: flex;
+  gap: 10px;
+  padding: 10px 12px;
+  background-color: #f5faff;
+  border-left: 1px solid #d8e8f5;
+  border-right: 1px solid #d8e8f5;
+}
+
+.color-swatch {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid #ddd;
+}
+
+.color-swatch.selected {
+  border-color: #5faee3;
+  box-shadow: 0 0 0 2px rgba(95, 174, 227, 0.3);
+}
+
+/* 编辑器主体 */
+.ql-editor {
+  width: 100%;
+  min-height: 300rpx;
+  padding: 16px 12px;
+  font-size: 15px;
+  line-height: 1.6;
+  background-color: #fff;
+  border-radius: 0 0 12px 12px;
+  border: 1px solid #d8e8f5;
+  border-top: none;
+  box-sizing: border-box;
+}
+
 
 
 .edit-row {
