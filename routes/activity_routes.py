@@ -872,7 +872,7 @@ def get_activity_participants():
         # 查询所有报名记录，关联 users 表获取头像和昵称（使用报名时填写的昵称优先，若为空则取 users 表中的昵称）
         cursor.execute("""
             SELECT 
-                p.id, p.user_openid, 
+                p.id, p.user_openid, p.status,
                 IFNULL(p.nickname, u.nickName) AS nickname,
                 u.avatarUrl,
                 p.phone, p.wechat_id, 
