@@ -1266,3 +1266,50 @@ def withdraw_activity():
             cursor.close()
         if conn:
             conn.close()
+@activity_bp.route('/calendar', methods=['GET'])
+def get_activity_calendar():
+    """获取活动日历数据（按月）+ 指定日期的活动列表"""
+    year = request.args.get('year', type=int)
+    month = request.args.get('month', type=int)
+    date = request.args.get('date', '')
+
+    if not year or not month:
+        return jsonify({'code': 400, 'msg': '请提供year和month参数'})
+
+    conn = None
+    cursor = None
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+
+        if date:
+            # 查询指定日期的活动列表
+            cursor.execute("""
+                SELECT id, name, location, activity_time
+                FROM activities
+                WHERE status NOT IN (0, -1, 2)
+                AND DATE(activity_time) = %s
+                ORDER BY activity_time ASC
+            """, (date,))
+            list_data = cursor.fetchall()
+            for item in list_data:
+                if item.get('activity_time'):
+                    item['activity_time'] = item['activity_time'].strftime('%m/%d %H:%M')
+            return jsonify({'code': 200, 'data': {'list': list_data}})
+
+        # 查询当月每天的活动数量
+        cursor.execute("""
+            SELECT DATE(activity_time) as dt, COUNT(*) as cnt
+            FROM activities
+            WHERE status NOT IN (0, -1, 2)
+            AND YEAR(activity_time) = %s AND MONTH(activity_time) = %s
+            GROUP BY DATE(activity_time)
+        """, (year, month))
+        result = {row['dt'].strftime('%Y-%m-%d') if row['dt'] else '': row['cnt'] for row in cursor.fetchall()}
+        return jsonify({'code': 200, 'data': result})
+    except Exception:
+        logging.exception("获取日历数据失败")
+        return jsonify({'code': 500, 'msg': '服务器内部错误'})
+    finally:
+        if cursor: cursor.close()
+        if conn: conn.close()
