@@ -30,6 +30,58 @@ page {
   display: block;
 }
 
+/* ====== 搜索和筛选 ====== */
+.search-section {
+  padding: 8px 16px 4px;
+}
+
+.search-bar {
+  display: flex;
+  align-items: center;
+  background-color: #fff;
+  border-radius: 10px;
+  padding: 0 12px;
+  height: 40px;
+  border: 1px solid #e0e8f0;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.search-input {
+  flex: 1;
+  font-size: 14px;
+  color: #333;
+  height: 100%;
+}
+
+.filter-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.filter-label {
+  font-size: 13px;
+  color: #999;
+  flex-shrink: 0;
+  width: 40px;
+}
+
+.filter-tag {
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 14px;
+  color: #7a9ec2;
+  background-color: #e3f0ff;
+  white-space: nowrap;
+}
+
+.filter-tag.active {
+  background-color: #5faee3;
+  color: #fff;
+}
+
 
 /* 发布按钮容器 */
 .publish-section {

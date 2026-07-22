@@ -9,6 +9,10 @@ Page({
     endedCount: 0,
     userInfo: null,
     isLoading: false,
+    // 搜索筛选
+    searchKeyword: '',
+    filterDifficulty: '',
+    filterTravel: '',
     // 验证弹窗相关
     showVerifyDialog: false,
     verifyAnswer: '',
@@ -170,21 +174,22 @@ Page({
     try {
       const userInfo = this.data.userInfo || wx.getStorageSync('userInfo');
 
+      const { searchKeyword, filterDifficulty, filterTravel } = this.data;
+      const params = { page: 1, size: 50 };
+      if (searchKeyword) params.keyword = searchKeyword;
+      if (filterDifficulty !== '') params.difficulty = filterDifficulty;
+      if (filterTravel !== '') params.travel = filterTravel;
+
       const result = await wx.cloud.callContainer({
-        config: {
-          env: "prod-3gktwx67d1dd1e76"
-        },
-        path: "/api/activity/list", // 根据蓝图注册的路径
+        config: { env: "prod-3gktwx67d1dd1e76" },
+        path: "/api/activity/list",
         header: {
           "X-WX-SERVICE": "flask-mysql-login",
           "X-Wx-OpenId": userInfo?.openId,
           "content-type": "application/json"
         },
         method: "GET",
-        data: {
-          page: 1,
-          size: 10,
-        }
+        data: params
       });
       console.log(result.data)
       if (result.data && result.data.code === 200) {
@@ -508,12 +513,31 @@ Page({
 
   // 点击单个活动卡片
   onActivityClick(e) {
-    const {
-      id
-    } = e.currentTarget.dataset;
-    wx.navigateTo({
-      url: `/pages/details/details?id=${id}`
-    });
+    const { id } = e.currentTarget.dataset;
+    wx.navigateTo({ url: `/pages/details/details?id=${id}` });
+  },
+
+  // ====== 搜索筛选 ======
+  onSearchInput(e) {
+    this.setData({ searchKeyword: e.detail.value });
+  },
+
+  onSearchConfirm() {
+    this.getActivityList();
+  },
+
+  onClearSearch() {
+    this.setData({ searchKeyword: '' }, () => this.getActivityList());
+  },
+
+  onFilterDifficulty(e) {
+    const value = e.currentTarget.dataset.value;
+    this.setData({ filterDifficulty: value === '' ? '' : value }, () => this.getActivityList());
+  },
+
+  onFilterTravel(e) {
+    const value = e.currentTarget.dataset.value;
+    this.setData({ filterTravel: value === '' ? '' : parseInt(value) }, () => this.getActivityList());
   },
 
   onShareAppMessage() {
