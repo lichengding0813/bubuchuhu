@@ -22,6 +22,7 @@ Page({
     editorFocused: false,
     formatStatus: {},
     showColorPicker: false,
+    showSizePicker: false,
     currentTextColor: '#333333',
     colorList: ['#333333', '#ff4444', '#ff8800', '#4caf50', '#1989fa', '#722ed1']
   },
@@ -99,18 +100,9 @@ Page({
   },
 
   onEditorBlur() {
-    // 延迟隐藏工具栏，给工具栏按钮点击留出时间
     this._blurTimer = setTimeout(() => {
-      this.setData({ editorFocused: false, showColorPicker: false });
-    }, 200);
-  },
-
-  // 工具栏触摸拦截——阻止触摸冒泡导致编辑器失焦
-  onToolbarTouch() {
-    if (this._blurTimer) {
-      clearTimeout(this._blurTimer);
-      this._blurTimer = null;
-    }
+      this.setData({ editorFocused: false, showColorPicker: false, showSizePicker: false });
+    }, 300);
   },
 
   onEditorStatusChange(e) {
@@ -123,16 +115,20 @@ Page({
       return;
     }
     const { name, value } = e.currentTarget.dataset;
-    console.log('format:', name, value);
     if (name === 'header') {
       this.editorCtx.format(name, value === '' ? false : parseInt(value));
     } else {
       this.editorCtx.format(name);
     }
+    this.setData({ showSizePicker: false });
   },
 
   onToggleColorPicker() {
-    this.setData({ showColorPicker: !this.data.showColorPicker });
+    this.setData({ showColorPicker: !this.data.showColorPicker, showSizePicker: false });
+  },
+
+  onToggleSizePicker() {
+    this.setData({ showSizePicker: !this.data.showSizePicker, showColorPicker: false });
   },
 
   onSetColor(e) {
