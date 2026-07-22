@@ -79,24 +79,17 @@
 </view>
 
 <!-- 富文本编辑器底部固定工具栏 -->
-<view class="editor-toolbar-fixed {{editorFocused ? 'show' : ''}}">
+<view class="editor-toolbar-fixed show">
   <view class="editor-toolbar-inner">
     <view class="tool-btn {{formatStatus.bold ? 'active' : ''}}" bindtap="onFormat" data-name="bold"><text class="tool-icon-bold">B</text></view>
-    <view class="tool-btn" bindtap="onToggleSizePicker">
-      <text class="tool-icon-size">大小</text>
-    </view>
+    <picker class="tool-picker" mode="selector" range="{{fontSizeLabels}}" bindchange="onFontSizeChange">
+      <view class="tool-btn">字号 {{currentFontSize || '16'}}</view>
+    </picker>
     <view class="tool-btn color-btn" bindtap="onToggleColorPicker">
       <view class="color-dot" style="background:{{currentTextColor || '#333'}}"></view>颜色
     </view>
     <view class="tool-vdivider"></view>
     <view class="tool-btn" bindtap="onInsertDivider">分割线</view>
-  </view>
-
-  <!-- 字号选择面板 -->
-  <view class="sub-panel" wx:if="{{showSizePicker}}">
-    <view class="sub-panel-item {{formatStatus.header === false || formatStatus.header === undefined ? 'selected' : ''}}" bindtap="onFormat" data-name="header" data-value="">正文</view>
-    <view class="sub-panel-item {{formatStatus.header === 2 ? 'selected' : ''}}" bindtap="onFormat" data-name="header" data-value="2">小标题</view>
-    <view class="sub-panel-item {{formatStatus.header === 1 ? 'selected' : ''}}" bindtap="onFormat" data-name="header" data-value="1">大标题</view>
   </view>
 
   <!-- 颜色选择面板 -->

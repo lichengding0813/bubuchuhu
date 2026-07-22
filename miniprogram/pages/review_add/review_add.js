@@ -19,12 +19,13 @@ Page({
     },
     submitting: false,
     editorReady: false,
-    editorFocused: false,
     formatStatus: {},
     showColorPicker: false,
-    showSizePicker: false,
     currentTextColor: '#333333',
-    colorList: ['#333333', '#ff4444', '#ff8800', '#4caf50', '#1989fa', '#722ed1']
+    colorList: ['#333333', '#ff4444', '#ff8800', '#4caf50', '#1989fa', '#722ed1'],
+    fontSizeList: [12, 14, 16, 18, 24, 36],
+    fontSizeLabels: ['12px', '14px', '16px', '18px', '24px', '36px'],
+    currentFontSize: '16'
   },
 
   onLoad(options) {
@@ -92,17 +93,11 @@ Page({
   },
 
   onEditorFocus() {
-    if (this._blurTimer) {
-      clearTimeout(this._blurTimer);
-      this._blurTimer = null;
-    }
-    this.setData({ editorFocused: true });
+    // 工具栏始终显示，不需要 focus 控制
   },
 
   onEditorBlur() {
-    this._blurTimer = setTimeout(() => {
-      this.setData({ editorFocused: false, showColorPicker: false, showSizePicker: false });
-    }, 300);
+    // 工具栏始终显示，不隐藏
   },
 
   onEditorStatusChange(e) {
@@ -110,25 +105,25 @@ Page({
   },
 
   onFormat(e) {
-    if (!this.editorCtx) {
-      console.warn('editorCtx 未就绪');
-      return;
-    }
+    if (!this.editorCtx) return;
     const { name, value } = e.currentTarget.dataset;
     if (name === 'header') {
       this.editorCtx.format(name, value === '' ? false : parseInt(value));
     } else {
       this.editorCtx.format(name);
     }
-    this.setData({ showSizePicker: false });
+  },
+
+  onFontSizeChange(e) {
+    if (!this.editorCtx) return;
+    const idx = e.detail.value;
+    const size = this.data.fontSizeList[idx];
+    this.editorCtx.format('fontSize', size + 'px');
+    this.setData({ currentFontSize: size });
   },
 
   onToggleColorPicker() {
-    this.setData({ showColorPicker: !this.data.showColorPicker, showSizePicker: false });
-  },
-
-  onToggleSizePicker() {
-    this.setData({ showSizePicker: !this.data.showSizePicker, showColorPicker: false });
+    this.setData({ showColorPicker: !this.data.showColorPicker });
   },
 
   onSetColor(e) {

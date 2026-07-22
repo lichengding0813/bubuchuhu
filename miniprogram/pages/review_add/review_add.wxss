@@ -221,8 +221,8 @@ page {
 /* pages/review_add/review_add.wxss */
 page {
   background-color: #f0faff;
+  padding-bottom: 60px;
 }
-
 /* 顶部导航栏 */
 .nav-bar {
   display: flex;
@@ -340,14 +340,14 @@ page {
   background-color: #fff;
   box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.08);
   padding-bottom: env(safe-area-inset-bottom);
-  transform: translateY(100%);
-  transition: transform 0.25s ease;
-  opacity: 0;
 }
 
 .editor-toolbar-fixed.show {
-  transform: translateY(0);
-  opacity: 1;
+  /* 始终显示 */
+}
+
+.tool-picker {
+  flex-shrink: 0;
 }
 
 .editor-toolbar-inner {
@@ -388,16 +388,6 @@ page {
 
 .tool-icon-bold {
   font-weight: 700;
-  font-size: 14px;
-}
-
-.tool-icon-italic {
-  font-style: italic;
-  font-size: 14px;
-}
-
-.tool-icon-underline {
-  text-decoration: underline;
   font-size: 14px;
 }
 
