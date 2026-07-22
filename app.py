@@ -486,6 +486,45 @@ def verify_answer():
             cursor.close()
 
 
+# ==================== 用户徒步统计 ====================
+@app.route('/user/stats', methods=['GET'])
+def user_stats():
+    openid = request.headers.get('X-Wx-OpenId')
+    if not openid:
+        return jsonify({'code': 401, 'msg': '请先登录'})
+
+    conn = None
+    cursor = None
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT 
+                COUNT(DISTINCT p.activity_id) as total_activities,
+                COALESCE(SUM(a.distance), 0) as total_distance,
+                COALESCE(SUM(a.climb), 0) as total_climb
+            FROM activity_participants p
+            JOIN activities a ON p.activity_id = a.id
+            WHERE p.user_openid = %s AND p.status = 1
+        """, (openid,))
+        stats = cursor.fetchone()
+        return jsonify({
+            'code': 200,
+            'data': {
+                'total_activities': stats['total_activities'] or 0,
+                'total_distance': int(stats['total_distance'] or 0),
+                'total_climb': int(stats['total_climb'] or 0)
+            }
+        })
+    except Exception:
+        logging.exception("获取用户统计失败")
+        return jsonify({'code': 500, 'msg': '服务器内部错误'})
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
 # ==================== 更新用户资料 ====================
 @app.route('/update_profile', methods=['POST'])
 def update_profile():
