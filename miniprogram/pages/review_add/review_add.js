@@ -19,9 +19,7 @@ Page({
     },
     submitting: false,
     editorReady: false,
-    editorFocused: false,
     formatStatus: {},
-    showColorPicker: false,
     currentTextColor: '#333333',
     colorList: ['#333333', '#ff4444', '#1989fa', '#ff8800', '#4caf50'],
     fontSizeList: [12, 14, 16, 18, 24, 36],
@@ -93,30 +91,11 @@ Page({
     this.setData({ 'form.summary': e.detail.html });
   },
 
-  onEditorFocus() {
-    this._cancelBlur();
-    this.setData({ editorFocused: true });
-  },
-
-  onEditorBlur() {
-    this._blurTimer = setTimeout(() => {
-      this.setData({ editorFocused: false, showColorPicker: false });
-    }, 500);
-  },
-
-  _cancelBlur() {
-    if (this._blurTimer) {
-      clearTimeout(this._blurTimer);
-      this._blurTimer = null;
-    }
-  },
-
   onEditorStatusChange(e) {
     this.setData({ formatStatus: e.detail });
   },
 
   onFormat(e) {
-    this._cancelBlur();
     if (!this.editorCtx) return;
     const { name, value } = e.currentTarget.dataset;
     if (name === 'header') {
@@ -127,7 +106,6 @@ Page({
   },
 
   onFontSizeChange(e) {
-    this._cancelBlur();
     if (!this.editorCtx) return;
     const idx = e.detail.value;
     const size = this.data.fontSizeList[idx];
@@ -136,7 +114,6 @@ Page({
   },
 
   onSetColor(e) {
-    this._cancelBlur();
     if (!this.editorCtx) return;
     const color = e.currentTarget.dataset.color;
     this.editorCtx.format('color', color);
@@ -144,7 +121,6 @@ Page({
   },
 
   onInsertDivider() {
-    this._cancelBlur();
     if (!this.editorCtx) return;
     this.editorCtx.insertDivider();
   },
