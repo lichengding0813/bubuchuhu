@@ -94,6 +94,7 @@ Page({
   },
 
   onFormat(e) {
+    if (!this.editorCtx) return;
     const { name, value } = e.currentTarget.dataset;
     if (name === 'header') {
       this.editorCtx.format(name, value === '' ? false : parseInt(value));
@@ -107,12 +108,14 @@ Page({
   },
 
   onSetColor(e) {
+    if (!this.editorCtx) return;
     const color = e.currentTarget.dataset.color;
     this.editorCtx.format('color', color);
     this.setData({ currentTextColor: color, showColorPicker: false });
   },
 
   onInsertDivider() {
+    if (!this.editorCtx) return;
     this.editorCtx.insertDivider();
   },
 
