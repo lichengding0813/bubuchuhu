@@ -1,12 +1,20 @@
 <!-- 统计卡片 -->
 <view class="stats-section">
   <view class="stat-card">
-    <view class="stat-number">{{pendingCount}}</view>
+    <view class="stat-number">{{dashboard.pending_count || 0}}</view>
     <view class="stat-label">待审核</view>
   </view>
   <view class="stat-card">
-    <view class="stat-number">{{totalCount}}</view>
+    <view class="stat-number">{{dashboard.approved_count || 0}}</view>
     <view class="stat-label">已通过</view>
+  </view>
+  <view class="stat-card">
+    <view class="stat-number">{{dashboard.total_users || 0}}</view>
+    <view class="stat-label">总用户</view>
+  </view>
+  <view class="stat-card">
+    <view class="stat-number">{{dashboard.this_week_signups || 0}}</view>
+    <view class="stat-label">本周报名</view>
   </view>
 </view>
 

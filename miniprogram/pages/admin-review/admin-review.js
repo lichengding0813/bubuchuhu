@@ -1,9 +1,10 @@
 Page({
   data: {
-    currentTab: 'pending', // pending: 待审核, all: 全部
+    currentTab: 'pending',
     activityList: [],
     pendingCount: 0,
     totalCount: 0,
+    dashboard: {},
     isLoading: false,
     page: 1,
     pageSize: 10,
@@ -20,13 +21,13 @@ Page({
 
   onLoad() {
     this.initUserData();
+    this.loadDashboard();
   },
 
   onShow() {
-    // 每次显示页面时刷新列表
     if (this.data.userInfo && this.data.userInfo.verified === 1) {
       this.loadActivities(true);
-      this.loadTotalCount();
+      this.loadDashboard();
     }
   },
 
@@ -89,6 +90,28 @@ Page({
       }
     } catch (error) {
       console.error('获取总活动数量失败:', error);
+    }
+  },
+
+  async loadDashboard() {
+    try {
+      const userInfo = wx.getStorageSync('userInfo');
+      if (!userInfo?.openId) return;
+      const result = await wx.cloud.callContainer({
+        config: { env: "prod-3gktwx67d1dd1e76" },
+        path: "/api/admin/dashboard",
+        header: {
+          "X-WX-SERVICE": "flask-mysql-login",
+          "X-Wx-OpenId": userInfo.openId,
+          "content-type": "application/json"
+        },
+        method: "GET"
+      });
+      if (result.data && result.data.code === 200) {
+        this.setData({ dashboard: result.data.data });
+      }
+    } catch (error) {
+      console.error('加载看板失败:', error);
     }
   },
 
