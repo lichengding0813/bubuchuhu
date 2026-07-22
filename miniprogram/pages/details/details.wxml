@@ -79,7 +79,7 @@
   <view class="info-card" style="margin-bottom: 120rpx;">
     <view class="card-title">路线信息</view>
     <view class="route-info">
-      <text class="route-text">{{activityDetail.route}}</text>
+      <rich-text class="route-text" nodes="{{activityDetail.route}}"></rich-text>
     </view>
 
     <!-- 集合点列表 - 新增 -->

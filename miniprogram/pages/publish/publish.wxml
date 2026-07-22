@@ -45,7 +45,7 @@
     <!-- 集合信息卡片 -->
     <view class="form-card">
       <view class="card-title">
-        集合信息<text class="required-star">*</text>
+        <text>集合信息<text class="required-star">*</text></text>
         <view class="add-btn" bindtap="onAddMeetingPoint">
           <van-icon name="plus" /> 添加集合点
         </view>
@@ -71,7 +71,17 @@
 
       <view class="form-item">
         <view class="item-label">路线简介<text class="required-star">*</text></view>
-        <van-field value="{{route}}" bind:input="onInput" data-field="route" type="textarea" placeholder="起点 → 途径点 → 终点，行程安排等" autosize border="{{false}}" />
+        <view class="editor-toolbar">
+          <view class="tool-btn {{formatStatus.bold ? 'active' : ''}}" catchtap="onFormat" data-name="bold"><text class="tool-icon-bold">B</text></view>
+          <picker class="tool-picker" mode="selector" range="{{fontSizeLabels}}" bindchange="onFontSizeChange">
+            <view class="tool-btn">字号 {{currentFontSize || '16'}}</view>
+          </picker>
+          <view class="tool-btn" catchtap="onInsertDivider">分割线</view>
+        </view>
+        <view class="editor-toolbar">
+          <view wx:for="{{colorList}}" wx:key="*this" class="color-swatch-btn {{currentTextColor === item ? 'selected' : ''}}" style="background:{{item}}" catchtap="onSetColor" data-color="{{item}}"></view>
+        </view>
+        <editor id="editor-route" class="ql-editor" placeholder="起点 → 途径点 → 终点，行程安排等" show-img-toolbar show-img-resize bind:ready="onEditorReady" bind:input="onEditorInput" bind:statuschange="onEditorStatusChange"></editor>
       </view>
 
       <view class="form-row">
@@ -88,8 +98,8 @@
       <view class="form-item difficulty-row">
         <view class="item-label difficulty-label">难度等级<text class="required-star">*</text></view>
         <view class="difficulty-dropdown">
-          <van-dropdown-menu active-color="#5faee3">
-            <van-dropdown-item value="{{difficulty}}" bindchange="onDifficultyChange" options="{{difficultyOptions}}" popup-style="width: 120px; left: auto; right: 16px;" />
+          <van-dropdown-menu active-color="#5faee3" custom-style="width: 140px; border-radius: 10px; border: 1px solid #e0e8f0;">
+            <van-dropdown-item value="{{difficulty}}" bindchange="onDifficultyChange" options="{{difficultyOptions}}" popup-style="width: 140px; left: auto; right: 16px;" />
           </van-dropdown-menu>
         </view>
       </view>

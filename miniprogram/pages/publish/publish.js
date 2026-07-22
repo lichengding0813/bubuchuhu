@@ -65,6 +65,14 @@ Page({
     location: '',
     travel: [],
     route: '',
+    // 富文本编辑器
+    editorReady: false,
+    formatStatus: {},
+    currentTextColor: '#333333',
+    colorList: ['#333333', '#ff4444', '#1989fa', '#ff8800', '#4caf50'],
+    fontSizeList: [12, 14, 16, 18, 24, 36],
+    fontSizeLabels: ['12px', '14px', '16px', '18px', '24px', '36px'],
+    currentFontSize: '16',
     distance: '',
     climb: '',
     difficulty: '',
@@ -663,6 +671,55 @@ Page({
     const { field } = e.currentTarget.dataset;
     const value = e.detail || '';
     this.setData({ [field]: value }, () => this.checkCanSubmit());
+  },
+
+  // ====== 富文本编辑器（路线简介） ======
+  onEditorReady() {
+    wx.createSelectorQuery().select('#editor-route').context((res) => {
+      this.editorCtx = res.context;
+      this.setData({ editorReady: true });
+      if (this.data.route) {
+        this.editorCtx.setContents({ html: this.data.route });
+      }
+    }).exec();
+  },
+
+  onEditorInput(e) {
+    this.setData({ route: e.detail.html }, () => this.checkCanSubmit());
+  },
+
+  onEditorStatusChange(e) {
+    this.setData({ formatStatus: e.detail });
+  },
+
+  onFormat(e) {
+    if (!this.editorCtx) return;
+    const { name, value } = e.currentTarget.dataset;
+    if (name === 'header') {
+      this.editorCtx.format(name, value === '' ? false : parseInt(value));
+    } else {
+      this.editorCtx.format(name);
+    }
+  },
+
+  onFontSizeChange(e) {
+    if (!this.editorCtx) return;
+    const idx = e.detail.value;
+    const size = this.data.fontSizeList[idx];
+    this.editorCtx.format('fontSize', size + 'px');
+    this.setData({ currentFontSize: size });
+  },
+
+  onSetColor(e) {
+    if (!this.editorCtx) return;
+    const color = e.currentTarget.dataset.color;
+    this.editorCtx.format('color', color);
+    this.setData({ currentTextColor: color });
+  },
+
+  onInsertDivider() {
+    if (!this.editorCtx) return;
+    this.editorCtx.insertDivider();
   },
 
   onMeetingLocationInput(e) {

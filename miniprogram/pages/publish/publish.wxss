@@ -812,8 +812,8 @@ page {
 }
 
 .difficulty-dropdown {
-  flex: 1;
-  min-width: 0;
+  flex-shrink: 0;
+  width: 140px;
 }
 
 .difficulty-dropdown van-dropdown-menu {
@@ -833,7 +833,82 @@ page {
 
 /* 强制保险单选框 - 样式修复 */
 .insurance-item {
-  margin-bottom: 20px;          /* 与上下表单项保持统一间距 */
+  margin-bottom: 20px;
+}
+
+/* ====== 富文本编辑器工具栏 ====== */
+.editor-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background-color: #f5faff;
+  border-radius: 12px 12px 0 0;
+  border: 1px solid #d8e8f5;
+  border-bottom: none;
+}
+
+.editor-toolbar + .editor-toolbar {
+  border-radius: 0;
+  border-top: none;
+  padding-top: 4px;
+}
+
+.tool-picker {
+  flex-shrink: 0;
+}
+
+.tool-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 10px;
+  font-size: 13px;
+  color: #5f7fa3;
+  background-color: #fff;
+  border-radius: 8px;
+  border: 1px solid #e0e8f0;
+  min-width: 32px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.tool-btn.active {
+  background-color: #5faee3;
+  color: #fff;
+  border-color: #5faee3;
+}
+
+.tool-icon-bold {
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.color-swatch-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid #ddd;
+  flex-shrink: 0;
+}
+
+.color-swatch-btn.selected {
+  border-color: #5faee3;
+  box-shadow: 0 0 0 2px rgba(95, 174, 227, 0.3);
+}
+
+.ql-editor {
+  width: 100%;
+  min-height: 200rpx;
+  padding: 16px 12px;
+  font-size: 15px;
+  line-height: 1.6;
+  background-color: #fff;
+  border-radius: 0 0 12px 12px;
+  border: 1px solid #d8e8f5;
+  border-top: none;
+  box-sizing: border-box;
 }
 
 .insurance-item .item-label {
