@@ -61,7 +61,7 @@ def create_activity():
         sql = """
         INSERT INTO activities (
             activity_no, name, description, activity_time, location,
-            route, distance, climb, difficulty, max_participants,
+            route, latitude, longitude, distance, climb, difficulty, max_participants,
             deadline, cover_url, group_qr_url, wechat_id, created_by,
             status, is_force_insurance, created_at
         ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
@@ -952,7 +952,7 @@ def save_draft():
             cursor.execute("""
                 UPDATE activities SET
                     name = %s, description = %s, activity_time = %s, location = %s,
-                    route = %s, distance = %s, climb = %s, difficulty = %s,
+                    route = %s, latitude = %s, longitude = %s, distance = %s, climb = %s, difficulty = %s,
                     max_participants = %s, deadline = %s, cover_url = %s,
                     group_qr_url = %s, wechat_id = %s, is_force_insurance = %s,
                     updated_at = NOW()
@@ -963,6 +963,8 @@ def save_draft():
                 data.get('activityTime') or None,
                 data.get('location', ''),
                 data.get('route', ''),
+                data.get('latitude'),
+                data.get('longitude'),
                 data.get('distance', 0) or 0,
                 data.get('climb', 0) or 0,
                 data.get('difficulty', 1) or 1,
@@ -999,7 +1001,7 @@ def save_draft():
             cursor.execute("""
                 INSERT INTO activities (
                     activity_no, name, description, activity_time, location,
-                    route, distance, climb, difficulty, max_participants,
+                    route, latitude, longitude, distance, climb, difficulty, max_participants,
                     deadline, cover_url, group_qr_url, wechat_id, created_by,
                     status, is_force_insurance, created_at
                 ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, -1, %s, NOW())
@@ -1010,6 +1012,8 @@ def save_draft():
                 data.get('activityTime') or None,
                 data.get('location', ''),
                 data.get('route', ''),
+                data.get('latitude'),
+                data.get('longitude'),
                 data.get('distance', 0) or 0,
                 data.get('climb', 0) or 0,
                 data.get('difficulty', 1) or 1,
