@@ -64,7 +64,7 @@ def create_activity():
             route, latitude, longitude, distance, climb, difficulty, max_participants,
             deadline, cover_url, group_qr_url, wechat_id, created_by,
             status, is_force_insurance, created_at
-        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
         """
 
         cursor.execute(sql, (
@@ -74,6 +74,8 @@ def create_activity():
             data.get('activityTime'),
             data.get('location'),
             data.get('route'),
+            data.get('latitude'),
+            data.get('longitude'),
             data.get('distance', 0),
             data.get('climb', 0),
             data.get('difficulty'),
@@ -1004,7 +1006,7 @@ def save_draft():
                     route, latitude, longitude, distance, climb, difficulty, max_participants,
                     deadline, cover_url, group_qr_url, wechat_id, created_by,
                     status, is_force_insurance, created_at
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, -1, %s, NOW())
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, -1, %s, NOW())
             """, (
                 activity_no,
                 data.get('name', ''),
