@@ -343,6 +343,13 @@ page {
   border-bottom: none;
 }
 
+/* 第二行工具栏（颜色行）去掉顶部圆角和边框 */
+.editor-toolbar + .editor-toolbar {
+  border-radius: 0;
+  border-top: none;
+  padding-top: 4px;
+}
+
 .tool-picker {
   flex-shrink: 0;
 }
