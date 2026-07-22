@@ -95,12 +95,11 @@
         </view>
       </view>
 
-      <view class="form-item difficulty-row">
-        <view class="item-label difficulty-label">难度等级<text class="required-star">*</text></view>
-        <view class="difficulty-dropdown">
-          <van-dropdown-menu active-color="#5faee3" custom-style="width: 140px; border-radius: 10px; border: 1px solid #e0e8f0;">
-            <van-dropdown-item value="{{difficulty}}" bindchange="onDifficultyChange" options="{{difficultyOptions}}" popup-style="width: 140px; left: auto; right: 16px;" />
-          </van-dropdown-menu>
+      <view class="form-item">
+        <view class="item-label">难度等级<text class="required-star">*</text></view>
+        <view class="difficulty-stars">
+          <text wx:for="{{[1,2,3,4,5]}}" wx:key="*this" class="star {{difficulty >= item ? 'active' : ''}}" catchtap="onDifficultyTap" data-value="{{item}}">★</text>
+          <text class="difficulty-text">{{difficulty}}星</text>
         </view>
       </view>
     </view>

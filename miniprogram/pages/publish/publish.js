@@ -750,6 +750,10 @@ Page({
     this.setData({ difficulty: e.detail }, () => this.checkCanSubmit());
   },
 
+  onDifficultyTap(e) {
+    this.setData({ difficulty: e.currentTarget.dataset.value }, () => this.checkCanSubmit());
+  },
+
   onStepperChange(e) {
     this.setData({ maxParticipants: e.detail }, () => this.checkCanSubmit());
   },

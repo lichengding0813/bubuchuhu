@@ -798,37 +798,27 @@ page {
 }
 
 
-/* 难度选择 - 左右排布 */
-.difficulty-row {
+/* 难度星级选择 */
+.difficulty-stars {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 4px;
 }
 
-.difficulty-label {
-  margin-bottom: 0;
-  white-space: nowrap;
-  flex-shrink: 0;
+.difficulty-stars .star {
+  font-size: 28px;
+  color: #ddd;
+  line-height: 1;
 }
 
-.difficulty-dropdown {
-  flex-shrink: 0;
-  width: 140px;
+.difficulty-stars .star.active {
+  color: #ffc107;
 }
 
-.difficulty-dropdown van-dropdown-menu {
-  --dropdown-menu-height: 40px;
-  --dropdown-menu-title-font-size: 15px;
-  --dropdown-menu-title-inactive-text-color: #9e9e9e;
-  --dropdown-menu-title-active-text-color: #2e4d73;
-  --dropdown-menu-title-padding: 0 12px;
-  box-shadow: none;
-  border-radius: 10px;
-  overflow: hidden;
-}
-
-.difficulty-dropdown van-dropdown-menu van-dropdown-item {
-  border-radius: 10px;
+.difficulty-text {
+  margin-left: 8px;
+  font-size: 14px;
+  color: #5f7fa3;
 }
 
 /* 强制保险单选框 - 样式修复 */
