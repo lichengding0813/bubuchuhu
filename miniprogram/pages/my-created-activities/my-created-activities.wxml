@@ -37,7 +37,7 @@
   </view>
 
   <!-- 非草稿箱空状态 -->
-  <view wx:elif="{{activityList.length === 0}}" class="empty-container">
+  <view wx:elif="{{currentTab !== 'draft' && activityList.length === 0}}" class="empty-container">
     <van-icon name="todo-list-o" size="80" color="#ccc" />
     <text class="empty-text">暂无活动</text>
   </view>
