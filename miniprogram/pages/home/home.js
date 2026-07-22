@@ -511,6 +511,10 @@ Page({
     });
   },
 
+  onCalendarClick() {
+    wx.navigateTo({ url: '/pages/calendar/calendar' });
+  },
+
   // 点击单个活动卡片
   onActivityClick(e) {
     const { id } = e.currentTarget.dataset;

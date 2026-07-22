@@ -1,6 +1,7 @@
 {
   "pages": [
     "pages/home/home",
+    "pages/calendar/calendar",
     "pages/review/review",
     "pages/profile/profile",
     "pages/publish/publish",

@@ -31,6 +31,9 @@
   <van-button type="default" custom-class="custom-publish-btn" bindtap="onPublishClick">
     + 发布活动
   </van-button>
+  <van-button type="default" custom-class="calendar-btn" bindtap="onCalendarClick">
+    📅 日历
+  </van-button>
 </view>
 
 <!-- 已发布活动列表 -->
