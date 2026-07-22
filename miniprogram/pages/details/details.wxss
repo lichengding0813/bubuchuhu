@@ -201,6 +201,42 @@ page {
   color: #5f7fa3;
 }
 
+/* 天气卡片 */
+.weather-card {
+  margin-bottom: 16px;
+  margin-top: -8px;
+}
+
+.weather-scroll {
+  white-space: nowrap;
+  display: flex;
+}
+
+.weather-day {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 14px;
+  flex-shrink: 0;
+}
+
+.weather-date {
+  font-size: 12px;
+  color: #999;
+}
+
+.weather-text {
+  font-size: 12px;
+  color: #5f7fa3;
+}
+
+.weather-temp {
+  font-size: 12px;
+  color: #ff6b6b;
+  white-space: nowrap;
+}
+
 /* 底部固定区域 */
 .bottom-fixed {
   position: fixed;

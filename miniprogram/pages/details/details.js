@@ -1,6 +1,7 @@
 Page({
   data: {
     activityId: null,
+    weather: {},
     creatorInfo: null,
     activityDetail: {
       name: '',
@@ -204,6 +205,24 @@ Page({
     }, () => {
       this.checkSignUpStatus();
     });
+    this.loadWeather(activity.location);
+  },
+
+  async loadWeather(city) {
+    try {
+      const result = await wx.cloud.callContainer({
+        config: { env: "prod-3gktwx67d1dd1e76" },
+        path: "/api/weather",
+        header: { "X-WX-SERVICE": "flask-mysql-login", "content-type": "application/json" },
+        method: "GET",
+        data: { city: city }
+      });
+      if (result.data && result.data.code === 200) {
+        this.setData({ weather: result.data.data });
+      }
+    } catch (err) {
+      console.log('天气加载失败（可忽略）:', err);
+    }
   },
 
   // 安全解析时间字符串

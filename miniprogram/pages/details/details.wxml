@@ -75,6 +75,19 @@
     </view>
   </view>
 
+  <!-- 天气预报 -->
+  <view class="info-card weather-card" wx:if="{{weather.daily && weather.daily.length > 0}}">
+    <view class="card-title">天气预报 · {{weather.city}}</view>
+    <scroll-view scroll-x class="weather-scroll" enable-flex>
+      <view class="weather-day" wx:for="{{weather.daily}}" wx:key="date">
+        <text class="weather-date">{{item.date.length > 5 ? item.date.slice(5) : item.date}}</text>
+        <van-icon name="{{item.icon}}" size="28px" color="#5faee3" />
+        <text class="weather-text">{{item.text_day}}</text>
+        <text class="weather-temp">{{item.low}}° ~ {{item.high}}°</text>
+      </view>
+    </scroll-view>
+  </view>
+
   <!-- 路线信息卡片 -->
   <view class="info-card" style="margin-bottom: 120rpx;">
     <view class="card-title">路线信息</view>
