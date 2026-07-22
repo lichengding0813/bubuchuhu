@@ -19,6 +19,7 @@ Page({
     },
     submitting: false,
     editorReady: false,
+    editorFocused: false,
     formatStatus: {},
     showColorPicker: false,
     currentTextColor: '#333333',
@@ -87,6 +88,29 @@ Page({
 
   onEditorInput(e) {
     this.setData({ 'form.summary': e.detail.html });
+  },
+
+  onEditorFocus() {
+    if (this._blurTimer) {
+      clearTimeout(this._blurTimer);
+      this._blurTimer = null;
+    }
+    this.setData({ editorFocused: true });
+  },
+
+  onEditorBlur() {
+    // 延迟隐藏工具栏，给工具栏按钮点击留出时间
+    this._blurTimer = setTimeout(() => {
+      this.setData({ editorFocused: false, showColorPicker: false });
+    }, 200);
+  },
+
+  // 工具栏触摸拦截——阻止触摸冒泡导致编辑器失焦
+  onToolbarTouch() {
+    if (this._blurTimer) {
+      clearTimeout(this._blurTimer);
+      this._blurTimer = null;
+    }
   },
 
   onEditorStatusChange(e) {
