@@ -79,7 +79,7 @@
 </view>
 
 <!-- 富文本编辑器底部固定工具栏 -->
-<view class="editor-toolbar-fixed {{editorFocused ? 'show' : ''}}">
+<view class="editor-toolbar-fixed {{(editorFocused || showColorPicker) ? 'show' : ''}}">
   <view class="editor-toolbar-inner">
     <view class="tool-btn {{formatStatus.bold ? 'active' : ''}}" bindtap="onFormat" data-name="bold"><text class="tool-icon-bold">B</text></view>
     <view bindtap="_cancelBlur">
