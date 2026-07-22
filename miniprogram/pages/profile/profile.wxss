@@ -163,6 +163,37 @@ page {
   font-weight: 400;
 }
 
+
+/* 徒步统计卡片 */
+.hike-stats-card {
+  background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%);
+  border-radius: 24rpx;
+  padding: 24rpx 16rpx;
+  display: flex;
+  margin-bottom: 30rpx;
+  box-shadow: 0 4rpx 16rpx rgba(76, 175, 80, 0.08);
+  border: 2rpx solid rgba(129, 199, 132, 0.3);
+}
+
+.hike-stat-item {
+  flex: 1;
+  text-align: center;
+}
+
+.hike-stat-num {
+  display: block;
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #2e7d32;
+  margin-bottom: 4rpx;
+  line-height: 1.2;
+}
+
+.hike-stat-label {
+  font-size: 22rpx;
+  color: #66bb6a;
+}
+
 /* 菜单列表 */
 .menu-list {
   background: #ffffff;

@@ -18,6 +18,11 @@ Page({
       created: 0,
       joined: 0
     },
+    hikeStats: {
+      total_activities: 0,
+      total_distance: 0,
+      total_climb: 0
+    },
     showVerifyDialog: false,
     verifyAnswer: '',
     verifyError: '',
@@ -50,13 +55,14 @@ Page({
   onLoad() {
     this.initUserData();
     this.loadUserStats();
+    this.loadHikeStats();
   },
 
   onShow() {
     this.initUserData();
-    // 每次显示页面时刷新统计数据（如果已登录）
     if (this.data.userInfo.isLogin) {
       this.loadUserStats();
+      this.loadHikeStats();
       this.loadPendingCount();
     }
   },
@@ -271,6 +277,28 @@ Page({
     } catch (error) {
       console.error('获取报名活动异常:', error);
       this.setData({ 'stats.joined': 0 });
+    }
+  },
+
+  async loadHikeStats() {
+    try {
+      const userInfo = wx.getStorageSync('userInfo');
+      if (!userInfo?.openId) return;
+      const result = await wx.cloud.callContainer({
+        config: { env: "prod-3gktwx67d1dd1e76" },
+        path: "/user/stats",
+        header: {
+          "X-WX-SERVICE": "flask-mysql-login",
+          "X-Wx-OpenId": userInfo.openId,
+          "content-type": "application/json"
+        },
+        method: "GET"
+      });
+      if (result.data && result.data.code === 200) {
+        this.setData({ hikeStats: result.data.data });
+      }
+    } catch (error) {
+      console.error('加载徒步统计失败:', error);
     }
   },
 

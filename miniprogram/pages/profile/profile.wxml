@@ -37,6 +37,22 @@
     </view>
   </view>
 
+  <!-- 徒步统计 -->
+  <view class="hike-stats-card">
+    <view class="hike-stat-item">
+      <text class="hike-stat-num">{{hikeStats.total_activities || 0}}</text>
+      <text class="hike-stat-label">累计活动</text>
+    </view>
+    <view class="hike-stat-item">
+      <text class="hike-stat-num">{{hikeStats.total_distance || 0}}</text>
+      <text class="hike-stat-label">累计里程(km)</text>
+    </view>
+    <view class="hike-stat-item">
+      <text class="hike-stat-num">{{hikeStats.total_climb || 0}}</text>
+      <text class="hike-stat-label">累计爬升(m)</text>
+    </view>
+  </view>
+
   <!-- 菜单列表 -->
   <view class="menu-list">
     <view wx:for="{{menuList}}" wx:key="index" class="menu-item" data-index="{{index}}" bindtap="onMenuClick">
