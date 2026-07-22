@@ -513,11 +513,81 @@ Page({
       }
     }
 
-    // 根据是否有 editActivityId 判断编辑还是新建
+    // 根据模式判断提交方式
     if (this.data.editActivityId) {
       this.submitEditActivity();
+    } else if (this.data.draftId) {
+      this.publishDraft();
     } else {
       this.submitNewActivity();
+    }
+  },
+
+  async publishDraft() {
+    wx.showLoading({ title: '提交中...' });
+    const travelTypeMap = { 'bus': 1, 'train': 2, 'self': 3 };
+    const travelOptionsNumbers = (this.data.travel || []).map(item => travelTypeMap[item]).filter(v => v);
+    const formData = {
+      draft_id: this.data.draftId,
+      name: this.data.name,
+      description: this.data.description,
+      activityTime: this.data.activityTime,
+      location: this.data.location,
+      route: this.data.route,
+      distance: parseInt(this.data.distance) || 0,
+      climb: parseInt(this.data.climb) || 0,
+      difficulty: parseInt(this.data.difficulty) || 1,
+      maxParticipants: this.data.maxParticipants,
+      deadline: this.data.deadline,
+      cover: this.data.cover,
+      groupQR: this.data.groupQR,
+      wechat: this.data.wechat,
+      travelOptions: travelOptionsNumbers,
+      meetingPoints: this.data.meetingPoints,
+      mandatoryInsurance: this.data.forceInsurance,
+    };
+    try {
+      const userInfo = wx.getStorageSync('userInfo');
+      // 1. 先保存草稿内容
+      const saveResult = await wx.cloud.callContainer({
+        config: { env: "prod-3gktwx67d1dd1e76" },
+        path: "/api/activity/save-draft",
+        method: "POST",
+        header: {
+          "X-WX-SERVICE": "flask-mysql-login",
+          "X-Wx-OpenId": userInfo?.openId,
+          "Content-Type": "application/json"
+        },
+        data: formData
+      });
+      if (!saveResult.data || saveResult.data.code !== 200) {
+        wx.hideLoading();
+        wx.showToast({ title: saveResult.data?.msg || '保存失败', icon: 'none' });
+        return;
+      }
+      // 2. 再发布草稿（status -1 → 0）
+      const publishResult = await wx.cloud.callContainer({
+        config: { env: "prod-3gktwx67d1dd1e76" },
+        path: "/api/activity/publish-draft",
+        method: "POST",
+        header: {
+          "X-WX-SERVICE": "flask-mysql-login",
+          "X-Wx-OpenId": userInfo?.openId,
+          "Content-Type": "application/json"
+        },
+        data: { draft_id: this.data.draftId }
+      });
+      wx.hideLoading();
+      if (publishResult.data && publishResult.data.code === 200) {
+        wx.showToast({ title: '已提交审核', icon: 'success', duration: 2000 });
+        setTimeout(() => wx.navigateBack(), 2000);
+      } else {
+        const errMsg = publishResult.data?.msg || '提交失败';
+        wx.showModal({ title: '提交失败', content: errMsg, showCancel: false });
+      }
+    } catch (err) {
+      wx.hideLoading();
+      wx.showToast({ title: '网络错误', icon: 'error' });
     }
   },
 
