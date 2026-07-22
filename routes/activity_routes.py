@@ -138,6 +138,8 @@ def get_activity_list():
     size = int(request.args.get('size', 10))
     status = request.args.get('status')
     keyword = request.args.get('keyword', '')
+    difficulty = request.args.get('difficulty')
+    travel_type = request.args.get('travel')
     openid = request.headers.get('X-Wx-OpenId')
 
     offset = (page - 1) * size
@@ -163,6 +165,14 @@ def get_activity_list():
         if keyword:
             where_clause += " AND (a.name LIKE %s OR a.description LIKE %s OR a.location LIKE %s)"
             params.extend([f'%{keyword}%', f'%{keyword}%', f'%{keyword}%'])
+
+        if difficulty is not None:
+            where_clause += " AND a.difficulty = %s"
+            params.append(int(difficulty))
+
+        if travel_type is not None:
+            where_clause += " AND EXISTS (SELECT 1 FROM activity_travel_options t WHERE t.activity_id = a.id AND t.travel_type = %s)"
+            params.append(int(travel_type))
 
         # 查询总数
         cursor.execute(f"SELECT COUNT(*) as total FROM activities a {where_clause}", params)
