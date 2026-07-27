@@ -1,18 +1,15 @@
 Page({
   data: {
-    showAll: false,
-    showAllEnded: false,
+    currentTab: 'ongoing',
     activityList: [],
-    ongoingList: [],
-    endedList: [],
     ongoingCount: 0,
     endedCount: 0,
+    page: 1,
+    pageSize: 10,
+    hasMore: true,
+    showScrollTop: false,
     userInfo: null,
     isLoading: false,
-    // 搜索筛选
-    searchKeyword: '',
-    filterDifficulty: '',
-    filterTravel: '',
     // 验证弹窗相关
     showVerifyDialog: false,
     verifyAnswer: '',
@@ -57,11 +54,11 @@ Page({
         data: {} // 无需参数
       });
       // 更新成功后，刷新活动列表
-      this.getActivityList();
+      this.getActivityList(true);
     } catch (error) {
       console.error('更新活动状态失败:', error);
       // 即使更新失败，也尝试正常拉取列表（可能显示旧状态）
-      this.getActivityList();
+      this.getActivityList(true);
     }
   },
 
@@ -82,7 +79,7 @@ Page({
       this.doBackgroundLogin();
       // 恢复验证/黑名单状态
       this.applyUserState(cachedUserInfo);
-      this.getActivityList();
+      this.getActivityList(true);
       return;
     }
 
@@ -98,7 +95,7 @@ Page({
         getApp().globalData.userInfo = fallbackUserInfo;
         this.setData({ userInfo: fallbackUserInfo, isLoading: false });
         this.applyUserState(fallbackUserInfo);
-        this.getActivityList();
+        this.getActivityList(true);
         return;
       }
       wx.showToast({ title: '登录失败，请重试', icon: 'error' });
@@ -142,7 +139,7 @@ Page({
       wx.showToast({ title: '欢迎新用户', icon: 'none' });
     }
     this.applyUserState(userData);
-    this.getActivityList();
+    this.getActivityList(true);
   },
 
   // 后台静默刷新登录态（不阻塞页面）
@@ -169,16 +166,18 @@ Page({
     }
   },
 
-  // 获取活动列表
-  async getActivityList() {
+  // 获取活动列表（分页+tab）
+  async getActivityList(reset = false) {
+    if (this.data.isLoading) return;
+    if (reset) {
+      this.setData({ page: 1, hasMore: true, activityList: [], isLoading: true });
+    } else {
+      this.setData({ isLoading: true });
+    }
+
     try {
       const userInfo = this.data.userInfo || wx.getStorageSync('userInfo');
-
-      const { searchKeyword, filterDifficulty, filterTravel } = this.data;
-      const params = { page: 1, size: 50 };
-      if (searchKeyword) params.keyword = searchKeyword;
-      if (filterDifficulty !== '') params.difficulty = filterDifficulty;
-      if (filterTravel !== '') params.travel = filterTravel;
+      const { currentTab, page, pageSize } = this.data;
 
       const result = await wx.cloud.callContainer({
         config: { env: "prod-3gktwx67d1dd1e76" },
@@ -189,53 +188,77 @@ Page({
           "content-type": "application/json"
         },
         method: "GET",
-        data: params
+        data: { page, size: pageSize, tab: currentTab }
       });
-      console.log(result.data)
+
       if (result.data && result.data.code === 200) {
         const activities = result.data.data.list || [];
         const total = result.data.data.total || 0;
 
-        // 格式化活动数据，排除待审核活动(status=0)
-        let formattedList = activities
-          .filter(item => item.status !== 0)
-          .map(item => {
-            const participantCount = item.participant_count || 0;
-            const remainCount = item.max_participants - participantCount;
+        const formattedList = activities.map(item => {
+          const participantCount = item.participant_count || 0;
+          const remainCount = item.max_participants - participantCount;
+          return {
+            id: item.id,
+            name: item.name,
+            time: this.formatActivityTime(item.activity_time),
+            location: item.location,
+            remainCount,
+            totalCount: item.max_participants,
+            difficulty: this.getDifficultyText(item.difficulty),
+            statusBadge: this.getStatusBadge(item.status, remainCount, item.has_registered),
+            statusClass: this.getStatusClass(item.status),
+            coverUrl: item.cover_url,
+            has_registered: item.has_registered
+          };
+        });
 
-            return {
-              id: item.id,
-              name: item.name,
-              time: this.formatActivityTime(item.activity_time),
-              location: item.location,
-              remainCount: remainCount,
-              totalCount: item.max_participants,
-              difficulty: this.getDifficultyText(item.difficulty),
-              statusText: this.getStatusText(item.status),
-              statusBadge: this.getStatusBadge(item.status, remainCount, item.has_registered),
-              statusClass: this.getStatusClass(item.status),
-              coverUrl: item.cover_url,
-              has_registered: item.has_registered
-            };
-          });
-
-        // 按状态分组：已结束/已取消归入往期，其余归入最新
-        const endedBadges = ['已结束', '已取消'];
+        const newList = reset ? formattedList : [...this.data.activityList, ...formattedList];
         this.setData({
-          activityList: formattedList,
-          ongoingList: formattedList.filter(item => endedBadges.indexOf(item.statusBadge) === -1),
-          endedList: formattedList.filter(item => endedBadges.indexOf(item.statusBadge) !== -1),
-          ongoingCount: formattedList.filter(item => endedBadges.indexOf(item.statusBadge) === -1).length,
-          endedCount: formattedList.filter(item => endedBadges.indexOf(item.statusBadge) !== -1).length
+          activityList: newList,
+          hasMore: newList.length < total,
+          isLoading: false,
+          [currentTab === 'ongoing' ? 'ongoingCount' : 'endedCount']: total
         });
       }
     } catch (error) {
       console.error('获取活动列表失败:', error);
-      wx.showToast({
-        title: '加载活动失败',
-        icon: 'none'
-      });
+      this.setData({ isLoading: false });
     }
+  },
+
+  // Tab 切换
+  switchTab(e) {
+    const tab = e.currentTarget.dataset.tab;
+    if (tab === this.data.currentTab) return;
+    this.setData({ currentTab: tab }, () => this.getActivityList(true));
+  },
+
+  // 下拉刷新
+  onPullDownRefresh() {
+    this.getActivityList(true);
+    setTimeout(() => wx.stopPullDownRefresh(), 1000);
+  },
+
+  // 触底加载更多
+  onReachBottom() {
+    if (this.data.hasMore && !this.data.isLoading) {
+      this.setData({ page: this.data.page + 1 });
+      this.getActivityList(false);
+    }
+  },
+
+  // 页面滚动检测
+  onPageScroll(e) {
+    const show = e.scrollTop > 400;
+    if (show !== this.data.showScrollTop) {
+      this.setData({ showScrollTop: show });
+    }
+  },
+
+  // 回到顶部
+  onScrollToTop() {
+    wx.pageScrollTo({ scrollTop: 0, duration: 300 });
   },
 
   // 安全解析时间字符串
@@ -487,20 +510,6 @@ Page({
     });
   },
 
-  // 点击展开/收起
-  onToggleExpand() {
-    this.setData({
-      showAll: !this.data.showAll
-    });
-  },
-
-  // 点击展开/收起已结束活动
-  onToggleEndedExpand() {
-    this.setData({
-      showAllEnded: !this.data.showAllEnded
-    });
-  },
-
   // 点击发布活动按钮
   onPublishClick() {
     wx.navigateTo({
@@ -511,37 +520,14 @@ Page({
     });
   },
 
-  onCalendarClick() {
-    wx.navigateTo({ url: '/pages/calendar/calendar' });
-  },
-
   // 点击单个活动卡片
   onActivityClick(e) {
-    const { id } = e.currentTarget.dataset;
-    wx.navigateTo({ url: `/pages/details/details?id=${id}` });
-  },
-
-  // ====== 搜索筛选 ======
-  onSearchInput(e) {
-    this.setData({ searchKeyword: e.detail.value });
-  },
-
-  onSearchConfirm() {
-    this.getActivityList();
-  },
-
-  onClearSearch() {
-    this.setData({ searchKeyword: '' }, () => this.getActivityList());
-  },
-
-  onFilterDifficulty(e) {
-    const value = e.currentTarget.dataset.value;
-    this.setData({ filterDifficulty: value === '' ? '' : value }, () => this.getActivityList());
-  },
-
-  onFilterTravel(e) {
-    const value = e.currentTarget.dataset.value;
-    this.setData({ filterTravel: value === '' ? '' : parseInt(value) }, () => this.getActivityList());
+    const {
+      id
+    } = e.currentTarget.dataset;
+    wx.navigateTo({
+      url: `/pages/details/details?id=${id}`
+    });
   },
 
   onShareAppMessage() {

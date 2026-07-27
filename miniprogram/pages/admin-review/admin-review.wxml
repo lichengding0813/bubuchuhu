@@ -1,20 +1,12 @@
 <!-- 统计卡片 -->
 <view class="stats-section">
   <view class="stat-card">
-    <view class="stat-number">{{dashboard.pending_count || 0}}</view>
+    <view class="stat-number">{{pendingCount}}</view>
     <view class="stat-label">待审核</view>
   </view>
   <view class="stat-card">
-    <view class="stat-number">{{dashboard.approved_count || 0}}</view>
+    <view class="stat-number">{{totalCount}}</view>
     <view class="stat-label">已通过</view>
-  </view>
-  <view class="stat-card">
-    <view class="stat-number">{{dashboard.total_users || 0}}</view>
-    <view class="stat-label">总用户</view>
-  </view>
-  <view class="stat-card">
-    <view class="stat-number">{{dashboard.this_week_signups || 0}}</view>
-    <view class="stat-label">本周报名</view>
   </view>
 </view>
 
@@ -93,4 +85,10 @@
     <button class="detail-btn" data-id="{{item.id}}" catchtap="onActivityClick">查看详情</button>
   </view>
 </view>
+
+  <!-- 加载更多/没有更多 -->
+  <view wx:if="{{!isLoading && activityList.length > 0}}" class="load-more">
+    <text wx:if="{{hasMore}}" class="load-more-text">上拉加载更多</text>
+    <text wx:else class="load-more-text">没有更多了</text>
+  </view>
 </view>

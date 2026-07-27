@@ -110,6 +110,16 @@ page {
   margin-top: 16px;
 }
 
+.load-more {
+  text-align: center;
+  padding: 16px 0 20px;
+}
+
+.load-more-text {
+  font-size: 13px;
+  color: #aaa;
+}
+
 /* 活动卡片 */
 .activity-card {
   background-color: white;

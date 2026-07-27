@@ -30,58 +30,91 @@ page {
   display: block;
 }
 
-/* ====== 搜索和筛选 ====== */
-.search-section {
-  padding: 8px 16px 4px;
-}
-
-.search-bar {
+/* ====== Tab 切换 ====== */
+.home-tabs {
   display: flex;
-  align-items: center;
-  background-color: #fff;
-  border-radius: 10px;
-  padding: 0 12px;
-  height: 40px;
-  border: 1px solid #e0e8f0;
-  gap: 8px;
-  margin-bottom: 10px;
+  padding: 0 16px;
+  margin-bottom: 8px;
+  gap: 24px;
 }
 
-.search-input {
-  flex: 1;
-  font-size: 14px;
-  color: #333;
-  height: 100%;
-}
-
-.filter-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 6px;
-}
-
-.filter-label {
-  font-size: 13px;
-  color: #999;
-  flex-shrink: 0;
-  width: 40px;
-}
-
-.filter-tag {
-  font-size: 12px;
-  padding: 4px 10px;
-  border-radius: 14px;
+.home-tab {
+  font-size: 16px;
   color: #7a9ec2;
-  background-color: #e3f0ff;
-  white-space: nowrap;
+  padding: 8px 0;
+  position: relative;
+  font-weight: 500;
 }
 
-.filter-tag.active {
+.home-tab.active {
+  color: #1e4d7c;
+  font-weight: 700;
+}
+
+.home-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 24px;
+  height: 3px;
+  border-radius: 2px;
   background-color: #5faee3;
-  color: #fff;
 }
 
+.tab-count {
+  font-size: 12px;
+  color: #5faee3;
+  margin-left: 2px;
+}
+
+/* ====== 列表 ====== */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 60px 0;
+}
+
+.empty-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 60px 0;
+}
+
+.empty-text {
+  color: #7a9ec2;
+  font-size: 14px;
+  margin-top: 16px;
+}
+
+.load-more {
+  text-align: center;
+  padding: 16px 0 20px;
+}
+
+.load-more-text {
+  font-size: 13px;
+  color: #aaa;
+}
+
+/* ====== 回到顶部 ====== */
+.scroll-top-btn {
+  position: fixed;
+  right: 20px;
+  bottom: 100px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
 
 /* 发布按钮容器 */
 .publish-section {
