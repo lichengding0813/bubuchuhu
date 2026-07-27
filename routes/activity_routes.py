@@ -139,6 +139,7 @@ def get_activity_list():
     page = int(request.args.get('page', 1))
     size = int(request.args.get('size', 10))
     status = request.args.get('status')
+    tab = request.args.get('tab', '')
     keyword = request.args.get('keyword', '')
     difficulty = request.args.get('difficulty')
     travel_type = request.args.get('travel')
@@ -155,6 +156,11 @@ def get_activity_list():
         # 构建查询条件
         where_clause = "WHERE a.status NOT IN (0, -1, 2)"  # 不展示待审核、草稿、已拒绝的活动
         params = []
+
+        if tab == 'ongoing':
+            where_clause = "WHERE a.status IN (1, 3)"
+        elif tab == 'ended':
+            where_clause = "WHERE a.status = 4"
 
         if status is not None:
             if int(status) == 0:
