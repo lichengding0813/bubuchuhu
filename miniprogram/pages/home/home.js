@@ -10,6 +10,10 @@ Page({
     showScrollTop: false,
     userInfo: null,
     isLoading: false,
+    // 搜索筛选
+    searchKeyword: '',
+    filterDifficulty: '',
+    filterTravel: '',
     // 验证弹窗相关
     showVerifyDialog: false,
     verifyAnswer: '',
@@ -166,7 +170,7 @@ Page({
     }
   },
 
-  // 获取活动列表（分页+tab）
+  // 获取活动列表（分页+tab+搜索筛选）
   async getActivityList(reset = false) {
     if (this.data.isLoading) return;
     if (reset) {
@@ -177,7 +181,11 @@ Page({
 
     try {
       const userInfo = this.data.userInfo || wx.getStorageSync('userInfo');
-      const { currentTab, page, pageSize } = this.data;
+      const { currentTab, page, pageSize, searchKeyword, filterDifficulty, filterTravel } = this.data;
+      const params = { page, size: pageSize, tab: currentTab };
+      if (searchKeyword) params.keyword = searchKeyword;
+      if (filterDifficulty !== '') params.difficulty = filterDifficulty;
+      if (filterTravel !== '') params.travel = filterTravel;
 
       const result = await wx.cloud.callContainer({
         config: { env: "prod-3gktwx67d1dd1e76" },
@@ -188,7 +196,7 @@ Page({
           "content-type": "application/json"
         },
         method: "GET",
-        data: { page, size: pageSize, tab: currentTab }
+        data: params
       });
 
       if (result.data && result.data.code === 200) {
@@ -520,14 +528,37 @@ Page({
     });
   },
 
+  onCalendarClick() {
+    wx.navigateTo({ url: '/pages/calendar/calendar' });
+  },
+
   // 点击单个活动卡片
   onActivityClick(e) {
-    const {
-      id
-    } = e.currentTarget.dataset;
-    wx.navigateTo({
-      url: `/pages/details/details?id=${id}`
-    });
+    const { id } = e.currentTarget.dataset;
+    wx.navigateTo({ url: `/pages/details/details?id=${id}` });
+  },
+
+  // ====== 搜索筛选 ======
+  onSearchInput(e) {
+    this.setData({ searchKeyword: e.detail.value });
+  },
+
+  onSearchConfirm() {
+    this.getActivityList(true);
+  },
+
+  onClearSearch() {
+    this.setData({ searchKeyword: '' }, () => this.getActivityList());
+  },
+
+  onFilterDifficulty(e) {
+    const value = e.currentTarget.dataset.value;
+    this.setData({ filterDifficulty: value === '' ? '' : value }, () => this.getActivityList());
+  },
+
+  onFilterTravel(e) {
+    const value = e.currentTarget.dataset.value;
+    this.setData({ filterTravel: value === '' ? '' : parseInt(value) }, () => this.getActivityList());
   },
 
   onShareAppMessage() {

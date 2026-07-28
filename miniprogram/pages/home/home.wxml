@@ -5,10 +5,34 @@
   </view>
 </view>
 
-<!-- 发布活动按钮 -->
+<!-- 搜索 & 筛选 -->
+<view class="search-section">
+  <view class="search-bar">
+    <van-icon name="search" size="16px" color="#aaa" />
+    <input class="search-input" placeholder="搜索活动名称、地点" value="{{searchKeyword}}" bindinput="onSearchInput" bindconfirm="onSearchConfirm" confirm-type="search" />
+    <van-icon wx:if="{{searchKeyword}}" name="clear" size="16px" color="#bbb" bindtap="onClearSearch" />
+  </view>
+  <view class="filter-row">
+    <text class="filter-label">难度：</text>
+    <text class="filter-tag {{filterDifficulty === '' ? 'active' : ''}}" bindtap="onFilterDifficulty" data-value="">全部</text>
+    <text wx:for="{{[1,2,3,4,5]}}" wx:key="*this" class="filter-tag {{filterDifficulty === item ? 'active' : ''}}" bindtap="onFilterDifficulty" data-value="{{item}}">{{item}}星</text>
+  </view>
+  <view class="filter-row">
+    <text class="filter-label">出行：</text>
+    <text class="filter-tag {{filterTravel === '' ? 'active' : ''}}" bindtap="onFilterTravel" data-value="">全部</text>
+    <text class="filter-tag {{filterTravel === 1 ? 'active' : ''}}" bindtap="onFilterTravel" data-value="1">大巴</text>
+    <text class="filter-tag {{filterTravel === 2 ? 'active' : ''}}" bindtap="onFilterTravel" data-value="2">高铁</text>
+    <text class="filter-tag {{filterTravel === 3 ? 'active' : ''}}" bindtap="onFilterTravel" data-value="3">自驾</text>
+  </view>
+</view>
+
+<!-- 发布活动按钮 + 日历 -->
 <view class="publish-section">
   <van-button type="default" custom-class="custom-publish-btn" bindtap="onPublishClick">
     + 发布活动
+  </van-button>
+  <van-button type="default" custom-class="calendar-btn" bindtap="onCalendarClick">
+    📅 日历
   </van-button>
 </view>
 
@@ -24,18 +48,15 @@
 
 <!-- 活动列表 -->
 <view class="list-section">
-  <!-- 加载中（首次） -->
   <view wx:if="{{isLoading && activityList.length === 0}}" class="loading-container">
     <van-loading size="40px" vertical>加载中...</van-loading>
   </view>
 
-  <!-- 空状态 -->
   <view wx:elif="{{activityList.length === 0}}" class="empty-container">
     <van-icon name="todo-list-o" size="80" color="#ccc" />
     <text class="empty-text">{{currentTab === 'ongoing' ? '暂无最新活动' : '暂无已结束活动'}}</text>
   </view>
 
-  <!-- 活动卡片列表 -->
   <block wx:else>
     <view wx:for="{{activityList}}" wx:key="id" class="activity-card {{currentTab === 'ended' ? 'ended-card' : ''}}" data-id="{{item.id}}" bindtap="onActivityClick">
       <view class="card-left">
@@ -70,13 +91,10 @@
       </view>
     </view>
 
-    <!-- 加载更多/没有更多 -->
     <view class="load-more" wx:if="{{!isLoading}}">
       <text wx:if="{{hasMore}}" class="load-more-text">上拉加载更多</text>
       <text wx:else class="load-more-text">没有更多了</text>
     </view>
-
-    <!-- 加载中（翻页） -->
     <view class="load-more" wx:if="{{isLoading && activityList.length > 0}}">
       <van-loading size="24px">加载中...</van-loading>
     </view>
@@ -88,22 +106,18 @@
   <van-icon name="back-top" size="20" color="#5faee3" />
 </view>
 
-
 <!-- ========== 自定义验证弹窗 ========== -->
 <view class="custom-dialog" wx:if="{{showVerifyDialog}}">
   <view class="dialog-mask" catchtouchmove="preventTouchMove"></view>
   <view class="dialog-container">
-    <!-- 顶部图片 -->
     <view class="dialog-title">验证问题</view>
     <image class="dialog-image" src="cloud://prod-3gktwx67d1dd1e76.7072-prod-3gktwx67d1dd1e76-1392222183/verify.png" mode="widthFix" />
     <view class="dialog-content">
       <view class="question">{{verifyQuestion || '兽妈准备宵夜是？'}}</view>
-
       <input class="dialog-input" type="text" placeholder="请输入答案" value="{{verifyAnswer}}" bindinput="onAnswerInput" focus="{{autoFocus}}" confirm-type="done" bindconfirm="onVerifyConfirm" />
       <view class="error-tip" wx:if="{{verifyError}}">{{verifyError}}</view>
     </view>
     <view class="dialog-buttons">
-      <!-- <view class="dialog-btn dialog-btn-cancel" bindtap="onVerifyCancel">取消</view> -->
       <view class="dialog-btn dialog-btn-confirm" bindtap="onVerifyConfirm">确认</view>
     </view>
   </view>
@@ -112,7 +126,6 @@
 <!-- ========== 黑名单全屏遮罩 + 锁定弹窗 ========== -->
 <view class="blacklist-mask" wx:if="{{isBlacklisted}}" catchtouchmove="preventTouchMove" bindtap="onMaskTap"></view>
 
-<!-- ========== 自定义锁定提示弹窗 ========== -->
 <view class="custom-dialog" wx:if="{{showLockedDialog}}">
   <view class="dialog-mask" catchtouchmove="preventTouchMove"></view>
   <view class="dialog-container">
