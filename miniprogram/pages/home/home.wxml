@@ -141,4 +141,3 @@
 
 <!-- 抽奖弹窗 -->
 <lottery-popup show="{{showLotteryPopup}}" lotteryInfo="{{lotteryInfo}}" bind:close="onLotteryClose" bind:drawn="onLotteryDrawn" />
-</view>
