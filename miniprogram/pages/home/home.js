@@ -540,16 +540,11 @@ Page({
 
   // 点击发布活动按钮
   onPublishClick() {
-    wx.navigateTo({
-      url: '/pages/publish/publish',
-      success: () => {
-        // 可以在发布成功后刷新列表，但需要在发布页面返回时触发
-      }
-    });
+    wx.navigateTo({ url: '/pages/publish/publish' });
   },
 
-  onCalendarClick() {
-    wx.navigateTo({ url: '/pages/calendar/calendar' });
+  onAboutClick() {
+    wx.navigateTo({ url: '/pages/about/about' });
   },
 
   // 点击单个活动卡片

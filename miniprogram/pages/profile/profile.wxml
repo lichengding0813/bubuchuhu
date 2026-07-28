@@ -55,15 +55,34 @@
 
   <!-- 菜单列表 -->
   <view class="menu-list">
-    <view wx:for="{{menuList}}" wx:key="index" class="menu-item" data-index="{{index}}" bindtap="onMenuClick">
-      <view class="menu-left">
-        <van-icon name="{{item.icon}}" class="menu-icon" />
-        <text>{{item.text}}</text>
+    <block wx:for="{{menuList}}" wx:key="index">
+      <view wx:if="{{item.isDivider}}" class="menu-divider"></view>
+      <view wx:else class="menu-item" data-index="{{index}}" bindtap="onMenuClick">
+        <view class="menu-left">
+          <van-icon name="{{item.icon}}" class="menu-icon" />
+          <text>{{item.text}}</text>
+        </view>
+        <view class="menu-right">
+          <view class="menu-badge" wx:if="{{item.showRedDot}}">{{item.badgeCount}}</view>
+          <van-icon name="arrow" class="menu-arrow" />
+        </view>
       </view>
-      <view class="menu-right">
-        <view class="menu-badge" wx:if="{{item.showRedDot}}">{{item.badgeCount}}</view>
-        <van-icon name="arrow" class="menu-arrow" />
-      </view>
+    </block>
+  </view>
+
+  <!-- 底部版本 + 更新日志折叠 -->
+  <view class="version-section">
+    <view class="version-toggle" bindtap="toggleUpdateLog">
+      <text class="version-text">当前版本 v1.3.0</text>
+      <van-icon name="{{showUpdateLog ? 'arrow-up' : 'arrow-down'}}" size="14" color="#999" />
+    </view>
+    <view class="update-log-content" wx:if="{{showUpdateLog}}">
+      <text>更新日志</text>
+      <view class="update-log-item">v1.3.0 — 富文本编辑器、撤回功能、难度星级、utf8mb4</view>
+      <view class="update-log-item">v1.2.0 — 草稿箱、同行人、黑名单管理、验证问题管理</view>
+      <view class="update-log-item">v1.0.2 — 多验证问题、协议须知弹窗、报名成功弹窗</view>
+      <view class="update-log-item">v1.0.1 — 个人页发布和报名查看、微信转发分享</view>
+      <view class="update-log-item">v1.0.0 — 小程序首次发布</view>
     </view>
   </view>
 </view>

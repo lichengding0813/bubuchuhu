@@ -18,6 +18,7 @@ Page({
       created: 0,
       joined: 0
     },
+    showUpdateLog: false,
     hikeStats: {
       total_activities: 0,
       total_distance: 0,
@@ -127,16 +128,15 @@ Page({
   buildMenuList() {
     const { isAdmin, needVerify } = this.data.userInfo;
     const menuList = [];
-    
-    // 个人信息设置（登录后显示）
+
     menuList.push({
       icon: 'setting',
       text: '个人信息设置',
       url: '/pages/settings/settings'
     });
-    
-    // 只有管理员才显示待审核入口
+
     if (isAdmin === 1) {
+      menuList.push({ isDivider: true });
       menuList.push({
         icon: 'records',
         text: '待审核',
@@ -159,22 +159,9 @@ Page({
         text: '抽奖管理',
         url: '/pages/lottery-admin/lottery-admin'
       });
+      menuList.push({ isDivider: true });
     }
-    
-    // 关于我们
-    menuList.push({
-      icon: 'info',
-      text: '关于我们',
-      url: '/pages/about/about'
-    });
-    
-    // 更新日志（始终显示）
-    menuList.push({
-      icon: 'records',
-      text: '更新日志',
-      url: '/pages/update-log/update-log'
-    });
-    
+
     console.log('当前用户 isAdmin:', isAdmin);
     this.setData({ menuList });
   },
@@ -316,29 +303,27 @@ Page({
     }
   },
 
+  toggleUpdateLog() {
+    this.setData({ showUpdateLog: !this.data.showUpdateLog });
+  },
+
   // 处理菜单点击
   onMenuClick(e) {
     const { index } = e.currentTarget.dataset;
     const menu = this.data.menuList[index];
-    
-    // 优先处理 action 类型菜单
+    if (!menu || menu.isDivider) return;
+
     if (menu.action === 'resetVerification') {
       this.onResetVerification();
       return;
     }
 
-    // 未登录状态限制
-    if (!this.data.userInfo.isLogin && menu.text !== '关于我们' && menu.text !== '更新日志') {
-      wx.showToast({
-        title: '请先登录',
-        icon: 'none'
-      });
+    if (!this.data.userInfo.isLogin) {
+      wx.showToast({ title: '请先登录', icon: 'none' });
       return;
     }
 
     switch(menu.text) {
-      case '关于我们':
-      case '更新日志':
       case '个人信息设置':
         wx.navigateTo({ url: menu.url });
         break;
