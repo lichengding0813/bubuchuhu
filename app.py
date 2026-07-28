@@ -71,6 +71,7 @@ def get_verify_questions():
 from routes.activity_routes import activity_bp
 from routes.admin_routes import admin_bp
 from routes.review_bp import review_bp
+from routes.lottery_routes import lottery_bp
 from db_utils import init_db_config, close_db, get_db
 
 # ==================== 自定义 JSON 序列化 ====================
@@ -284,6 +285,7 @@ def check_image_url():
 app.register_blueprint(activity_bp, url_prefix='/api/activity')
 app.register_blueprint(admin_bp, url_prefix='/api/admin')
 app.register_blueprint(review_bp)
+app.register_blueprint(lottery_bp, url_prefix='/api')
 
 
 # ==================== 数据库连接钩子 ====================
