@@ -303,8 +303,8 @@ Page({
     }
   },
 
-  toggleUpdateLog() {
-    this.setData({ showUpdateLog: !this.data.showUpdateLog });
+  goToUpdateLog() {
+    wx.navigateTo({ url: '/pages/update-log/update-log' });
   },
 
   // 处理菜单点击
