@@ -2,6 +2,7 @@
   "pages": [
     "pages/home/home",
     "pages/calendar/calendar",
+    "pages/lottery-admin/lottery-admin",
     "pages/review/review",
     "pages/profile/profile",
     "pages/publish/publish",
@@ -72,6 +73,7 @@
     "van-datetime-picker": "/miniprogram_npm/@vant/weapp/datetime-picker/index",
     "van-action-sheet": "/miniprogram_npm/@vant/weapp/action-sheet/index",
     "van-popup": "/miniprogram_npm/@vant/weapp/popup/index",
-    "van-dialog": "@vant/weapp/dialog/index"
+    "van-dialog": "@vant/weapp/dialog/index",
+    "lottery-popup": "/components/lottery-popup/lottery-popup"
   }
 }

@@ -199,6 +199,27 @@ page {
   justify-content: space-between;
   font-size: 13px;
   color: #5f7fa3;
+  align-items: center;
+}
+
+.lottery-entry {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  background: #fff3e0;
+  border-radius: 20px;
+  border: 1px solid #ffcc80;
+}
+
+.lottery-wheel-icon {
+  font-size: 20px;
+}
+
+.lottery-entry-text {
+  font-size: 13px;
+  color: #e65100;
+  font-weight: 500;
 }
 
 /* 天气卡片 */

@@ -1,0 +1,40 @@
+<view class="lottery-mask" wx:if="{{show}}" catchtap="onMaskTap"></view>
+<view class="lottery-popup" wx:if="{{show}}">
+  <view class="popup-header">
+    <text class="popup-title">{{result ? '抽奖结果' : '活动抽奖'}}</text>
+    <van-icon name="cross" size="18" color="#999" bindtap="onClose" />
+  </view>
+
+  <block wx:if="{{!result && !drawing}}">
+    <view class="popup-body">
+      <view class="lottery-icon">🎡</view>
+      <text class="lottery-tip">你有一场活动抽奖机会</text>
+      <text class="lottery-name">{{lotteryInfo.activity_name}}</text>
+      <view class="time-info">
+        <text>{{lotteryInfo.start_time}} ~ {{lotteryInfo.end_time}}</text>
+      </view>
+      <input class="password-input" placeholder="请输入口令" value="{{password}}" bindinput="onPasswordInput" confirm-type="done" bindconfirm="onDraw" />
+      <text class="error-tip" wx:if="{{errorText}}">{{errorText}}</text>
+      <view class="attempts-tip" wx:if="{{attemptsLeft < 3}}">剩余 {{attemptsLeft}} 次机会</view>
+    </view>
+    <view class="popup-footer">
+      <button class="draw-btn" bindtap="onDraw">立即抽奖</button>
+    </view>
+  </block>
+
+  <view class="drawing" wx:if="{{drawing}}">
+    <view class="spinner"></view>
+    <text class="drawing-text">抽奖中...</text>
+  </view>
+
+  <block wx:if="{{result}}">
+    <view class="popup-body result-body">
+      <view class="result-icon {{result.prize_id ? 'win' : 'lose'}}">{{result.prize_id ? '🎉' : '😊'}}</view>
+      <text class="result-text {{result.prize_id ? 'win-text' : 'lose-text'}}">{{result.prize_name}}</text>
+      <text class="result-activity">{{result.activity_name}}</text>
+    </view>
+    <view class="popup-footer">
+      <button class="close-btn" bindtap="onClose">知道了</button>
+    </view>
+  </block>
+</view>

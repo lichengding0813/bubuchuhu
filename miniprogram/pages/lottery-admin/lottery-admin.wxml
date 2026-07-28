@@ -1,0 +1,77 @@
+<view class="lottery-container">
+  <view class="header">
+    <text class="title">活动抽奖管理</text>
+    <van-button size="small" type="primary" custom-class="create-btn" bindtap="showCreateForm">创建抽奖</van-button>
+  </view>
+
+  <view wx:if="{{lotteryList.length === 0}}" class="empty">
+    <van-icon name="gift-o" size="60" color="#ccc" />
+    <text class="empty-text">暂无抽奖活动</text>
+  </view>
+
+  <view wx:for="{{lotteryList}}" wx:key="id" class="lottery-card">
+    <view class="card-header">
+      <text class="card-title">{{item.activity_name}}</text>
+      <view class="status-badge status-{{item.status}}">{{item.status === 0 ? '未开始' : item.status === 1 ? '进行中' : '已结束'}}</view>
+    </view>
+    <view class="card-body">
+      <view class="info-row"><text>时间：{{item.start_time}} ~ {{item.end_time}}</text></view>
+      <view class="info-row"><text>参与人数：{{item.draw_count}}</text></view>
+      <view class="prize-list">
+        <view wx:for="{{item.prizes}}" wx:for-item="prize" wx:key="id" class="prize-item">
+          <text>{{prize.tier_name}}</text>
+          <text class="prize-remain">{{prize.remaining}}/{{prize.quantity}}</text>
+        </view>
+      </view>
+    </view>
+    <view class="card-footer" wx:if="{{item.status !== 2}}">
+      <van-button size="small" type="danger" bindtap="onEndLottery" data-id="{{item.id}}">结束抽奖</van-button>
+    </view>
+  </view>
+</view>
+
+<!-- 创建抽奖弹窗 -->
+<van-popup show="{{showForm}}" position="bottom" custom-style="border-radius:16px 16px 0 0;height:80vh;" bind:close="hideCreateForm">
+  <view class="form-container">
+    <view class="form-title">创建抽奖</view>
+    
+    <view class="form-item">
+      <text class="form-label">选择活动</text>
+      <picker mode="selector" range="{{activityOptions}}" range-key="name" bindchange="onActivityChange" value="{{activityIndex}}">
+        <view class="picker-value">{{activityOptions[activityIndex] ? activityOptions[activityIndex].name : '请选择活动'}}</view>
+      </picker>
+    </view>
+
+    <view class="form-item">
+      <text class="form-label">口令</text>
+      <input class="form-input" placeholder="用户抽奖口令" value="{{formPassword}}" bindinput="onPasswordInput" />
+    </view>
+
+    <view class="form-row">
+      <view class="form-item half">
+        <text class="form-label">开始时间</text>
+        <picker mode="date" bindchange="onStartDateChange" value="{{formStartDate}}">
+          <view class="picker-value">{{formStartDate || '选择日期'}}</view>
+        </picker>
+      </view>
+      <view class="form-item half">
+        <text class="form-label">结束时间</text>
+        <picker mode="date" bindchange="onEndDateChange" value="{{formEndDate}}">
+          <view class="picker-value">{{formEndDate || '选择日期'}}</view>
+        </picker>
+      </view>
+    </view>
+
+    <view class="form-item">
+      <text class="form-label">奖品配置</text>
+      <view wx:for="{{prizeList}}" wx:key="index" class="prize-config">
+        <input class="prize-name-input" placeholder="档位名称" value="{{item.tier_name}}" data-index="{{index}}" bindinput="onPrizeNameInput" />
+        <input class="prize-qty-input" type="number" placeholder="份数" value="{{item.quantity}}" data-index="{{index}}" bindinput="onPrizeQtyInput" />
+        <van-icon name="delete-o" size="20" color="#ff6b6b" bindtap="removePrize" data-index="{{index}}" />
+      </view>
+      <view class="add-prize-btn" bindtap="addPrize">+ 添加奖品档位</view>
+    </view>
+
+    <van-button type="primary" block bindtap="onCreateLottery" custom-class="submit-btn">发布抽奖</van-button>
+  </view>
+</van-popup>

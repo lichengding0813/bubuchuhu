@@ -2,6 +2,10 @@ Page({
   data: {
     activityId: null,
     weather: {},
+    hasLottery: false,
+    lotteryInfo: {},
+    showLotteryPopup: false,
+    lotteryDrawn: false,
     creatorInfo: null,
     activityDetail: {
       name: '',
@@ -206,6 +210,63 @@ Page({
       this.checkSignUpStatus();
     });
     this.loadWeather(activity.location);
+    this.checkActivityLottery(activity.id || this.data.activityId);
+  },
+
+  async checkActivityLottery(activityId) {
+    try {
+      const userInfo = wx.getStorageSync('userInfo');
+      if (!userInfo?.openId) return;
+      const checkRes = await wx.cloud.callContainer({
+        config: { env: "prod-3gktwx67d1dd1e76" },
+        path: "/api/lottery/check",
+        header: { "X-WX-SERVICE": "flask-mysql-login", "X-Wx-OpenId": userInfo.openId, "content-type": "application/json" },
+        method: "POST", data: {}
+      });
+      if (checkRes.data && checkRes.data.code === 200) {
+        const match = checkRes.data.data.find(l => l.activity_id == activityId);
+        if (match) {
+          this.setData({ hasLottery: true, lotteryInfo: match, lotteryDrawn: false });
+          return;
+        }
+      }
+      const myRes = await wx.cloud.callContainer({
+        config: { env: "prod-3gktwx67d1dd1e76" },
+        path: "/api/lottery/my-result",
+        header: { "X-WX-SERVICE": "flask-mysql-login", "X-Wx-OpenId": userInfo.openId, "content-type": "application/json" },
+        method: "GET", data: {}
+      });
+      if (myRes.data && myRes.data.code === 200) {
+        const drawn = myRes.data.data.find(r => r.activity_name === this.data.activityDetail.name);
+        if (drawn) {
+          this.setData({ hasLottery: true, lotteryInfo: { id: drawn.lottery_id, activity_name: drawn.activity_name }, lotteryDrawn: true });
+        }
+      }
+    } catch (err) {
+      console.log('抽奖检查失败（可忽略）:', err);
+    }
+  },
+
+  onLotteryClick() {
+    if (this.data.lotteryDrawn) {
+      wx.showModal({
+        title: '抽奖结果',
+        content: '您已参与过此活动的抽奖',
+        showCancel: false,
+        confirmText: '知道了'
+      });
+      return;
+    }
+    this.setData({ showLotteryPopup: true });
+  },
+
+  onLotteryClose() {
+    this.setData({ showLotteryPopup: false });
+  },
+
+  onLotteryDrawn(e) {
+    this.setData({ lotteryDrawn: true, showLotteryPopup: false });
+    wx.showToast({ title: e.detail.prize_name, icon: 'none', duration: 3000 });
   },
 
   async loadWeather(city) {

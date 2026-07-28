@@ -154,6 +154,11 @@ Page({
         text: '黑名单管理',
         url: '/pages/blacklist/blacklist'
       });
+      menuList.push({
+        icon: 'gift-o',
+        text: '抽奖管理',
+        url: '/pages/lottery-admin/lottery-admin'
+      });
     }
     
     // 关于我们

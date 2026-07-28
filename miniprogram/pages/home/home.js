@@ -22,7 +22,9 @@ Page({
     verifyQuestionIdx: 0,
     autoFocus: false,
     showLockedDialog: false,
-    isBlacklisted: false
+    isBlacklisted: false,
+    showLotteryPopup: false,
+    lotteryInfo: {}
   },
 
   onLoad() {
@@ -30,13 +32,31 @@ Page({
   },
 
   onShow() {
-    // 每次回到首页时，先更新活动状态，再刷新列表
     if (this.data.userInfo) {
-      // 检查黑名单状态
       if (this.data.userInfo.isBlacklist === 1) {
         this.setData({ isBlacklisted: true, showLockedDialog: true });
       }
-      this.updateActivityStatus(); // 异步更新状态（内部会等待完成）
+      this.updateActivityStatus();
+      this.checkLottery();
+    }
+  },
+
+  async checkLottery() {
+    try {
+      const userInfo = wx.getStorageSync('userInfo');
+      if (!userInfo?.openId) return;
+      const result = await wx.cloud.callContainer({
+        config: { env: "prod-3gktwx67d1dd1e76" },
+        path: "/api/lottery/check",
+        header: { "X-WX-SERVICE": "flask-mysql-login", "X-Wx-OpenId": userInfo.openId, "content-type": "application/json" },
+        method: "POST",
+        data: {}
+      });
+      if (result.data && result.data.code === 200 && result.data.data.length > 0) {
+        this.setData({ lotteryInfo: result.data.data[0], showLotteryPopup: true });
+      }
+    } catch (err) {
+      console.log('抽奖检查失败（可忽略）:', err);
     }
   },
 
@@ -548,17 +568,27 @@ Page({
   },
 
   onClearSearch() {
-    this.setData({ searchKeyword: '' }, () => this.getActivityList());
+    this.setData({ searchKeyword: '' }, () => this.getActivityList(true));
   },
 
   onFilterDifficulty(e) {
     const value = e.currentTarget.dataset.value;
-    this.setData({ filterDifficulty: value === '' ? '' : value }, () => this.getActivityList());
+    this.setData({ filterDifficulty: value === '' ? '' : value }, () => this.getActivityList(true));
   },
 
   onFilterTravel(e) {
     const value = e.currentTarget.dataset.value;
-    this.setData({ filterTravel: value === '' ? '' : parseInt(value) }, () => this.getActivityList());
+    this.setData({ filterTravel: value === '' ? '' : parseInt(value) }, () => this.getActivityList(true));
+  },
+
+  onLotteryClose() {
+    this.setData({ showLotteryPopup: false, lotteryInfo: {} });
+  },
+
+  onLotteryDrawn() {
+    setTimeout(() => {
+      this.setData({ showLotteryPopup: false, lotteryInfo: {} });
+    }, 3000);
   },
 
   onShareAppMessage() {

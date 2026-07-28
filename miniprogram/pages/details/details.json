@@ -1,4 +1,6 @@
 {
-  "usingComponents": {},
+  "usingComponents": {
+    "lottery-popup": "/components/lottery-popup/lottery-popup"
+  },
   "navigationBarTitleText": "活动详情"
 }

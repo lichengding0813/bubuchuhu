@@ -117,8 +117,15 @@
 
     <view class="route-meta">
       <text>报名截止：{{activityDetail.deadline}}</text>
+      <view class="lottery-entry" wx:if="{{hasLottery}}" catchtap="onLotteryClick">
+        <text class="lottery-wheel-icon">🎡</text>
+        <text class="lottery-entry-text">{{lotteryDrawn ? '查看抽奖结果' : '参与抽奖'}}</text>
+      </view>
     </view>
   </view>
+
+  <!-- 抽奖弹窗 -->
+  <lottery-popup show="{{showLotteryPopup}}" lotteryInfo="{{lotteryInfo}}" bind:close="onLotteryClose" bind:drawn="onLotteryDrawn" />
 
   <!-- 底部固定区域 -->
   <view class="bottom-fixed">
