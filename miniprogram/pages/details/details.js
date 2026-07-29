@@ -1,0 +1,646 @@
+Page({
+  data: {
+    activityId: null,
+    weather: {},
+    hasLottery: false,
+    lotteryInfo: {},
+    showLotteryPopup: false,
+    lotteryDrawn: false,
+    creatorInfo: null,
+    activityDetail: {
+      name: '',
+      time: '',
+      location: '',
+      difficulty: '',
+      distance: 0,
+      climb: 0,
+      remainCount: 0,
+      totalCount: 0,
+      organizer: '',
+      wechat: '',
+      cover: '',
+      groupQR: '',
+      busQR: '',
+      description: '',
+      route: '',
+      meetingPoints: [],
+      deadline: '',
+      status: '',
+      travel: [],
+      is_force_insurance: 0
+    },
+    agreeNotice: false,
+    agreeBus: false,
+    agreeSelf: false,
+    canSignUp: false,
+    userInfo: null,
+    isRegistered: false,
+    showSuccessPopup: false,
+    // 协议强制阅读相关
+    noticeViewed: { participant: false, bus: false, self: false },
+    companionCount: 0,
+    maxCompanion: 3,
+    registeredCompanionCount: 0,
+    bottomExpanded: false
+  },
+
+  toggleBottom() {
+    this.setData({ bottomExpanded: !this.data.bottomExpanded });
+  },
+
+  onLoad(options) {
+    const { id } = options;
+    if (id) {
+      this.setData({ activityId: id });
+      this.getActivityDetail(id);
+    } else {
+      wx.showToast({ title: '活动ID不存在', icon: 'error' });
+    }
+
+    const userInfo = wx.getStorageSync('userInfo');
+    if (userInfo) {
+      this.setData({ userInfo });
+    } else {
+      // 通过分享链接进入时可能未登录，主动触发登录以确保 userInfo 可用
+      this.loginIfNeeded();
+    }
+  },
+
+  onShow() {
+    // 从设置页返回后刷新本地 userInfo
+    const userInfo = wx.getStorageSync('userInfo');
+    if (userInfo) {
+      this.setData({ userInfo });
+    }
+  },
+
+  // 分享进入时确保用户已登录，否则报名时 nickname 为空
+  async loginIfNeeded() {
+    try {
+      const loginRes = await new Promise((resolve, reject) => {
+        wx.login({ success: resolve, fail: reject });
+      });
+      if (!loginRes.code) return;
+
+      wx.cloud.init();
+      const result = await wx.cloud.callContainer({
+        config: { env: 'prod-3gktwx67d1dd1e76' },
+        path: '/login',
+        header: {
+          'X-WX-SERVICE': 'flask-mysql-login',
+          'content-type': 'application/json'
+        },
+        method: 'POST',
+        data: { code: loginRes.code }
+      });
+
+      if (result.data && result.data.code === 200) {
+        const userData = result.data.data;
+        if (result.data.verifyQuestion) {
+          userData.verifyQuestion = result.data.verifyQuestion;
+          userData.verifyQuestionIdx = result.data.verifyQuestionIdx;
+        }
+        getApp().globalData.userInfo = userData;
+        wx.setStorageSync('userInfo', userData);
+        this.setData({ userInfo: userData });
+      }
+    } catch (error) {
+      console.error('details页自动登录失败:', error);
+    }
+  },
+
+  async getActivityDetail(activityId) {
+    wx.showLoading({ title: '加载中...' });
+
+    try {
+      const userInfo = this.data.userInfo || wx.getStorageSync('userInfo');
+      const result = await wx.cloud.callContainer({
+        config: { env: "prod-3gktwx67d1dd1e76" },
+        path: "/api/activity/detail",
+        header: {
+          "X-WX-SERVICE": "flask-mysql-login",
+          "X-Wx-OpenId": userInfo?.openId,
+          "content-type": "application/json"
+        },
+        method: "GET",
+        data: { id: activityId }
+      });
+
+      wx.hideLoading();
+
+      if (result.data && result.data.code === 200) {
+        const activity = result.data.data;
+        console.log(activity);
+        this.formatActivityDetail(activity);
+      } else {
+        wx.showToast({ title: result.data?.msg || '获取详情失败', icon: 'none' });
+      }
+    } catch (error) {
+      wx.hideLoading();
+      console.error('获取活动详情失败:', error);
+      wx.showToast({ title: '网络错误', icon: 'error' });
+    }
+  },
+
+  formatActivityDetail(activity) {
+    const participantCount = activity.participant_count || 0;
+    const remainCount = activity.max_participants - participantCount;
+
+    const travelOptions = (activity.travel_options || []).map(item => {
+      switch (item.travel_type) {
+        case 1: return 'bus';
+        case 2: return 'train';
+        case 3: return 'self';
+        default: return '';
+      }
+    }).filter(Boolean);
+
+    const busTravel = (activity.travel_options || []).find(item => item.travel_type === 1);
+    const busQR = busTravel ? busTravel.bus_qr_url : '';
+
+    const selfTravel = (activity.travel_options || []).find(item => item.travel_type === 3);
+    const selfQR = selfTravel ? selfTravel.bus_qr_url : '';
+
+    const statusMap = {
+      0: '待审核', 1: '报名中', 2: '审核拒绝',
+      3: '进行中', 4: '已结束', 5: '已取消'
+    };
+    const difficultyMap = {
+      1: '1⭐', 2: '2⭐',
+      3: '3⭐', 4: '4⭐', 5: '5⭐'
+    };
+
+    // 获取是否强制保险（后端返回字段名为 is_force_insurance）
+    const isForceInsurance = activity.is_force_insurance !== undefined ? activity.is_force_insurance : 0;
+
+    this.setData({
+      'activityDetail.name': activity.name || '',
+      'activityDetail.time': this.formatTime(activity.activity_time),
+      'activityDetail.location': activity.location || '',
+      'activityDetail.difficulty': (activity.difficulty || 1) + '⭐',
+      'activityDetail.distance': activity.distance || 0,
+      'activityDetail.climb': activity.climb || 0,
+      'activityDetail.remainCount': remainCount,
+      'activityDetail.totalCount': activity.max_participants || 0,
+      'activityDetail.organizer': activity.creator_name || '未知',
+      'activityDetail.wechat': activity.wechat_id || '',
+      'activityDetail.cover': activity.cover_url || '',
+      'activityDetail.groupQR': activity.group_qr_url || '',
+      'activityDetail.busQR': busQR,
+      'activityDetail.selfQR': selfQR,
+      'activityDetail.description': activity.description || '',
+      'activityDetail.route': activity.routes || activity.route || '',
+      'activityDetail.meetingPoints': activity.meeting_points || [],
+      'activityDetail.deadline': this.formatDate(activity.deadline),
+      'activityDetail.status': statusMap[activity.status] || '',
+      'activityDetail.travel': travelOptions,
+      'activityDetail.rawStatus': activity.status,
+      'activityDetail.creatorAvatar': activity.creator_avatar || '',
+      'activityDetail.is_force_insurance': isForceInsurance,   // 新增
+    });
+
+    // 获取当前用户是否已报名
+    const isRegistered = activity.has_registered === true;
+    this.setData({
+      isRegistered: isRegistered,
+      agreeNotice: isRegistered ? true : this.data.agreeNotice,
+      agreeBus: isRegistered ? true : this.data.agreeBus,
+      agreeSelf: isRegistered ? true : this.data.agreeSelf,
+    }, () => {
+      this.checkSignUpStatus();
+    });
+    this.loadWeather(activity.location);
+    this.checkActivityLottery(activity.id || this.data.activityId);
+  },
+
+  async checkActivityLottery(activityId) {
+    try {
+      const userInfo = wx.getStorageSync('userInfo');
+      if (!userInfo?.openId) return;
+      const checkRes = await wx.cloud.callContainer({
+        config: { env: "prod-3gktwx67d1dd1e76" },
+        path: "/api/lottery/check",
+        header: { "X-WX-SERVICE": "flask-mysql-login", "X-Wx-OpenId": userInfo.openId, "content-type": "application/json" },
+        method: "POST", data: {}
+      });
+      if (checkRes.data && checkRes.data.code === 200) {
+        const match = checkRes.data.data.find(l => l.activity_id == activityId);
+        if (match) {
+          this.setData({ hasLottery: true, lotteryInfo: match, lotteryDrawn: false });
+          return;
+        }
+      }
+      const myRes = await wx.cloud.callContainer({
+        config: { env: "prod-3gktwx67d1dd1e76" },
+        path: "/api/lottery/my-result",
+        header: { "X-WX-SERVICE": "flask-mysql-login", "X-Wx-OpenId": userInfo.openId, "content-type": "application/json" },
+        method: "GET", data: {}
+      });
+      if (myRes.data && myRes.data.code === 200) {
+        const drawn = myRes.data.data.find(r => r.activity_name === this.data.activityDetail.name);
+        if (drawn) {
+          this.setData({ hasLottery: true, lotteryInfo: { id: drawn.lottery_id, activity_name: drawn.activity_name }, lotteryDrawn: true });
+        }
+      }
+    } catch (err) {
+      console.log('抽奖检查失败（可忽略）:', err);
+    }
+  },
+
+  onLotteryClick() {
+    if (this.data.lotteryDrawn) {
+      wx.showModal({
+        title: '抽奖结果',
+        content: '您已参与过此活动的抽奖',
+        showCancel: false,
+        confirmText: '知道了'
+      });
+      return;
+    }
+    this.setData({ showLotteryPopup: true });
+  },
+
+  onLotteryClose() {
+    this.setData({ showLotteryPopup: false });
+  },
+
+  onLotteryDrawn(e) {
+    this.setData({ lotteryDrawn: true, showLotteryPopup: false });
+    wx.showToast({ title: e.detail.prize_name, icon: 'none', duration: 3000 });
+  },
+
+  async loadWeather(city) {
+    try {
+      const result = await wx.cloud.callContainer({
+        config: { env: "prod-3gktwx67d1dd1e76" },
+        path: "/api/weather",
+        header: { "X-WX-SERVICE": "flask-mysql-login", "content-type": "application/json" },
+        method: "GET",
+        data: { city: city }
+      });
+      if (result.data && result.data.code === 200) {
+        this.setData({ weather: result.data.data });
+      }
+    } catch (err) {
+      console.log('天气加载失败（可忽略）:', err);
+    }
+  },
+
+  // 安全解析时间字符串
+  // wx.cloud.callContainer 会把 "YYYY-MM-DD HH:MM:SS" 当作 UTC 转成 Date 对象
+  // 所以需要用 UTC getter 取回原始值（即后端的北京时间）
+  parseTimeStr(timeStr) {
+    if (!timeStr) return null;
+    // 如果已经是 Date 对象，直接取 UTC 组件
+    if (timeStr instanceof Date) {
+      return {
+        year: timeStr.getUTCFullYear(),
+        month: timeStr.getUTCMonth() + 1,
+        day: timeStr.getUTCDate(),
+        hour: timeStr.getUTCHours(),
+        minute: timeStr.getUTCMinutes(),
+        second: timeStr.getUTCSeconds()
+      };
+    }
+    // 尝试 YYYY-MM-DD HH:MM:SS 格式
+    const str = String(timeStr).replace('T', ' ');
+    const parts = str.split(/[- :]/);
+    if (parts.length >= 5 && !isNaN(parseInt(parts[0]))) {
+      return {
+        year: parseInt(parts[0]),
+        month: parseInt(parts[1]),
+        day: parseInt(parts[2]),
+        hour: parseInt(parts[3]),
+        minute: parseInt(parts[4]),
+        second: parts.length >= 6 ? parseInt(parts[5]) : 0
+      };
+    }
+    // 兜底：Date 解析后取 UTC 组件
+    const d = new Date(timeStr);
+    if (!isNaN(d.getTime())) {
+      return {
+        year: d.getUTCFullYear(),
+        month: d.getUTCMonth() + 1,
+        day: d.getUTCDate(),
+        hour: d.getUTCHours(),
+        minute: d.getUTCMinutes(),
+        second: d.getUTCSeconds()
+      };
+    }
+    return null;
+  },
+
+  formatTime(timeStr) {
+    const t = this.parseTimeStr(timeStr);
+    if (!t) return timeStr || '';
+    const month = String(t.month).padStart(2, '0');
+    const day = String(t.day).padStart(2, '0');
+    const hour = String(t.hour).padStart(2, '0');
+    const minute = String(t.minute).padStart(2, '0');
+    return `${month}/${day} ${hour}:${minute}`;
+  },
+
+  formatDate(timeStr) {
+    const t = this.parseTimeStr(timeStr);
+    if (!t) return timeStr || '';
+    const year = t.year;
+    const month = String(t.month).padStart(2, '0');
+    const day = String(t.day).padStart(2, '0');
+    const hour = String(t.hour).padStart(2, '0');
+    const minute = String(t.minute).padStart(2, '0');
+    return `${year}-${month}-${day} ${hour}:${minute}`;
+  },
+
+  previewQRCode(e) {
+    const urls = [this.data.activityDetail.groupQR];
+    wx.previewImage({ urls, current: e.currentTarget.dataset.url });
+  },
+
+  previewCoverImage(e) {
+    const src = e.currentTarget.dataset.src;
+    if (!src) return;
+    wx.previewImage({ urls: [src], current: src });
+  },
+
+  checkSignUpStatus() {
+    const { activityDetail, agreeNotice, agreeBus, agreeSelf } = this.data;
+    // 后端允许 status=1(报名中) 或 status=3(进行中) 报名
+    const isActive = activityDetail.rawStatus === 1 || activityDetail.rawStatus === 3;
+    const hasRemain = activityDetail.remainCount > 0;
+
+    // 截止时间对比：用 parseTimeStr 统一解析
+    let notExpired = true;
+    const deadlineStr = activityDetail.deadline;
+    if (deadlineStr) {
+      const t = this.parseTimeStr(deadlineStr);
+      if (t) {
+        const deadlineDate = new Date(t.year, t.month - 1, t.day, t.hour, t.minute);
+        notExpired = deadlineDate > new Date();
+      }
+    }
+
+    let agreed = agreeNotice;
+    if (activityDetail.travel.includes('bus')) agreed = agreed && agreeBus;
+    if (activityDetail.travel.includes('train') || activityDetail.travel.includes('self')) {
+      agreed = agreed && agreeSelf;
+    }
+    const canSignUp = isActive && hasRemain && notExpired && agreed;
+    this.setData({ canSignUp });
+  },
+
+  onAgreeNoticeChange(e) {
+    const checked = e.detail;
+    if (checked && !this.data.noticeViewed.participant) {
+      this.openNoticeForAgree('participant', 'agreeNotice');
+      return;
+    }
+    this.setData({ agreeNotice: checked }, () => this.checkSignUpStatus());
+  },
+  onAgreeBusChange(e) {
+    const checked = e.detail;
+    if (checked && !this.data.noticeViewed.bus) {
+      this.openNoticeForAgree('bus', 'agreeBus');
+      return;
+    }
+    this.setData({ agreeBus: checked }, () => this.checkSignUpStatus());
+  },
+  onAgreeSelfChange(e) {
+    const checked = e.detail;
+    if (checked && !this.data.noticeViewed.self) {
+      this.openNoticeForAgree('self', 'agreeSelf');
+      return;
+    }
+    this.setData({ agreeSelf: checked }, () => this.checkSignUpStatus());
+  },
+
+  // 勾选协议时跳转须知页面
+  openNoticeForAgree(type, agreeField) {
+    wx.navigateTo({
+      url: `/pages/notice/notice?type=${type}`,
+      events: {
+        viewed: (data) => {
+          if (data.type) {
+            this.setData({ ['noticeViewed.' + data.type]: true });
+          }
+          if (data.agreeField) {
+            this.setData({ [data.agreeField]: true }, () => this.checkSignUpStatus());
+          }
+        }
+      },
+      success: (res) => {
+        res.eventChannel.emit('init', { agreeField });
+      }
+    });
+  },
+
+  onNoticeClick(e) {
+    const { type } = e.currentTarget.dataset;
+    wx.navigateTo({
+      url: `/pages/notice/notice?type=${type}`,
+      events: {
+        viewed: (data) => {
+          if (data.type) {
+            this.setData({ ['noticeViewed.' + data.type]: true });
+          }
+          if (data.agreeField) {
+            this.setData({ [data.agreeField]: true }, () => this.checkSignUpStatus());
+          }
+        }
+      },
+      success: (res) => {
+        res.eventChannel.emit('init', { agreeField: '' });
+      }
+    });
+  },
+
+  onSignUpClick() {
+    // 校验用户资料完整性：手机号或微信号至少填一项（优先检查，先于canSignUp）
+    const userInfo = this.data.userInfo || wx.getStorageSync('userInfo');
+    if (!userInfo.phoneNumber && !userInfo.wechatId) {
+      wx.showModal({
+        title: '资料不完整',
+        content: '请先在设置中填写手机号或微信号，以便活动发起者能联系到您',
+        confirmText: '去设置',
+        success: (res) => {
+          if (res.confirm) {
+            wx.navigateTo({ url: '/pages/settings/settings' });
+          }
+        }
+      });
+      return;
+    }
+    if (!this.data.canSignUp) {
+      // 未就绪：自动展开底部区域让用户看到需要操作的内容
+      if (!this.data.bottomExpanded) {
+        this.setData({ bottomExpanded: true });
+      }
+      const { agreeNotice, agreeBus, agreeSelf, activityDetail } = this.data;
+      let tip = '当前不可报名';
+      if (!agreeNotice) {
+        tip = '请先阅读并同意《报名参与者须知》';
+      } else if (activityDetail.travel && activityDetail.travel[0] === 'bus' && !agreeBus) {
+        tip = '请先阅读并同意《大巴行程免责声明》';
+      } else if (activityDetail.travel && (activityDetail.travel[0] === 'train' || activityDetail.travel[1] === 'train' || activityDetail.travel[0] === 'self' || activityDetail.travel[1] === 'self' || activityDetail.travel[2] === 'self') && !agreeSelf) {
+        tip = '请先阅读并同意《自驾/高铁行程免责声明》';
+      }
+      wx.showToast({ title: tip, icon: 'none' });
+      return;
+    }
+    wx.showModal({
+      title: '确认报名',
+      content: '请确认已仔细阅读所有须知并同意相关条款',
+      success: (res) => {
+        if (res.confirm) this.signUpActivity();
+      }
+    });
+  },
+
+  onCancelSignUpClick() {
+    wx.showModal({
+      title: '确认取消报名',
+      content: '取消后需重新报名，确定要取消吗？',
+      success: (res) => {
+        if (res.confirm) this.cancelParticipation();
+      }
+    });
+  },
+
+  async cancelParticipation() {
+    wx.showLoading({ title: '取消中...' });
+    try {
+      const userInfo = this.data.userInfo || wx.getStorageSync('userInfo');
+      const result = await wx.cloud.callContainer({
+        config: { env: "prod-3gktwx67d1dd1e76" },
+        path: "/api/activity/cancel-participation",
+        header: {
+          "X-WX-SERVICE": "flask-mysql-login",
+          "X-Wx-OpenId": userInfo?.openId,
+          "content-type": "application/json"
+        },
+        method: "POST",
+        data: { activity_id: this.data.activityId }
+      });
+      wx.hideLoading();
+      if (result.data && result.data.code === 200) {
+        this.setData({
+          isRegistered: false,
+          agreeNotice: false,
+          agreeBus: false,
+          agreeSelf: false
+        });
+        wx.showToast({
+          title: '已取消报名',
+          icon: 'success',
+          duration: 1500,
+          success: () => setTimeout(() => this.getActivityDetail(this.data.activityId), 1500)
+        });
+      } else {
+        wx.showToast({ title: result.data?.msg || '取消失败', icon: 'none' });
+      }
+    } catch (error) {
+      wx.hideLoading();
+      wx.showToast({ title: '网络错误', icon: 'error' });
+    }
+  },
+
+  onCompanionChange(e) {
+    const count = parseInt(e.detail) || 0;
+    // 确保不超过剩余名额
+    const remain = this.data.activityDetail.remainCount;
+    const maxAllowed = Math.min(3, remain - 1);
+    const finalCount = Math.max(0, Math.min(count, maxAllowed));
+    this.setData({ companionCount: finalCount, maxCompanion: Math.max(0, maxAllowed) }, () => {
+      this.checkSignUpStatus();
+    });
+  },
+
+  async signUpActivity() {
+    wx.showLoading({ title: '报名中...' });
+    try {
+      const userInfo = this.data.userInfo || wx.getStorageSync('userInfo');
+      const result = await wx.cloud.callContainer({
+        config: { env: "prod-3gktwx67d1dd1e76" },
+        path: "/api/activity/participate",
+        header: {
+          "X-WX-SERVICE": "flask-mysql-login",
+          "X-Wx-OpenId": userInfo?.openId,
+          "content-type": "application/json"
+        },
+        method: "POST",
+        data: {
+          activity_id: this.data.activityId,
+          nickname: userInfo?.nickName || '',
+          phone: userInfo?.phoneNumber || '',
+          wechat_id: userInfo?.wechatId || '',
+          travel_option: null,
+          remark: '',
+          companion_count: this.data.companionCount
+        }
+      });
+      wx.hideLoading();
+      if (result.data && result.data.code === 200) {
+        this.setData({ showSuccessPopup: true, isRegistered: true, registeredCompanionCount: this.data.companionCount });
+      } else {
+        wx.showToast({ title: result.data?.msg || '报名失败', icon: 'none' });
+      }
+    } catch (error) {
+      wx.hideLoading();
+      console.error('报名失败:', error);
+      wx.showToast({ title: '网络错误', icon: 'error' });
+    }
+  },
+
+  onBackClick() {
+    const pages = getCurrentPages();
+    if (pages.length > 1) {
+      wx.navigateBack({ delta: 1 });
+    } else {
+      // 分享进入时页面栈只有当前页，无法navigateBack，回到首页
+      wx.switchTab({ url: '/pages/home/home' });
+    }
+  },
+
+  onSuccessPopupClose() {
+    this.setData({ showSuccessPopup: false });
+    this.getActivityDetail(this.data.activityId);
+  },
+
+  onPreviewGroupQR() {
+    if (this.data.activityDetail.groupQR) {
+      wx.previewImage({ urls: [this.data.activityDetail.groupQR] });
+    }
+  },
+
+  // 点击“已报名”按钮
+  onViewRegistration() {
+    // 这里可以提前获取报名信息并存入 data，然后显示弹窗
+    this.setData({
+      showSuccessPopup: true
+    });
+  },
+
+  onCopyWechat() {
+    if (this.data.activityDetail.wechat) {
+      wx.setClipboardData({
+        data: this.data.activityDetail.wechat,
+        success: () => wx.showToast({ title: '微信号已复制', icon: 'success' })
+      });
+    }
+  },
+
+  preventTouchMove() {},
+
+  onUnload() {
+    if (this.countdownTimer) clearInterval(this.countdownTimer);
+  },
+
+  onShareAppMessage() {
+    const { activityId, activityDetail } = this.data;
+    const title = activityDetail.name || '步步出沪｜活动详情';
+    const pages = getCurrentPages();
+    const currentPage = pages[pages.length - 1];
+    const path = `${currentPage.route}?id=${activityId}`;
+    const imageUrl = activityDetail.cover || '';
+    return { title, path, imageUrl };
+  }
+});

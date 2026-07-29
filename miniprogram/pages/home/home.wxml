@@ -1,0 +1,128 @@
+<!-- 顶部介绍的banner (点击跳转关于我们) -->
+<view class="banner-section" bindtap="onAboutClick">
+  <view class="banner-image">
+    <image src="cloud://prod-3gktwx67d1dd1e76.7072-prod-3gktwx67d1dd1e76-1392222183/banner.jpg" mode="widthFix" />
+  </view>
+</view>
+
+<!-- 搜索 -->
+<view class="search-section">
+  <view class="search-bar">
+    <van-icon name="search" size="16px" color="#aaa" />
+    <input class="search-input" placeholder="搜索活动名称、地点" value="{{searchKeyword}}" bindinput="onSearchInput" bindconfirm="onSearchConfirm" confirm-type="search" />
+    <van-icon wx:if="{{searchKeyword}}" name="clear" size="16px" color="#bbb" bindtap="onClearSearch" />
+  </view>
+</view>
+
+<!-- 发布活动按钮 -->
+<view class="publish-section">
+  <van-button type="default" custom-class="custom-publish-btn" bindtap="onPublishClick">
+    + 发布活动
+  </van-button>
+</view>
+
+<!-- Tab 切换 -->
+<view class="home-tabs">
+  <view class="home-tab {{currentTab === 'ongoing' ? 'active' : ''}}" bindtap="switchTab" data-tab="ongoing">
+    最新活动<text class="tab-count" wx:if="{{ongoingCount > 0}}">{{ongoingCount}}</text>
+  </view>
+  <view class="home-tab {{currentTab === 'ended' ? 'active' : ''}}" bindtap="switchTab" data-tab="ended">
+    已结束活动<text class="tab-count" wx:if="{{endedCount > 0}}">{{endedCount}}</text>
+  </view>
+</view>
+
+<!-- 活动列表 -->
+<view class="list-section">
+  <view wx:if="{{isLoading && activityList.length === 0}}" class="loading-container">
+    <van-loading size="40px" vertical>加载中...</van-loading>
+  </view>
+
+  <view wx:elif="{{activityList.length === 0}}" class="empty-container">
+    <van-icon name="todo-list-o" size="80" color="#ccc" />
+    <text class="empty-text">{{currentTab === 'ongoing' ? '暂无最新活动' : '暂无已结束活动'}}</text>
+  </view>
+
+  <block wx:else>
+    <view wx:for="{{activityList}}" wx:key="id" class="activity-card {{currentTab === 'ended' ? 'ended-card' : ''}}" data-id="{{item.id}}" bindtap="onActivityClick">
+      <view class="card-left">
+        <image class="cover-image" src="{{item.coverUrl}}" mode="aspectFill" wx:if="{{item.coverUrl}}" />
+        <view class="default-cover" wx:else>
+          <van-icon name="photo-o" size="40" color="#ccc" />
+        </view>
+      </view>
+      <view class="card-right">
+        <view class="activity-name">
+          {{item.name}}
+          <text class="status-badge {{item.statusClass}}" wx:if="{{currentTab === 'ended'}}">{{item.statusBadge}}</text>
+        </view>
+        <view class="info-row">
+          <view class="info-item">
+            <van-icon name="clock-o" />
+            <text>{{item.time}}</text>
+          </view>
+          <view class="info-item">
+            <van-icon name="location-o" />
+            <text>{{item.location}}</text>
+          </view>
+        </view>
+        <view class="info-row">
+          <view class="info-item">
+            <van-icon name="user-o" />
+            <text class="remain-count {{item.remainCount < 5 ? 'warning' : ''}}">{{item.remainCount}}/{{item.totalCount}} 剩余</text>
+          </view>
+          <text class="tag-difficulty">{{item.difficulty}}</text>
+          <text class="status-badge {{item.has_registered ? 'registered-badge' : item.statusClass}}" wx:if="{{currentTab === 'ongoing'}}">{{item.statusBadge}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="load-more" wx:if="{{!isLoading}}">
+      <text wx:if="{{hasMore}}" class="load-more-text">上拉加载更多</text>
+      <text wx:else class="load-more-text">没有更多了</text>
+    </view>
+    <view class="load-more" wx:if="{{isLoading && activityList.length > 0}}">
+      <van-loading size="24px">加载中...</van-loading>
+    </view>
+  </block>
+</view>
+
+<!-- 回到顶部浮窗 -->
+<view class="scroll-top-btn" wx:if="{{showScrollTop}}" bindtap="onScrollToTop">
+  <van-icon name="back-top" size="20" color="#5faee3" />
+</view>
+
+<!-- ========== 自定义验证弹窗 ========== -->
+<view class="custom-dialog" wx:if="{{showVerifyDialog}}">
+  <view class="dialog-mask" catchtouchmove="preventTouchMove"></view>
+  <view class="dialog-container">
+    <view class="dialog-title">验证问题</view>
+    <image class="dialog-image" src="cloud://prod-3gktwx67d1dd1e76.7072-prod-3gktwx67d1dd1e76-1392222183/verify.png" mode="widthFix" />
+    <view class="dialog-content">
+      <view class="question">{{verifyQuestion || '兽妈准备宵夜是？'}}</view>
+      <input class="dialog-input" type="text" placeholder="请输入答案" value="{{verifyAnswer}}" bindinput="onAnswerInput" focus="{{autoFocus}}" confirm-type="done" bindconfirm="onVerifyConfirm" />
+      <view class="error-tip" wx:if="{{verifyError}}">{{verifyError}}</view>
+    </view>
+    <view class="dialog-buttons">
+      <view class="dialog-btn dialog-btn-confirm" bindtap="onVerifyConfirm">确认</view>
+    </view>
+  </view>
+</view>
+
+<!-- ========== 黑名单全屏遮罩 + 锁定弹窗 ========== -->
+<view class="blacklist-mask" wx:if="{{isBlacklisted}}" catchtouchmove="preventTouchMove" bindtap="onMaskTap"></view>
+
+<view class="custom-dialog" wx:if="{{showLockedDialog}}">
+  <view class="dialog-mask" catchtouchmove="preventTouchMove"></view>
+  <view class="dialog-container">
+    <view class="dialog-title">账户已锁定</view>
+    <view class="dialog-content">
+      <view class="plain-text">由于多次验证失败，您的账户已被锁定。</view>
+    </view>
+    <view class="dialog-buttons">
+      <view class="dialog-btn dialog-btn-confirm" bindtap="onLockedConfirm">知道了</view>
+    </view>
+  </view>
+</view>
+
+<!-- 抽奖弹窗 -->
+<lottery-popup show="{{showLotteryPopup}}" lotteryInfo="{{lotteryInfo}}" bind:close="onLotteryClose" bind:drawn="onLotteryDrawn" />

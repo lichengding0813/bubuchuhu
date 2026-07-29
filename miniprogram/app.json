@@ -1,0 +1,79 @@
+{
+  "pages": [
+    "pages/home/home",
+    "pages/calendar/calendar",
+    "pages/lottery-admin/lottery-admin",
+    "pages/review/review",
+    "pages/profile/profile",
+    "pages/publish/publish",
+    "pages/details/details",
+    "pages/about/about",
+    "pages/settings/settings",
+    "pages/review-detail/review-detail",
+    "pages/admin-review/admin-review",
+    "pages/admin-detail/admin-detail",
+    "pages/review_add/review_add",
+    "pages/update-log/update-log",
+    "pages/my-created-activities/my-created-activities",
+    "pages/my-joined-activities/my-joined-activities",
+    "pages/activity-participants/activity-participants",
+    "pages/verify-management/verify-management",
+    "pages/notice/notice",
+    "pages/blacklist/blacklist"
+  ],
+  "tabBar": {
+    "color": "#7f8c8d",
+    "selectedColor": "#96c9ff",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "white",
+    "list": [
+      {
+        "pagePath": "pages/home/home",
+        "text": "首页",
+        "iconPath": "images/tabbar/2.png",
+        "selectedIconPath": "images/tabbar/3.png"
+      },
+      {
+        "pagePath": "pages/review/review",
+        "text": "活动回顾",
+        "iconPath": "images/tabbar/1.png",
+        "selectedIconPath": "images/tabbar/6.png"
+      },
+      {
+        "pagePath": "pages/profile/profile",
+        "text": "我的",
+        "iconPath": "images/tabbar/4.png",
+        "selectedIconPath": "images/tabbar/5.png"
+      }
+    ]
+  },
+  "window": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "步步出沪 | 徒然好想走",
+    "navigationBarBackgroundColor": "#ffffff"
+  },
+  "style": "v2",
+  "componentFramework": "glass-easel",
+  "sitemapLocation": "sitemap.json",
+  "lazyCodeLoading": "requiredComponents",
+  "usingComponents": {
+    "van-button": "/miniprogram_npm/@vant/weapp/button/index",
+    "van-icon": "/miniprogram_npm/@vant/weapp/icon/index",
+    "van-field": "/miniprogram_npm/@vant/weapp/field/index",
+    "van-cell": "/miniprogram_npm/@vant/weapp/cell/index",
+    "van-cell-group": "/miniprogram_npm/@vant/weapp/cell-group/index",
+    "van-checkbox": "/miniprogram_npm/@vant/weapp/checkbox/index",
+    "van-checkbox-group": "/miniprogram_npm/@vant/weapp/checkbox-group/index",
+    "van-radio-group": "@vant/weapp/radio-group/index",
+    "van-radio": "@vant/weapp/radio/index",
+    "van-stepper": "/miniprogram_npm/@vant/weapp/stepper/index",
+    "van-dropdown-menu": "/miniprogram_npm/@vant/weapp/dropdown-menu/index",
+    "van-dropdown-item": "/miniprogram_npm/@vant/weapp/dropdown-item/index",
+    "van-uploader": "/miniprogram_npm/@vant/weapp/uploader/index",
+    "van-datetime-picker": "/miniprogram_npm/@vant/weapp/datetime-picker/index",
+    "van-action-sheet": "/miniprogram_npm/@vant/weapp/action-sheet/index",
+    "van-popup": "/miniprogram_npm/@vant/weapp/popup/index",
+    "van-dialog": "@vant/weapp/dialog/index",
+    "lottery-popup": "/components/lottery-popup/lottery-popup"
+  }
+}

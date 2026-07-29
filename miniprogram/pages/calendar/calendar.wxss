@@ -1,0 +1,40 @@
+/* pages/calendar/calendar.wxss */
+page { background-color: #e6f7ff; height: 100%; overflow-y: auto; }
+
+.calendar-container { padding: 16px; padding-bottom: 40px; }
+
+.month-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 0 16px;
+}
+.month-arrow { padding: 8px; }
+.month-title { font-size: 18px; font-weight: 600; color: #1e4d7c; }
+
+.week-header { display: flex; margin-bottom: 8px; }
+.week-day { flex: 1; text-align: center; font-size: 13px; color: #999; padding: 6px 0; }
+
+.date-grid { display: flex; flex-wrap: wrap; background: #fff; border-radius: 12px; overflow: hidden; }
+.date-cell {
+  width: calc(100% / 7); aspect-ratio: 1; display: flex;
+  flex-direction: column; align-items: center; justify-content: center;
+  position: relative;
+}
+.date-cell.empty { background: #fafafa; }
+.date-num { font-size: 14px; color: #333; }
+.date-dot {
+  width: 6px; height: 6px; border-radius: 50%; background: #5faee3;
+  position: absolute; bottom: 8px;
+}
+.date-cell.today { background: #e3f0ff; }
+.date-cell.today .date-num { color: #5faee3; font-weight: 700; }
+
+.day-activities { margin-top: 20px; }
+.day-title { font-size: 16px; font-weight: 600; color: #1e4d7c; margin-bottom: 12px; }
+.day-card {
+  background: #fff; border-radius: 10px; padding: 12px 16px; margin-bottom: 8px;
+  display: flex; flex-direction: column; gap: 4px;
+  border: 1px solid #e8f0f8;
+}
+.day-name { font-size: 15px; color: #134579; font-weight: 500; }
+.day-location { font-size: 13px; color: #7a9ec2; }
+.empty-text { color: #ccc; text-align: center; padding: 30px 0; font-size: 14px; }
