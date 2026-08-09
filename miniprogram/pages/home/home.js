@@ -1,3 +1,5 @@
+const { get, post } = require('../../utils/api');
+
 Page({
   data: {
     currentTab: 'ongoing',
@@ -14,6 +16,7 @@ Page({
     searchKeyword: '',
     filterDifficulty: '',
     filterTravel: '',
+    filterOfficial: false,
     // 验证弹窗相关
     showVerifyDialog: false,
     verifyAnswer: '',
@@ -31,12 +34,16 @@ Page({
     this.loginAndGetUser();
   },
 
+  goToCalendar() {
+    wx.navigateTo({ url: '/pages/calendar/calendar' });
+  },
+
   onShow() {
     if (this.data.userInfo) {
       if (this.data.userInfo.isBlacklist === 1) {
         this.setData({ isBlacklisted: true, showLockedDialog: true });
       }
-      this.updateActivityStatus();
+      this.getActivityList(true);
       this.checkLottery();
     }
   },
@@ -45,44 +52,12 @@ Page({
     try {
       const userInfo = wx.getStorageSync('userInfo');
       if (!userInfo?.openId) return;
-      const result = await wx.cloud.callContainer({
-        config: { env: "prod-3gktwx67d1dd1e76" },
-        path: "/api/lottery/check",
-        header: { "X-WX-SERVICE": "flask-mysql-login", "X-Wx-OpenId": userInfo.openId, "content-type": "application/json" },
-        method: "POST",
-        data: {}
-      });
-      if (result.data && result.data.code === 200 && result.data.data.length > 0) {
-        this.setData({ lotteryInfo: result.data.data[0], showLotteryPopup: true });
+      const result = await post('/api/lottery/check', {}, { silent: true });
+      if (result.code === 200 && result.data.length > 0) {
+        this.setData({ lotteryInfo: result.data[0], showLotteryPopup: true });
       }
     } catch (err) {
       console.log('抽奖检查失败（可忽略）:', err);
-    }
-  },
-
-  // 新增：调用后端批量更新活动状态（进行中/已结束）
-  async updateActivityStatus() {
-    try {
-      const userInfo = this.data.userInfo || wx.getStorageSync('userInfo');
-      await wx.cloud.callContainer({
-        config: {
-          env: "prod-3gktwx67d1dd1e76"
-        },
-        path: "/api/activity/update-status", // 后端新增的接口路径
-        header: {
-          "X-WX-SERVICE": "flask-mysql-login",
-          "X-Wx-OpenId": userInfo?.openId,
-          "content-type": "application/json"
-        },
-        method: "POST",
-        data: {} // 无需参数
-      });
-      // 更新成功后，刷新活动列表
-      this.getActivityList(true);
-    } catch (error) {
-      console.error('更新活动状态失败:', error);
-      // 即使更新失败，也尝试正常拉取列表（可能显示旧状态）
-      this.getActivityList(true);
     }
   },
 
@@ -132,34 +107,19 @@ Page({
     const loginRes = await this.wxPromise('login');
     if (!loginRes.code) throw new Error('wx.login 未返回 code');
 
-    const result = await wx.cloud.callContainer({
-      config: { env: "prod-3gktwx67d1dd1e76" },
-      path: "/login",
-      header: {
-        "X-WX-SERVICE": "flask-mysql-login",
-        "content-type": "application/json"
-      },
-      method: "POST",
-      data: { code: loginRes.code }
-    });
+    const result = await post('/login', { code: loginRes.code }, { silent: true });
 
-    if (!result.data || result.data.code !== 200) {
-      const serverMsg = result.data?.msg;
-      console.error('后端登录返回非200:', result.data);
-      throw new Error(serverMsg || '登录失败');
-    }
-
-    const userData = result.data.data;
-    if (result.data.verifyQuestion) {
-      userData.verifyQuestion = result.data.verifyQuestion;
-      userData.verifyQuestionIdx = result.data.verifyQuestionIdx;
+    const userData = result.data;
+    if (result.verifyQuestion) {
+      userData.verifyQuestion = result.verifyQuestion;
+      userData.verifyQuestionIdx = result.verifyQuestionIdx;
     }
     getApp().globalData.userInfo = userData;
     wx.setStorageSync('userInfo', userData);
 
     this.setData({ userInfo: userData, isLoading: false });
 
-    if (result.data.isNew) {
+    if (result.isNew) {
       wx.showToast({ title: '欢迎新用户', icon: 'none' });
     }
     this.applyUserState(userData);
@@ -200,32 +160,22 @@ Page({
     }
 
     try {
-      const userInfo = this.data.userInfo || wx.getStorageSync('userInfo');
-      const { currentTab, page, pageSize, searchKeyword, filterDifficulty, filterTravel } = this.data;
+      const { currentTab, page, pageSize, searchKeyword, filterDifficulty, filterTravel, filterOfficial } = this.data;
       const params = { page, size: pageSize, tab: currentTab };
       if (searchKeyword) params.keyword = searchKeyword;
       if (filterDifficulty !== '') params.difficulty = filterDifficulty;
       if (filterTravel !== '') params.travel = filterTravel;
+      if (filterOfficial) params.official = 1;
 
-      const result = await wx.cloud.callContainer({
-        config: { env: "prod-3gktwx67d1dd1e76" },
-        path: "/api/activity/list",
-        header: {
-          "X-WX-SERVICE": "flask-mysql-login",
-          "X-Wx-OpenId": userInfo?.openId,
-          "content-type": "application/json"
-        },
-        method: "GET",
-        data: params
-      });
+      const result = await get('/api/activity/list', params, { silent: true });
 
-      if (result.data && result.data.code === 200) {
-        const activities = result.data.data.list || [];
-        const total = result.data.data.total || 0;
+      if (result.code === 200) {
+        const activities = result.data.list || [];
+        const total = result.data.total || 0;
 
         const formattedList = activities.map(item => {
           const participantCount = item.participant_count || 0;
-          const remainCount = item.max_participants - participantCount;
+          const remainCount = Math.max(item.max_participants - participantCount, 0);
           return {
             id: item.id,
             name: item.name,
@@ -237,7 +187,8 @@ Page({
             statusBadge: this.getStatusBadge(item.status, remainCount, item.has_registered),
             statusClass: this.getStatusClass(item.status),
             coverUrl: item.cover_url,
-            has_registered: item.has_registered
+            has_registered: item.has_registered,
+            isOfficial: Number(item.is_official) === 1
           };
         });
 
@@ -428,31 +379,19 @@ Page({
       title: '验证中...'
     });
     try {
-      const result = await wx.cloud.callContainer({
-        config: {
-          env: "prod-3gktwx67d1dd1e76"
-        },
-        path: "/verify",
-        header: {
-          "X-WX-SERVICE": "flask-mysql-login",
-          "X-Wx-OpenId": getApp().globalData.userInfo?.openId,
-          "content-type": "application/json"
-        },
-        method: "POST",
-        data: {
-          answer,
-          question_idx: this.data.verifyQuestionIdx
-        }
-      });
+      const result = await post('/verify', {
+        answer,
+        question_idx: this.data.verifyQuestionIdx
+      }, { silent: true });
 
       wx.hideLoading();
 
-      if (result.data && result.data.code === 200) {
-        const userData = result.data.data;
+      if (result.code === 200) {
+        const userData = result.data;
         // 更新验证问题信息到 userData
-        if (result.data.verifyQuestion) {
-          userData.verifyQuestion = result.data.verifyQuestion;
-          userData.verifyQuestionIdx = result.data.verifyQuestionIdx;
+        if (result.verifyQuestion) {
+          userData.verifyQuestion = result.verifyQuestion;
+          userData.verifyQuestionIdx = result.verifyQuestionIdx;
         }
         getApp().globalData.userInfo = userData;
         wx.setStorageSync('userInfo', userData);
@@ -481,17 +420,12 @@ Page({
             verifyAnswer: '',
             autoFocus: true
           };
-          if (result.data.verifyQuestion) {
-            updateData.verifyQuestion = result.data.verifyQuestion;
-            updateData.verifyQuestionIdx = result.data.verifyQuestionIdx;
+          if (result.verifyQuestion) {
+            updateData.verifyQuestion = result.verifyQuestion;
+            updateData.verifyQuestionIdx = result.verifyQuestionIdx;
           }
           this.setData(updateData);
         }
-      } else {
-        wx.showToast({
-          title: result.data?.msg || '验证失败',
-          icon: 'none'
-        });
       }
     } catch (error) {
       wx.hideLoading();
@@ -574,6 +508,10 @@ Page({
   onFilterTravel(e) {
     const value = e.currentTarget.dataset.value;
     this.setData({ filterTravel: value === '' ? '' : parseInt(value) }, () => this.getActivityList(true));
+  },
+
+  onToggleOfficial() {
+    this.setData({ filterOfficial: !this.data.filterOfficial }, () => this.getActivityList(true));
   },
 
   onLotteryClose() {

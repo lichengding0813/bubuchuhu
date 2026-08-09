@@ -2,9 +2,51 @@ from flask import Blueprint, request, jsonify, g
 from datetime import datetime
 import logging
 from db_utils import get_db
-from middleware import check_verified_and_blacklist, check_admin
+from middleware import (
+    check_verified_and_blacklist,
+    check_admin,
+    _invalidate_user_cache,
+    _clear_user_cache,
+)
 
 admin_bp = Blueprint('admin', __name__)
+
+
+@admin_bp.route('/dashboard', methods=['GET'])
+@check_verified_and_blacklist
+@check_admin
+def get_dashboard():
+    conn = None
+    cursor = None
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) as c FROM activities")
+        total_activities = cursor.fetchone()['c']
+        cursor.execute("SELECT COUNT(*) as c FROM activities WHERE status = 0 AND is_official = 0")
+        pending = cursor.fetchone()['c']
+        cursor.execute("SELECT COUNT(*) as c FROM activities WHERE status IN (1,3,4)")
+        approved = cursor.fetchone()['c']
+        cursor.execute("SELECT COUNT(*) as c FROM users")
+        total_users = cursor.fetchone()['c']
+        cursor.execute("SELECT COUNT(DISTINCT user_openid) as c FROM activity_participants WHERE status = 1")
+        active_participants = cursor.fetchone()['c']
+        cursor.execute("SELECT COUNT(*) as c FROM activity_participants WHERE status = 1 AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)")
+        this_week_signups = cursor.fetchone()['c']
+        return jsonify({'code': 200, 'data': {
+            'total_activities': total_activities,
+            'pending_count': pending,
+            'approved_count': approved,
+            'total_users': total_users,
+            'active_participants': active_participants,
+            'this_week_signups': this_week_signups
+        }})
+    except Exception:
+        logging.exception("获取管理看板失败")
+        return jsonify({'code': 500, 'msg': '服务器内部错误'})
+    finally:
+        if cursor: cursor.close()
+        if conn: conn.close()
 
 
 @admin_bp.route('/pending-activities', methods=['GET'])
@@ -12,8 +54,8 @@ admin_bp = Blueprint('admin', __name__)
 @check_admin
 def get_pending_activities():
     """获取待审核的活动列表（status=0）"""
-    page = int(request.args.get('page', 1))
-    size = int(request.args.get('size', 20))
+    page = max(request.args.get('page', 1, type=int) or 1, 1)
+    size = min(max(request.args.get('size', 20, type=int) or 20, 1), 50)
     offset = (page - 1) * size
 
     conn = None
@@ -24,7 +66,7 @@ def get_pending_activities():
         cursor = conn.cursor()
 
         # 查询总数
-        cursor.execute("SELECT COUNT(*) as total FROM activities WHERE status = 0")
+        cursor.execute("SELECT COUNT(*) as total FROM activities WHERE status = 0 AND is_official = 0")
         total = cursor.fetchone()['total']
 
         # 查询待审核列表
@@ -32,7 +74,7 @@ def get_pending_activities():
             SELECT a.*, u.nickName as creator_name, u.avatarUrl as creator_avatar
             FROM activities a
             JOIN users u ON a.created_by = u.openId
-            WHERE a.status = 0
+            WHERE a.status = 0 AND a.is_official = 0
             ORDER BY a.created_at ASC
             LIMIT %s OFFSET %s
         """, (size, offset))
@@ -69,10 +111,10 @@ def get_pending_activities():
 @check_admin
 def review_activity():
     """审核活动（通过/驳回）"""
-    data = request.get_json()
+    data = request.get_json(silent=True) or {}
     activity_id = data.get('activity_id')
     action = data.get('action')  # 'approve' 或 'reject'
-    reject_reason = data.get('reject_reason', '')
+    reject_reason = str(data.get('reject_reason') or '').strip()
     auditor_openid = g.openid  # 审核人openid
 
     if not activity_id or not action:
@@ -80,6 +122,8 @@ def review_activity():
 
     if action not in ['approve', 'reject']:
         return jsonify({'code': 400, 'msg': '无效的操作类型'})
+    if action == 'reject' and not reject_reason.strip():
+        return jsonify({'code': 400, 'msg': '驳回时请填写原因'})
 
     conn = None
     cursor = None
@@ -89,11 +133,17 @@ def review_activity():
         cursor = conn.cursor()
 
         # 检查活动是否存在
-        cursor.execute("SELECT id, status, created_by FROM activities WHERE id = %s", (activity_id,))
+        cursor.execute(
+            "SELECT id, status, created_by, is_official FROM activities WHERE id = %s FOR UPDATE",
+            (activity_id,)
+        )
         activity = cursor.fetchone()
 
         if not activity:
             return jsonify({'code': 404, 'msg': '活动不存在'})
+
+        if activity.get('is_official') == 1:
+            return jsonify({'code': 400, 'msg': '官方活动无需审核'})
 
         if activity['status'] != 0:
             return jsonify({'code': 400, 'msg': '活动已被审核过'})
@@ -149,8 +199,8 @@ def review_activity():
 @check_admin
 def get_blacklist():
     """获取黑名单用户列表"""
-    page = int(request.args.get('page', 1))
-    size = int(request.args.get('size', 20))
+    page = max(request.args.get('page', 1, type=int) or 1, 1)
+    size = min(max(request.args.get('size', 20, type=int) or 20, 1), 50)
     offset = (page - 1) * size
 
     conn = None
@@ -196,7 +246,7 @@ def get_blacklist():
 @check_admin
 def remove_from_blacklist():
     """将用户移出黑名单"""
-    data = request.get_json()
+    data = request.get_json(silent=True) or {}
     openid = data.get('openid')
 
     if not openid:
@@ -216,6 +266,7 @@ def remove_from_blacklist():
         """, (openid,))
 
         conn.commit()
+        _invalidate_user_cache(openid)
 
         if cursor.rowcount == 0:
             return jsonify({'code': 404, 'msg': '用户不存在或不在黑名单中'})
@@ -253,6 +304,7 @@ def reset_all_verification():
 
         affected = cursor.rowcount
         conn.commit()
+        _clear_user_cache()
 
         return jsonify({
             'code': 200,
@@ -268,8 +320,6 @@ def reset_all_verification():
     finally:
         if cursor:
             cursor.close()
-        if conn:
-            conn.close()
 
 
 # ==================== 验证问题管理 ====================
@@ -305,8 +355,6 @@ def get_verify_questions():
     finally:
         if cursor:
             cursor.close()
-        if conn:
-            conn.close()
 
 
 @admin_bp.route('/verify-questions', methods=['POST'])
@@ -314,7 +362,7 @@ def get_verify_questions():
 @check_admin
 def add_verify_question():
     """添加验证问题"""
-    data = request.get_json()
+    data = request.get_json(silent=True) or {}
     question = (data.get('question') or '').strip()
     answers = (data.get('answers') or '').strip()
 
@@ -344,8 +392,6 @@ def add_verify_question():
     finally:
         if cursor:
             cursor.close()
-        if conn:
-            conn.close()
 
 
 @admin_bp.route('/verify-questions/<int:qid>', methods=['PUT'])
@@ -353,7 +399,7 @@ def add_verify_question():
 @check_admin
 def update_verify_question(qid):
     """更新验证问题"""
-    data = request.get_json()
+    data = request.get_json(silent=True) or {}
     question = (data.get('question') or '').strip()
     answers = (data.get('answers') or '').strip()
     is_active = data.get('is_active')
@@ -391,8 +437,6 @@ def update_verify_question(qid):
     finally:
         if cursor:
             cursor.close()
-        if conn:
-            conn.close()
 
 
 @admin_bp.route('/verify-questions/<int:qid>', methods=['DELETE'])
@@ -421,6 +465,151 @@ def delete_verify_question(qid):
         if conn:
             conn.rollback()
         logging.exception("删除验证问题失败")
+        return jsonify({'code': 500, 'msg': '服务器内部错误，请稍后重试'})
+    finally:
+        if cursor:
+            cursor.close()
+
+
+# ==================== 官方账号白名单 ====================
+
+@admin_bp.route('/official-accounts', methods=['GET'])
+@check_verified_and_blacklist
+@check_admin
+def get_official_accounts():
+    """获取全部官方账号白名单。"""
+    conn = None
+    cursor = None
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT openId, nickName, avatarUrl, wechatId, isOfficial, createTime, lastLoginTime
+            FROM users
+            WHERE isOfficial = 1
+            ORDER BY nickName ASC, openId ASC
+        """)
+        accounts = cursor.fetchall()
+        return jsonify({'code': 200, 'data': {'list': accounts, 'total': len(accounts)}})
+    except Exception:
+        logging.exception("获取官方账号白名单失败")
+        return jsonify({'code': 500, 'msg': '服务器内部错误，请稍后重试'})
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+
+@admin_bp.route('/official-account-candidates', methods=['GET'])
+@check_verified_and_blacklist
+@check_admin
+def search_official_account_candidates():
+    """按昵称、微信号或精确 openId 搜索可加入白名单的用户。"""
+    keyword = str(request.args.get('keyword') or '').strip()
+    if not keyword:
+        return jsonify({'code': 200, 'data': {'list': []}})
+    if len(keyword) > 100:
+        return jsonify({'code': 400, 'msg': '搜索内容过长'})
+
+    conn = None
+    cursor = None
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        pattern = f'%{keyword}%'
+        cursor.execute("""
+            SELECT openId, nickName, avatarUrl, wechatId, verified, isAdmin, isOfficial
+            FROM users
+            WHERE isOfficial = 0
+              AND isBlacklist = 0
+              AND (nickName LIKE %s OR wechatId LIKE %s OR openId = %s)
+            ORDER BY lastLoginTime DESC
+            LIMIT 20
+        """, (pattern, pattern, keyword))
+        return jsonify({'code': 200, 'data': {'list': cursor.fetchall()}})
+    except Exception:
+        logging.exception("搜索官方账号候选用户失败")
+        return jsonify({'code': 500, 'msg': '服务器内部错误，请稍后重试'})
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+
+@admin_bp.route('/official-accounts', methods=['POST'])
+@check_verified_and_blacklist
+@check_admin
+def add_official_account():
+    """将注册用户加入官方账号白名单，授予官方活动共享管理权限。"""
+    data = request.get_json(silent=True) or {}
+    openid = str(data.get('openid') or data.get('openId') or '').strip()
+    if not openid or len(openid) > 100:
+        return jsonify({'code': 400, 'msg': '用户标识无效'})
+
+    conn = None
+    cursor = None
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT openId, nickName, avatarUrl, wechatId, isOfficial
+            FROM users WHERE openId = %s FOR UPDATE
+        """, (openid,))
+        account = cursor.fetchone()
+        if not account:
+            return jsonify({'code': 404, 'msg': '用户不存在'})
+
+        if account.get('isOfficial') != 1:
+            cursor.execute("UPDATE users SET isOfficial = 1 WHERE openId = %s", (openid,))
+            conn.commit()
+            _invalidate_user_cache(openid)
+
+        account['isOfficial'] = 1
+        return jsonify({'code': 200, 'msg': '已加入官方账号白名单', 'data': account})
+    except Exception:
+        if conn:
+            conn.rollback()
+        logging.exception("添加官方账号失败")
+        return jsonify({'code': 500, 'msg': '服务器内部错误，请稍后重试'})
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+
+@admin_bp.route('/official-accounts/remove', methods=['POST'])
+@check_verified_and_blacklist
+@check_admin
+def remove_official_account():
+    """将用户移出白名单；历史官方活动保持不变。"""
+    data = request.get_json(silent=True) or {}
+    openid = str(data.get('openid') or data.get('openId') or '').strip()
+    if not openid or len(openid) > 100:
+        return jsonify({'code': 400, 'msg': '用户标识无效'})
+
+    conn = None
+    cursor = None
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute("SELECT openId, isOfficial FROM users WHERE openId = %s FOR UPDATE", (openid,))
+        account = cursor.fetchone()
+        if not account:
+            return jsonify({'code': 404, 'msg': '用户不存在'})
+        if account.get('isOfficial') != 1:
+            return jsonify({'code': 404, 'msg': '该用户不在官方账号白名单中'})
+
+        cursor.execute("UPDATE users SET isOfficial = 0 WHERE openId = %s", (openid,))
+        conn.commit()
+        _invalidate_user_cache(openid)
+        return jsonify({'code': 200, 'msg': '已移出官方账号白名单'})
+    except Exception:
+        if conn:
+            conn.rollback()
+        logging.exception("移除官方账号失败")
         return jsonify({'code': 500, 'msg': '服务器内部错误，请稍后重试'})
     finally:
         if cursor:

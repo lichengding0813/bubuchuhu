@@ -45,6 +45,7 @@ Page({
       
       if (result.data && result.data.code === 200) {
         const detail = result.data.data;
+        detail.is_force_insurance = Number(detail.is_force_insurance) === 1 ? 1 : 0;
         
         // 处理出行方式（1=大巴, 2=高铁, 3=自驾）
         let travelOptions = [];

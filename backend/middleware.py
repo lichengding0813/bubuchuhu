@@ -49,6 +49,11 @@ def _invalidate_user_cache(openid):
     _cache.pop(openid, None)
 
 
+def _clear_user_cache():
+    """管理员批量修改用户状态后清空缓存。"""
+    _cache.clear()
+
+
 # ==================== 中间件装饰器 ====================
 
 def check_verified_and_blacklist(f):

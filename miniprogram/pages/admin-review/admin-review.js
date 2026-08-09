@@ -217,7 +217,9 @@ Page({
             creator_name: item.creator_name || item.nickName || item.creator_nickname || '未知',
             reject_reason: item.reject_reason,
             difficulty: this.getDifficultyText(item.difficulty),
-            cover_url: item.cover_url
+            cover_url: item.cover_url,
+            is_force_insurance: Number(item.is_force_insurance) === 1 ? 1 : 0,
+            is_official: Number(item.is_official) === 1 ? 1 : 0
           };
         });
 

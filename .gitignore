@@ -1,3 +1,12 @@
 node_modules/
 miniprogram_npm/
 .project
+.DS_Store
+.idea/
+project.private.config.json
+*.pyc
+__pycache__/
+.env
+static/uploads/
+deploy.zip
+*.zip

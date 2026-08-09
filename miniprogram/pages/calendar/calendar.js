@@ -1,3 +1,5 @@
+const { get } = require('../../utils/api');
+
 Page({
   data: {
     year: 0,
@@ -17,15 +19,9 @@ Page({
   async loadCalendar() {
     try {
       const { year, month } = this.data;
-      const result = await wx.cloud.callContainer({
-        config: { env: "prod-3gktwx67d1dd1e76" },
-        path: "/api/activity/calendar",
-        header: { "X-WX-SERVICE": "flask-mysql-login", "content-type": "application/json" },
-        method: "GET",
-        data: { year, month }
-      });
-      if (result.data && result.data.code === 200) {
-        const activityMap = result.data.data || {};
+      const result = await get('/api/activity/calendar', { year, month }, { silent: true });
+      if (result.code === 200) {
+        const activityMap = result.data || {};
         this.setData({ activityMap });
         this.buildDays();
       }
@@ -72,18 +68,13 @@ Page({
 
   async onDateTap(e) {
     const dateStr = e.currentTarget.dataset.date;
+    if (!dateStr) return;
     this.setData({ selectedDate: dateStr });
     try {
       const { year, month } = this.data;
-      const result = await wx.cloud.callContainer({
-        config: { env: "prod-3gktwx67d1dd1e76" },
-        path: "/api/activity/calendar",
-        header: { "X-WX-SERVICE": "flask-mysql-login", "content-type": "application/json" },
-        method: "GET",
-        data: { year, month, date: dateStr }
-      });
-      if (result.data && result.data.code === 200) {
-        this.setData({ dayActivities: result.data.data.list || [] });
+      const result = await get('/api/activity/calendar', { year, month, date: dateStr }, { silent: true });
+      if (result.code === 200) {
+        this.setData({ dayActivities: result.data.list || [] });
       }
     } catch (err) {
       console.error('加载当日活动失败:', err);

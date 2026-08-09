@@ -1,0 +1,242 @@
+page {
+  min-height: 100%;
+  background-color: #eaf7ff;
+}
+
+.page-container {
+  padding: 28rpx 30rpx 60rpx;
+}
+
+.intro-card {
+  display: flex;
+  align-items: center;
+  gap: 22rpx;
+  padding: 28rpx;
+  margin-bottom: 24rpx;
+  border: 2rpx solid rgba(47, 128, 197, 0.18);
+  border-radius: 24rpx;
+  background: linear-gradient(135deg, #dff2ff 0%, #f8fcff 100%);
+}
+
+.intro-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 68rpx;
+  height: 68rpx;
+  border-radius: 50%;
+  color: #fff;
+  background-color: #2f80c5;
+  font-size: 34rpx;
+  font-weight: 700;
+}
+
+.intro-content {
+  min-width: 0;
+}
+
+.intro-title {
+  color: #1d5b8f;
+  font-size: 30rpx;
+  font-weight: 600;
+}
+
+.intro-text {
+  margin-top: 6rpx;
+  color: #6789a7;
+  font-size: 23rpx;
+  line-height: 1.5;
+}
+
+.create-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10rpx;
+  box-sizing: border-box;
+  width: 100%;
+  height: 82rpx;
+  padding: 0;
+  margin: 0 0 34rpx;
+  border: none;
+  border-radius: 41rpx;
+  color: #fff;
+  background: linear-gradient(135deg, #4698d5 0%, #2f80c5 100%);
+  font-size: 28rpx;
+  font-weight: 600;
+  line-height: 1;
+  box-shadow: 0 8rpx 18rpx rgba(47, 128, 197, 0.2);
+}
+
+.create-btn::after,
+.action-btn::after {
+  border: none;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 6rpx;
+  margin-bottom: 18rpx;
+}
+
+.section-title {
+  padding-left: 16rpx;
+  border-left: 8rpx solid #5faee3;
+  color: #1e4d7c;
+  font-size: 32rpx;
+  font-weight: 600;
+}
+
+.section-count {
+  color: #7c9ab5;
+  font-size: 24rpx;
+}
+
+.activity-card {
+  padding: 28rpx;
+  margin-bottom: 24rpx;
+  border: 2rpx solid rgba(148, 194, 232, 0.38);
+  border-radius: 26rpx;
+  background-color: #fff;
+  box-shadow: 0 8rpx 22rpx rgba(0, 104, 176, 0.08);
+}
+
+.card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18rpx;
+  padding-bottom: 20rpx;
+  border-bottom: 2rpx solid #edf3f8;
+}
+
+.activity-name {
+  flex: 1;
+  min-width: 0;
+  color: #184b78;
+  font-size: 30rpx;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.badges {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  flex-shrink: 0;
+}
+
+.official-badge,
+.status-badge {
+  padding: 5rpx 14rpx;
+  border-radius: 20rpx;
+  font-size: 20rpx;
+  white-space: nowrap;
+}
+
+.official-badge {
+  color: #fff;
+  background-color: #2f80c5;
+}
+
+.status-badge.open {
+  color: #16845b;
+  background-color: #e5f7ef;
+}
+
+.status-badge.ongoing {
+  color: #d88418;
+  background-color: #fff4df;
+}
+
+.status-badge.ended,
+.status-badge.cancelled,
+.status-badge.pending {
+  color: #7d8d9c;
+  background-color: #edf1f4;
+}
+
+.card-content {
+  padding: 20rpx 0 12rpx;
+}
+
+.info-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12rpx;
+  margin-bottom: 12rpx;
+  color: #607f9b;
+  font-size: 24rpx;
+  line-height: 1.5;
+}
+
+.info-row van-icon {
+  flex-shrink: 0;
+  margin-top: 2rpx;
+  color: #65a4d5;
+}
+
+.inline-v {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 30rpx;
+  height: 30rpx;
+  border-radius: 50%;
+  color: #fff;
+  background-color: #2f80c5;
+  font-size: 17rpx;
+  font-weight: 700;
+}
+
+.card-actions {
+  display: flex;
+  gap: 12rpx;
+  padding-top: 18rpx;
+  border-top: 2rpx solid #edf3f8;
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  flex: 1;
+  height: 64rpx;
+  padding: 0;
+  margin: 0;
+  border-radius: 32rpx;
+  font-size: 23rpx;
+  line-height: 1;
+}
+
+.action-btn.secondary {
+  border: 2rpx solid #b8d8ef;
+  color: #417ca9;
+  background-color: #f5fbff;
+}
+
+.action-btn.primary {
+  border: none;
+  color: #fff;
+  background-color: #3f91cc;
+}
+
+.loading-container,
+.empty-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 100rpx 0;
+}
+
+.empty-container {
+  flex-direction: column;
+  gap: 20rpx;
+  color: #8ca5bb;
+  font-size: 25rpx;
+}

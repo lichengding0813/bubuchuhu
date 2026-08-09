@@ -7,7 +7,10 @@
 
   <!-- 活动基本信息卡片 -->
   <view class="info-card">
-    <view class="activity-title">{{activityDetail.name}}</view>
+    <view class="activity-title-row">
+      <view class="activity-title">{{activityDetail.name}}</view>
+      <text class="official-title-badge" wx:if="{{activityDetail.is_official == 1}}">官方</text>
+    </view>
     <view class="activity-meta">
       <view class="meta-item">
         <van-icon name="clock-o" />
@@ -16,6 +19,10 @@
       <view class="meta-item">
         <van-icon name="location-o" />
         <text>{{activityDetail.location}}</text>
+      </view>
+      <view class="meta-item">
+        <van-icon name="certificate" />
+        <text>需要购买保险：{{activityDetail.is_force_insurance === 1 ? '是' : '否'}}</text>
       </view>
     </view>
     <view class="activity-stats">
@@ -46,7 +53,10 @@
         <image src="{{activityDetail.creator_avatar || activityDetail.creatorAvatar}}" mode="aspectFill"></image>
       </view>
       <view class="organizer-detail">
-        <text class="organizer-name">{{activityDetail.creator_name || activityDetail.organizer}}</text>
+        <view class="organizer-name-row">
+          <text class="organizer-name">{{activityDetail.creator_name || activityDetail.organizer}}</text>
+          <text class="official-v" wx:if="{{activityDetail.is_official == 1}}">V</text>
+        </view>
         <text class="organizer-wechat">微信号：{{activityDetail.wechat_id || activityDetail.wechat}}</text>
       </view>
     </view>

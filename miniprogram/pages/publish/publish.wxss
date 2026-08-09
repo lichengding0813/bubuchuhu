@@ -8,6 +8,44 @@ page {
   padding-bottom: 40px;
 }
 
+.official-publish-banner {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  padding: 24rpx 28rpx;
+  margin-bottom: 24rpx;
+  border: 2rpx solid rgba(47, 128, 197, 0.22);
+  border-radius: 20rpx;
+  background: linear-gradient(135deg, #e8f5ff 0%, #f7fbff 100%);
+}
+
+.official-banner-v {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 54rpx;
+  height: 54rpx;
+  border-radius: 50%;
+  color: #fff;
+  background-color: #2f80c5;
+  font-size: 28rpx;
+  font-weight: 700;
+}
+
+.official-banner-title {
+  color: #1f5f96;
+  font-size: 28rpx;
+  font-weight: 600;
+}
+
+.official-banner-desc {
+  margin-top: 4rpx;
+  color: #6d8eaa;
+  font-size: 22rpx;
+  line-height: 1.4;
+}
+
 .form-card {
   background-color: white;
   border-radius: 20px;
@@ -886,6 +924,16 @@ page {
 .color-swatch-btn.selected {
   border-color: #5faee3;
   box-shadow: 0 0 0 2px rgba(95, 174, 227, 0.3);
+}
+
+.editor-format-tip {
+  padding: 4px 12px 8px;
+  color: #7f9fbf;
+  font-size: 12px;
+  line-height: 1.4;
+  background-color: #f5faff;
+  border-right: 1px solid #d8e8f5;
+  border-left: 1px solid #d8e8f5;
 }
 
 .ql-editor {

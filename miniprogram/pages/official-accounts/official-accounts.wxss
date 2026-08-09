@@ -1,0 +1,210 @@
+page {
+  background-color: #eaf7ff;
+}
+
+.container {
+  padding: 16px;
+  padding-bottom: 40px;
+}
+
+.tip-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 13px 14px;
+  margin-bottom: 14px;
+  border: 1px solid #cce5fa;
+  border-radius: 12px;
+  color: #3c6f9c;
+  background-color: #f4faff;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.search-card {
+  padding: 14px;
+  margin-bottom: 20px;
+  border: 1px solid rgba(160, 200, 255, 0.45);
+  border-radius: 16px;
+  background-color: #fff;
+  box-shadow: 0 4px 12px rgba(0, 130, 210, 0.06);
+}
+
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.search-input {
+  flex: 1;
+  min-width: 0;
+  height: 36px;
+  font-size: 14px;
+  color: #244f78;
+}
+
+.candidate-section {
+  padding-top: 14px;
+  margin-top: 14px;
+  border-top: 1px solid #edf3f8;
+}
+
+.sub-title {
+  margin-bottom: 10px;
+  color: #52799d;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.section-header {
+  margin-bottom: 12px;
+  padding: 0 4px;
+}
+
+.section-title {
+  padding-left: 10px;
+  border-left: 4px solid #5faee3;
+  color: #1e4d7c;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.user-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 15px;
+  margin-bottom: 12px;
+  border: 1px solid rgba(160, 200, 255, 0.4);
+  border-radius: 16px;
+  background-color: #fff;
+  box-shadow: 0 4px 12px rgba(0, 130, 210, 0.07);
+}
+
+.user-card.compact {
+  padding: 10px 0;
+  margin-bottom: 0;
+  border: none;
+  border-bottom: 1px solid #edf3f8;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.user-main {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-width: 0;
+  flex: 1;
+}
+
+.avatar-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.user-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  color: #7fa6c8;
+  background-color: #e8f2fb;
+}
+
+.avatar-placeholder {
+  font-size: 22px;
+}
+
+.avatar-v {
+  position: absolute;
+  right: -2px;
+  bottom: -1px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  color: #fff;
+  background-color: #2f80c5;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.user-info {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.name-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.user-name {
+  overflow: hidden;
+  color: #1e4d7c;
+  font-size: 15px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.official-label {
+  flex-shrink: 0;
+  padding: 2px 7px;
+  border-radius: 10px;
+  color: #fff;
+  background-color: #2f80c5;
+  font-size: 10px;
+}
+
+.user-meta {
+  color: #6f92b2;
+  font-size: 12px;
+}
+
+.user-openid {
+  overflow: hidden;
+  color: #9bb0c3;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.loading-container,
+.empty-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 56px 0;
+}
+
+.empty-container {
+  flex-direction: column;
+}
+
+.empty-text,
+.empty-inline {
+  color: #8aa5be;
+  font-size: 13px;
+}
+
+.empty-text {
+  margin-top: 12px;
+}
+
+.empty-inline {
+  padding: 12px 0 4px;
+  text-align: center;
+}

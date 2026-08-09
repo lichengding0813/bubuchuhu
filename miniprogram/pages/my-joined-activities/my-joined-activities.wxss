@@ -136,6 +136,29 @@ page {
   flex: 1;
 }
 
+.official-badge {
+  padding: 4px 10px;
+  border-radius: 20px;
+  color: #fff;
+  background-color: #2f80c5;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.inline-official-v {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  margin-left: 4px;
+  border-radius: 50%;
+  color: #fff;
+  background-color: #2f80c5;
+  font-size: 9px;
+  font-weight: 700;
+}
+
 /* 状态徽章 - 进行中/已结束 */
 .status-badge {
   padding: 4px 12px;
@@ -182,14 +205,23 @@ page {
 }
 
 .detail-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
   width: 100%;
   height: 36px;
-  line-height: 36px;
+  padding: 0;
+  line-height: 1;
   background: linear-gradient(135deg, #5faee3 0%, #4a9ad0 100%);
   color: white;
   border-radius: 30px;
   font-size: 14px;
   font-weight: 500;
+  border: none;
+}
+
+.detail-btn::after {
   border: none;
 }
 

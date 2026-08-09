@@ -1,5 +1,7 @@
 {
-  "usingComponents": {},
+  "usingComponents": {
+    "van-loading": "/miniprogram_npm/@vant/weapp/loading/index"
+  },
   "enablePullDownRefresh": true,
   "backgroundTextStyle": "dark"
 }

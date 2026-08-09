@@ -7,13 +7,16 @@
 
   <!-- 活动基本信息卡片 -->
   <view class="info-card">
-    <view class="activity-title">{{activityDetail.name}}</view>
+    <view class="activity-title-row">
+      <view class="activity-title">{{activityDetail.name}}</view>
+      <text class="official-title-badge" wx:if="{{activityDetail.isOfficial}}">官方</text>
+    </view>
     <view class="activity-meta">
       <view class="meta-item">
         <van-icon name="clock-o" />
-        <text>{{activityDetail.time}}</text>
+        <text>{{activityDetail.time}}<text wx:if="{{activityDetail.endTime}}"> 至 {{activityDetail.endTime}}</text></text>
       </view>
-      <view class="meta-item">
+      <view class="meta-item {{activityDetail.latitude != null ? 'clickable-location' : ''}}" bindtap="openActivityLocation">
         <van-icon name="location-o" />
         <text>{{activityDetail.location}}</text>
       </view>
@@ -46,7 +49,10 @@
         <image src="{{activityDetail.creatorAvatar}}" mode="aspectFill"></image>
       </view>
       <view class="organizer-detail">
-        <text class="organizer-name">{{activityDetail.organizer}}</text>
+        <view class="organizer-name-row">
+          <text class="organizer-name">{{activityDetail.organizer}}</text>
+          <text class="official-v" wx:if="{{activityDetail.isOfficial}}">V</text>
+        </view>
         <text class="organizer-wechat">微信号：{{activityDetail.wechat}}</text>
       </view>
     </view>
@@ -106,7 +112,7 @@
               <van-icon name="clock-o" size="14px" />
               <text>{{item.meeting_time || item.time}}</text>
             </view>
-            <view class="meeting-point-location">
+            <view class="meeting-point-location {{item.latitude != null ? 'clickable-location' : ''}}" bindtap="openMeetingLocation" data-index="{{idx}}">
               <van-icon name="location-o" size="14px" />
               <text>{{item.location}}</text>
             </view>

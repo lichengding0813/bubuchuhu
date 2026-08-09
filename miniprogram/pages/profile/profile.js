@@ -10,6 +10,7 @@ Page({
       needVerify: 0,
       isBlacklist: 0,
       isAdmin: 0,
+      isOfficial: 0,
       createTime: '',
       lastLoginTime: '',
       loginCount: 0
@@ -101,6 +102,7 @@ Page({
             needVerify: 0,
             isBlacklist: 0,
             isAdmin: 0,
+            isOfficial: 0,
             createTime: '',
             lastLoginTime: '',
             loginCount: 0
@@ -126,7 +128,7 @@ Page({
 
   // 动态构建菜单列表（登录后使用）
   buildMenuList() {
-    const { isAdmin, needVerify } = this.data.userInfo;
+    const { isAdmin, needVerify, isOfficial } = this.data.userInfo;
     const menuList = [];
 
     menuList.push({
@@ -134,6 +136,14 @@ Page({
       text: '个人信息设置',
       url: '/pages/settings/settings'
     });
+
+    if (Number(isOfficial) === 1) {
+      menuList.push({
+        icon: 'certificate',
+        text: '官方活动管理',
+        url: '/pages/official-activities/official-activities'
+      });
+    }
 
     if (isAdmin === 1) {
       menuList.push({ isDivider: true });
@@ -153,6 +163,11 @@ Page({
         icon: 'lock',
         text: '黑名单管理',
         url: '/pages/blacklist/blacklist'
+      });
+      menuList.push({
+        icon: 'friends-o',
+        text: '官方账号管理',
+        url: '/pages/official-accounts/official-accounts'
       });
       menuList.push({
         icon: 'gift-o',
@@ -299,7 +314,7 @@ Page({
     if (!this.data.userInfo.isLogin) {
       this.handleLogin();
     } else {
-      this.goToUserDetail();
+      wx.navigateTo({ url: '/pages/settings/settings' });
     }
   },
 
@@ -568,12 +583,6 @@ Page({
 
   preventTouchMove() {
     return;
-  },
-
-  goToUserDetail() {
-    wx.navigateTo({
-      url: '/pages/user-detail/user-detail'
-    });
   },
 
   // 跳转到“我发起的”活动列表

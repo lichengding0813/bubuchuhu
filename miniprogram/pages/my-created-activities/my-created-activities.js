@@ -80,7 +80,8 @@ Page({
           ...item,
           activity_time_formatted: this.formatDateTime(item.activity_time),
           status: item.status,
-          participant_count: item.participant_count || 0
+          participant_count: item.participant_count || 0,
+          is_force_insurance: Number(item.is_force_insurance) === 1 ? 1 : 0
         }));
 
         const pendingList = formatted.filter(item => item.status === 0);
@@ -131,7 +132,8 @@ Page({
         const formattedDrafts = drafts.map(item => ({
           ...item,
           activity_time_formatted: this.formatDateTime(item.activity_time),
-          updated_at_formatted: this.formatDateTime(item.updated_at)
+          updated_at_formatted: this.formatDateTime(item.updated_at),
+          is_force_insurance: Number(item.is_force_insurance) === 1 ? 1 : 0
         }));
         this.setData({
           draftList: formattedDrafts,

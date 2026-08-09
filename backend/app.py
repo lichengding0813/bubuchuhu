@@ -6,6 +6,9 @@ import os
 import random
 import time
 import logging
+import ipaddress
+import socket
+from urllib.parse import urljoin, urlparse
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -71,7 +74,9 @@ def get_verify_questions():
 from routes.activity_routes import activity_bp
 from routes.admin_routes import admin_bp
 from routes.review_bp import review_bp
+from routes.lottery_routes import lottery_bp
 from db_utils import init_db_config, close_db, get_db
+from middleware import check_verified_and_blacklist, _invalidate_user_cache
 
 # ==================== 自定义 JSON 序列化 ====================
 class BeijingTimeJSONProvider(DefaultJSONProvider):
@@ -118,6 +123,16 @@ try:
 except ImportError:
     limiter = None
     logging.warning("flask_limiter 未安装，速率限制已禁用。安装: pip install flask-limiter")
+
+
+def rate_limit(limit_string):
+    """条件装饰器：仅在 limiter 可用时应用速率限制。"""
+    if limiter is not None:
+        return limiter.limit(limit_string)
+
+    def noop_dec(func):
+        return func
+    return noop_dec
 
 # ==================== access_token 缓存 ====================
 _access_token_cache = {
@@ -249,27 +264,91 @@ def error_response(code, msg, internal_msg=None):
 
 
 # ==================== 图片安全检测（通过云存储 URL） ====================
+_IMAGE_MAX_BYTES = 10 * 1024 * 1024
+_IMAGE_ALLOWED_HOSTS = tuple(
+    host.strip().lower()
+    for host in os.environ.get(
+        'IMAGE_FETCH_ALLOWED_HOSTS',
+        'tcb.qcloud.la,tcb.qcloud.tencent.com,cloudbase.net,myqcloud.com'
+    ).split(',')
+    if host.strip()
+)
+
+
+def _validate_image_url(file_url):
+    """仅允许从配置的 HTTPS 云存储域名下载，阻止 SSRF。"""
+    parsed = urlparse(file_url)
+    hostname = (parsed.hostname or '').lower().rstrip('.')
+    if parsed.scheme != 'https' or not hostname or parsed.username or parsed.password:
+        raise ValueError('仅支持安全的 HTTPS 图片地址')
+    if not any(hostname == suffix or hostname.endswith(f'.{suffix}')
+               for suffix in _IMAGE_ALLOWED_HOSTS):
+        raise ValueError('图片域名不在允许列表中')
+
+    try:
+        addresses = socket.getaddrinfo(hostname, parsed.port or 443, type=socket.SOCK_STREAM)
+    except socket.gaierror as exc:
+        raise ValueError('图片域名无法解析') from exc
+
+    for address in addresses:
+        ip = ipaddress.ip_address(address[4][0])
+        if (ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved
+                or ip.is_multicast or ip.is_unspecified):
+            raise ValueError('图片地址不安全')
+
+
+def _download_allowed_image(file_url):
+    """流式下载允许域名的图片，限制重定向、类型与文件大小。"""
+    current_url = file_url
+    for _ in range(4):
+        _validate_image_url(current_url)
+        response = requests.get(current_url, timeout=(5, 20), stream=True, allow_redirects=False)
+        try:
+            if response.is_redirect or response.is_permanent_redirect:
+                location = response.headers.get('Location')
+                if not location:
+                    raise ValueError('图片重定向地址无效')
+                current_url = urljoin(current_url, location)
+                continue
+            if response.status_code != 200:
+                raise ValueError('图片下载失败')
+            if not response.headers.get('Content-Type', '').lower().startswith('image/'):
+                raise ValueError('文件不是图片')
+            length = response.headers.get('Content-Length')
+            if length and int(length) > _IMAGE_MAX_BYTES:
+                raise ValueError('图片大小不能超过10MB')
+
+            chunks = []
+            total = 0
+            for chunk in response.iter_content(64 * 1024):
+                if not chunk:
+                    continue
+                total += len(chunk)
+                if total > _IMAGE_MAX_BYTES:
+                    raise ValueError('图片大小不能超过10MB')
+                chunks.append(chunk)
+            return b''.join(chunks)
+        finally:
+            response.close()
+    raise ValueError('图片重定向次数过多')
+
+
 @app.route('/check-image-url', methods=['POST'])
+@rate_limit("10 per minute")
+@check_verified_and_blacklist
 def check_image_url():
     """前端上传图片到云存储后，用文件URL调用后端检测"""
-    openid = request.headers.get('X-Wx-OpenId')
-    if not openid:
-        return jsonify({'code': 401, 'msg': '未获取到用户身份'})
-
-    data = request.get_json()
+    openid = g.openid
+    data = request.get_json(silent=True) or {}
     file_url = data.get('url', '')
     if not file_url:
         return jsonify({'code': 400, 'msg': '缺少图片URL'})
 
     try:
-        res = requests.get(file_url, timeout=30)
-        if res.status_code != 200:
-            return jsonify({'code': 400, 'msg': '图片下载失败'})
-
-        image_data = res.content
-        if len(image_data) > 10 * 1024 * 1024:
-            return jsonify({'code': 400, 'msg': '图片大小不能超过10MB'})
-    except Exception:
+        image_data = _download_allowed_image(file_url)
+    except ValueError as exc:
+        return jsonify({'code': 400, 'msg': str(exc)})
+    except requests.RequestException:
         logging.exception("下载图片失败")
         return jsonify({'code': 400, 'msg': '图片下载失败'})
 
@@ -284,6 +363,7 @@ def check_image_url():
 app.register_blueprint(activity_bp, url_prefix='/api/activity')
 app.register_blueprint(admin_bp, url_prefix='/api/admin')
 app.register_blueprint(review_bp)
+app.register_blueprint(lottery_bp, url_prefix='/api')
 
 
 # ==================== 数据库连接钩子 ====================
@@ -292,24 +372,14 @@ def teardown_db(e=None):
     close_db(e)
 
 
-# ==================== 条件速率限制装饰器 ====================
-def rate_limit(limit_string):
-    """条件装饰器：仅在 limiter 可用时应用速率限制"""
-    if limiter is not None:
-        return limiter.limit(limit_string)
-    else:
-        def noop_dec(f):
-            return f
-        return noop_dec
-
-
 # ==================== 登录/注册 ====================
 @app.route('/login', methods=['POST'])
+@rate_limit("10 per minute")
 def login():
-    data = request.get_json()
+    data = request.get_json(silent=True) or {}
     code = data.get('code')
 
-    if not code:
+    if not code or not isinstance(code, str) or len(code) > 128:
         return jsonify({'code': 400, 'msg': '缺少code参数'})
 
     try:
@@ -403,17 +473,21 @@ def login():
 
 # ==================== 验证答案接口 ====================
 @app.route('/verify', methods=['POST'])
+@rate_limit("5 per minute")
 def verify_answer():
     openid = request.headers.get('X-Wx-OpenId')
     if not openid:
         return jsonify({'code': 401, 'msg': '未获取到用户身份'})
 
-    data = request.get_json()
+    data = request.get_json(silent=True) or {}
     answer = data.get('answer')
-    if not answer:
+    if not answer or not isinstance(answer, str) or len(answer) > 100:
         return jsonify({'code': 400, 'msg': '缺少answer参数'})
 
-    question_idx = data.get('question_idx', 0)
+    try:
+        question_idx = int(data.get('question_idx', 0))
+    except (TypeError, ValueError):
+        return jsonify({'code': 400, 'msg': '问题编号无效'})
     questions = get_verify_questions()
     # 按 id 查找对应的问题
     matched_q = next((q for q in questions if q['id'] == question_idx), None)
@@ -464,6 +538,8 @@ def verify_answer():
                 msg = f'答案错误，还剩 {3 - new_attempt} 次机会'
             conn.commit()
 
+        _invalidate_user_cache(openid)
+
         cursor.execute("SELECT * FROM users WHERE openId = %s", (openid,))
         user = cursor.fetchone()
 
@@ -486,14 +562,128 @@ def verify_answer():
             cursor.close()
 
 
+# ==================== 用户徒步统计 ====================
+@app.route('/user/stats', methods=['GET'])
+@check_verified_and_blacklist
+def user_stats():
+    openid = g.openid
+
+    conn = None
+    cursor = None
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT
+                COUNT(DISTINCT p.activity_id) as total_activities,
+                COALESCE(SUM(a.distance), 0) as total_distance,
+                COALESCE(SUM(a.climb), 0) as total_climb
+            FROM activity_participants p
+            JOIN activities a ON p.activity_id = a.id
+            WHERE p.user_openid = %s AND p.status = 1
+              AND (
+                  a.status = 4
+                  OR (
+                      a.status IN (1, 3)
+                      AND COALESCE(a.end_time, DATE_ADD(a.activity_time, INTERVAL 12 HOUR)) <= NOW()
+                  )
+              )
+        """, (openid,))
+        stats = cursor.fetchone()
+        return jsonify({
+            'code': 200,
+            'data': {
+                'total_activities': stats['total_activities'] or 0,
+                'total_distance': int(stats['total_distance'] or 0),
+                'total_climb': int(stats['total_climb'] or 0)
+            }
+        })
+    except Exception:
+        logging.exception("获取用户统计失败")
+        return jsonify({'code': 500, 'msg': '服务器内部错误'})
+    finally:
+        if cursor:
+            cursor.close()
+# ==================== 天气预报（代理心知天气） ====================
+WEATHER_API_KEY = os.environ.get('WEATHER_API_KEY', '')
+_weather_cache = {}
+_WEATHER_CACHE_TTL = 30 * 60
+
+# 天气图标映射
+WEATHER_ICONS = {
+    '晴': 'sunny-o', '多云': 'cloud', '阴': 'cloud-o',
+    '雨': 'rain-o', '小雨': 'rain-o', '中雨': 'rain-o', '大雨': 'rain-o', '暴雨': 'rain-o',
+    '雪': 'snow-o', '小雪': 'snow-o', '中雪': 'snow-o', '大雪': 'snow-o',
+    '雾': 'warn-o', '霾': 'warn-o',
+}
+
+@app.route('/api/weather', methods=['GET'])
+@rate_limit("30 per minute")
+@check_verified_and_blacklist
+def get_weather():
+    city = request.args.get('city', '上海').strip()
+    if not city or len(city) > 40:
+        return jsonify({'code': 400, 'msg': '城市参数无效'})
+    if not WEATHER_API_KEY:
+        return jsonify({'code': 500, 'msg': '未配置天气API'})
+
+    cache_key = city.lower()
+    cached = _weather_cache.get(cache_key)
+    if cached and time.time() - cached['ts'] < _WEATHER_CACHE_TTL:
+        return jsonify(cached['response'])
+
+    try:
+        url = 'https://api.seniverse.com/v3/weather/daily.json'
+        resp = requests.get(url, params={
+            'key': WEATHER_API_KEY,
+            'location': city,
+            'start': 0, 'days': 7
+        }, timeout=5)
+        data = resp.json()
+        results = data.get('results', [])
+        if not results:
+            return jsonify({'code': 404, 'msg': '未找到该城市天气'})
+
+        daily_list = results[0].get('daily', [])
+        weather_list = [{
+            'date': d['date'],
+            'text_day': d.get('text_day', ''),
+            'high': d.get('high', ''),
+            'low': d.get('low', ''),
+            'icon': WEATHER_ICONS.get(d.get('text_day', ''), 'cloud-o')
+        } for d in daily_list]
+
+        result = {'code': 200, 'data': {
+            'city': results[0].get('location', {}).get('name', city),
+            'daily': weather_list
+        }}
+        _weather_cache[cache_key] = {'ts': time.time(), 'response': result}
+        return jsonify(result)
+    except requests.exceptions.Timeout:
+        return jsonify({'code': 500, 'msg': '天气服务超时'})
+    except Exception as e:
+        logging.exception("获取天气失败")
+        return jsonify({'code': 500, 'msg': '天气服务异常'})
+
 # ==================== 更新用户资料 ====================
 @app.route('/update_profile', methods=['POST'])
+@check_verified_and_blacklist
 def update_profile():
-    openid = request.headers.get('X-Wx-OpenId')
-    if not openid:
-        return jsonify({'code': 401, 'msg': '未获取到用户身份'})
+    openid = g.openid
+    data = request.get_json(silent=True) or {}
+    if not isinstance(data, dict):
+        return jsonify({'code': 400, 'msg': '请求数据格式无效'})
 
-    data = request.get_json()
+    field_limits = {'nickName': 100, 'avatarUrl': 500, 'phoneNumber': 20, 'wechatId': 50}
+    for field, limit in field_limits.items():
+        if field in data and len(str(data[field] or '')) > limit:
+            return jsonify({'code': 400, 'msg': f'{field}内容过长'})
+
+    if 'nickName' in data:
+        is_safe, msg = check_text_security(str(data['nickName'] or ''), openid, scene=1)
+        if not is_safe:
+            return jsonify({'code': 400, 'msg': msg})
+
     update_fields = []
     params = []
 
@@ -523,6 +713,7 @@ def update_profile():
         cursor = conn.cursor()
         cursor.execute(sql, params)
         conn.commit()
+        _invalidate_user_cache(openid)
 
         if cursor.rowcount == 0:
             return jsonify({'code': 404, 'msg': '用户不存在或没有变化'})

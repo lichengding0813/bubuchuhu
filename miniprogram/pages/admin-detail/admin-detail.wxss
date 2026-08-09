@@ -52,6 +52,27 @@ page {
   margin-bottom: 12px;
 }
 
+.activity-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.activity-title-row .activity-title {
+  margin-bottom: 0;
+}
+
+.official-title-badge {
+  flex-shrink: 0;
+  padding: 3px 9px;
+  border-radius: 12px;
+  color: #fff;
+  background: linear-gradient(135deg, #4b9bd3, #2169ad);
+  font-size: 12px;
+  font-weight: 600;
+}
+
 .activity-meta {
   display: flex;
   flex-wrap: wrap;
@@ -142,6 +163,30 @@ page {
   font-weight: 500;
   color: #333;
   margin-bottom: 8rpx;
+}
+
+.organizer-name-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8rpx;
+}
+
+.organizer-name-row .organizer-name {
+  margin-bottom: 0;
+}
+
+.official-v {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  color: #fff;
+  background-color: #2f80c5;
+  font-size: 11px;
+  font-weight: 700;
 }
 
 .organizer-wechat {

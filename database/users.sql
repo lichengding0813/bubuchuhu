@@ -25,6 +25,7 @@ CREATE TABLE `users` (
   `loginCount` int(11) DEFAULT '0' COMMENT '登录次数',
   `isBlacklist` tinyint(1) DEFAULT '0' COMMENT '是否黑名单：0-否，1-是',
   `isAdmin` tinyint(1) NOT NULL DEFAULT '0' COMMENT '是否管理员：0-否，1-是',
+  `isOfficial` tinyint(1) NOT NULL DEFAULT '0' COMMENT '是否官方账号白名单：0-否，1-是',
   `verifyAttempts` tinyint(1) DEFAULT '0' COMMENT '验证尝试次数',
   `needVerify` tinyint(1) DEFAULT '1' COMMENT '是否需要验证：0-否，1-是',
   `verified` tinyint(1) DEFAULT '0' COMMENT '是否通过验证：0-否，1-是',
@@ -33,7 +34,8 @@ CREATE TABLE `users` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `idx_openid` (`openId`),
   KEY `idx_lastLoginTime` (`lastLoginTime`),
-  KEY `idx_isBlacklist` (`isBlacklist`)
+  KEY `idx_isBlacklist` (`isBlacklist`),
+  KEY `idx_isOfficial` (`isOfficial`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户表';
 
 SET FOREIGN_KEY_CHECKS = 1;

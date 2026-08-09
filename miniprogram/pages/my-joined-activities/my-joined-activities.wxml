@@ -35,6 +35,7 @@
   <view wx:for="{{currentList}}" wx:key="id" class="activity-card" bindtap="onActivityClick" data-id="{{item.activity_id}}">
     <view class="card-header">
       <view class="activity-name">{{item.name}}</view>
+      <view class="official-badge" wx:if="{{item.is_official == 1}}">官方</view>
       <!-- <view class="status-badge {{item.activity_status === 3 ? 'ongoing' : 'ended'}}">
         {{item.activity_status === 3 ? '进行中' : '已结束'}}
       </view> -->
@@ -44,6 +45,7 @@
       <view class="info-row">
         <van-icon name="user-o" />
         <text>发起人：{{item.creator_name || '未知'}}</text>
+        <text class="inline-official-v" wx:if="{{item.is_official == 1}}">V</text>
       </view>
       <view class="info-row">
         <van-icon name="clock-o" />
@@ -55,7 +57,7 @@
       </view>
       <view class="info-row">
         <van-icon name="certificate" />
-        <text>户外保险：{{item.is_force_insurance === 1 ? '强制' : '不强制'}}</text>
+        <text>需要购买保险：{{item.is_force_insurance === 1 ? '是' : '否'}}</text>
       </view>
     </view>
 

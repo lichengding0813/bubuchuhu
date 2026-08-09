@@ -55,7 +55,7 @@ Page({
         const formatList = (list) => list.map(item => ({
           ...item,
           activity_time_formatted: this.formatDateTime(item.activity_time),
-          is_force_insurance: item.is_force_insurance || 0
+          is_force_insurance: Number(item.is_force_insurance) === 1 ? 1 : 0
         }));
 
         const ongoingFormatted = formatList(ongoing);

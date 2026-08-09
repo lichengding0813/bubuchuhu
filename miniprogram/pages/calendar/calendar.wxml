@@ -14,7 +14,7 @@
 
   <!-- 日期网格 -->
   <view class="date-grid">
-    <view wx:for="{{days}}" wx:key="*this" class="date-cell {{item.isEmpty ? 'empty' : ''}} {{item.isToday ? 'today' : ''}} {{item.hasActivity ? 'has-activity' : ''}}" bindtap="{{item.isEmpty ? '' : 'onDateTap'}}" data-date="{{item.dateStr}}">
+    <view wx:for="{{days}}" wx:key="*this" class="date-cell {{item.isEmpty ? 'empty' : ''}} {{item.isToday ? 'today' : ''}} {{item.hasActivity ? 'has-activity' : ''}}" bindtap="onDateTap" data-date="{{item.dateStr}}">
       <text class="date-num">{{item.day}}</text>
       <view class="date-dot" wx:if="{{item.hasActivity}}"></view>
     </view>
@@ -26,6 +26,7 @@
     <view wx:if="{{dayActivities.length === 0}}" class="empty-text">当天暂无活动</view>
     <view wx:for="{{dayActivities}}" wx:key="id" class="day-card" bindtap="onActivityClick" data-id="{{item.id}}">
       <text class="day-name">{{item.name}}</text>
+      <text class="calendar-official-badge" wx:if="{{item.is_official == 1}}">官方</text>
       <text class="day-location">{{item.location}}</text>
     </view>
   </view>

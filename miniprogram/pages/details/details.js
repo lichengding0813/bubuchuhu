@@ -1,3 +1,5 @@
+const { get, post } = require('../../utils/api');
+
 Page({
   data: {
     activityId: null,
@@ -10,7 +12,10 @@ Page({
     activityDetail: {
       name: '',
       time: '',
+      endTime: '',
       location: '',
+      latitude: null,
+      longitude: null,
       difficulty: '',
       distance: 0,
       climb: 0,
@@ -27,7 +32,8 @@ Page({
       deadline: '',
       status: '',
       travel: [],
-      is_force_insurance: 0
+      is_force_insurance: 0,
+      isOfficial: false
     },
     agreeNotice: false,
     agreeBus: false,
@@ -82,23 +88,13 @@ Page({
       });
       if (!loginRes.code) return;
 
-      wx.cloud.init();
-      const result = await wx.cloud.callContainer({
-        config: { env: 'prod-3gktwx67d1dd1e76' },
-        path: '/login',
-        header: {
-          'X-WX-SERVICE': 'flask-mysql-login',
-          'content-type': 'application/json'
-        },
-        method: 'POST',
-        data: { code: loginRes.code }
-      });
+      const result = await post('/login', { code: loginRes.code }, { silent: true });
 
-      if (result.data && result.data.code === 200) {
-        const userData = result.data.data;
-        if (result.data.verifyQuestion) {
-          userData.verifyQuestion = result.data.verifyQuestion;
-          userData.verifyQuestionIdx = result.data.verifyQuestionIdx;
+      if (result.code === 200) {
+        const userData = result.data;
+        if (result.verifyQuestion) {
+          userData.verifyQuestion = result.verifyQuestion;
+          userData.verifyQuestionIdx = result.verifyQuestionIdx;
         }
         getApp().globalData.userInfo = userData;
         wx.setStorageSync('userInfo', userData);
@@ -113,32 +109,18 @@ Page({
     wx.showLoading({ title: '加载中...' });
 
     try {
-      const userInfo = this.data.userInfo || wx.getStorageSync('userInfo');
-      const result = await wx.cloud.callContainer({
-        config: { env: "prod-3gktwx67d1dd1e76" },
-        path: "/api/activity/detail",
-        header: {
-          "X-WX-SERVICE": "flask-mysql-login",
-          "X-Wx-OpenId": userInfo?.openId,
-          "content-type": "application/json"
-        },
-        method: "GET",
-        data: { id: activityId }
-      });
+      const result = await get('/api/activity/detail', { id: activityId }, { silent: true });
 
       wx.hideLoading();
 
-      if (result.data && result.data.code === 200) {
-        const activity = result.data.data;
-        console.log(activity);
+      if (result.code === 200) {
+        const activity = result.data;
         this.formatActivityDetail(activity);
-      } else {
-        wx.showToast({ title: result.data?.msg || '获取详情失败', icon: 'none' });
       }
     } catch (error) {
       wx.hideLoading();
       console.error('获取活动详情失败:', error);
-      wx.showToast({ title: '网络错误', icon: 'error' });
+      wx.showToast({ title: error.response?.msg || '网络错误', icon: 'none' });
     }
   },
 
@@ -171,12 +153,15 @@ Page({
     };
 
     // 获取是否强制保险（后端返回字段名为 is_force_insurance）
-    const isForceInsurance = activity.is_force_insurance !== undefined ? activity.is_force_insurance : 0;
+    const isForceInsurance = Number(activity.is_force_insurance) === 1 ? 1 : 0;
 
     this.setData({
       'activityDetail.name': activity.name || '',
       'activityDetail.time': this.formatTime(activity.activity_time),
+      'activityDetail.endTime': this.formatTime(activity.end_time),
       'activityDetail.location': activity.location || '',
+      'activityDetail.latitude': activity.latitude ?? null,
+      'activityDetail.longitude': activity.longitude ?? null,
       'activityDetail.difficulty': (activity.difficulty || 1) + '⭐',
       'activityDetail.distance': activity.distance || 0,
       'activityDetail.climb': activity.climb || 0,
@@ -197,6 +182,7 @@ Page({
       'activityDetail.rawStatus': activity.status,
       'activityDetail.creatorAvatar': activity.creator_avatar || '',
       'activityDetail.is_force_insurance': isForceInsurance,   // 新增
+      'activityDetail.isOfficial': Number(activity.is_official) === 1,
     });
 
     // 获取当前用户是否已报名
@@ -217,27 +203,17 @@ Page({
     try {
       const userInfo = wx.getStorageSync('userInfo');
       if (!userInfo?.openId) return;
-      const checkRes = await wx.cloud.callContainer({
-        config: { env: "prod-3gktwx67d1dd1e76" },
-        path: "/api/lottery/check",
-        header: { "X-WX-SERVICE": "flask-mysql-login", "X-Wx-OpenId": userInfo.openId, "content-type": "application/json" },
-        method: "POST", data: {}
-      });
-      if (checkRes.data && checkRes.data.code === 200) {
-        const match = checkRes.data.data.find(l => l.activity_id == activityId);
+      const checkRes = await post('/api/lottery/check', {}, { silent: true });
+      if (checkRes.code === 200) {
+        const match = checkRes.data.find(l => l.activity_id == activityId);
         if (match) {
           this.setData({ hasLottery: true, lotteryInfo: match, lotteryDrawn: false });
           return;
         }
       }
-      const myRes = await wx.cloud.callContainer({
-        config: { env: "prod-3gktwx67d1dd1e76" },
-        path: "/api/lottery/my-result",
-        header: { "X-WX-SERVICE": "flask-mysql-login", "X-Wx-OpenId": userInfo.openId, "content-type": "application/json" },
-        method: "GET", data: {}
-      });
-      if (myRes.data && myRes.data.code === 200) {
-        const drawn = myRes.data.data.find(r => r.activity_name === this.data.activityDetail.name);
+      const myRes = await get('/api/lottery/my-result', {}, { silent: true });
+      if (myRes.code === 200) {
+        const drawn = myRes.data.find(r => r.activity_name === this.data.activityDetail.name);
         if (drawn) {
           this.setData({ hasLottery: true, lotteryInfo: { id: drawn.lottery_id, activity_name: drawn.activity_name }, lotteryDrawn: true });
         }
@@ -271,19 +247,29 @@ Page({
 
   async loadWeather(city) {
     try {
-      const result = await wx.cloud.callContainer({
-        config: { env: "prod-3gktwx67d1dd1e76" },
-        path: "/api/weather",
-        header: { "X-WX-SERVICE": "flask-mysql-login", "content-type": "application/json" },
-        method: "GET",
-        data: { city: city }
-      });
-      if (result.data && result.data.code === 200) {
-        this.setData({ weather: result.data.data });
+      const result = await get('/api/weather', { city }, { silent: true });
+      if (result.code === 200) {
+        this.setData({ weather: result.data });
       }
     } catch (err) {
       console.log('天气加载失败（可忽略）:', err);
     }
+  },
+
+  openActivityLocation() {
+    const { latitude, longitude, location } = this.data.activityDetail;
+    if (latitude == null || longitude == null) return;
+    wx.openLocation({ latitude: Number(latitude), longitude: Number(longitude), name: location });
+  },
+
+  openMeetingLocation(e) {
+    const point = this.data.activityDetail.meetingPoints[e.currentTarget.dataset.index];
+    if (!point || point.latitude == null || point.longitude == null) return;
+    wx.openLocation({
+      latitude: Number(point.latitude),
+      longitude: Number(point.longitude),
+      name: point.location || '集合点'
+    });
   },
 
   // 安全解析时间字符串
@@ -508,20 +494,13 @@ Page({
   async cancelParticipation() {
     wx.showLoading({ title: '取消中...' });
     try {
-      const userInfo = this.data.userInfo || wx.getStorageSync('userInfo');
-      const result = await wx.cloud.callContainer({
-        config: { env: "prod-3gktwx67d1dd1e76" },
-        path: "/api/activity/cancel-participation",
-        header: {
-          "X-WX-SERVICE": "flask-mysql-login",
-          "X-Wx-OpenId": userInfo?.openId,
-          "content-type": "application/json"
-        },
-        method: "POST",
-        data: { activity_id: this.data.activityId }
-      });
+      const result = await post(
+        '/api/activity/cancel-participation',
+        { activity_id: this.data.activityId },
+        { silent: true }
+      );
       wx.hideLoading();
-      if (result.data && result.data.code === 200) {
+      if (result.code === 200) {
         this.setData({
           isRegistered: false,
           agreeNotice: false,
@@ -534,12 +513,10 @@ Page({
           duration: 1500,
           success: () => setTimeout(() => this.getActivityDetail(this.data.activityId), 1500)
         });
-      } else {
-        wx.showToast({ title: result.data?.msg || '取消失败', icon: 'none' });
       }
     } catch (error) {
       wx.hideLoading();
-      wx.showToast({ title: '网络错误', icon: 'error' });
+      wx.showToast({ title: error.response?.msg || '网络错误', icon: 'none' });
     }
   },
 
@@ -558,16 +535,7 @@ Page({
     wx.showLoading({ title: '报名中...' });
     try {
       const userInfo = this.data.userInfo || wx.getStorageSync('userInfo');
-      const result = await wx.cloud.callContainer({
-        config: { env: "prod-3gktwx67d1dd1e76" },
-        path: "/api/activity/participate",
-        header: {
-          "X-WX-SERVICE": "flask-mysql-login",
-          "X-Wx-OpenId": userInfo?.openId,
-          "content-type": "application/json"
-        },
-        method: "POST",
-        data: {
+      const result = await post('/api/activity/participate', {
           activity_id: this.data.activityId,
           nickname: userInfo?.nickName || '',
           phone: userInfo?.phoneNumber || '',
@@ -575,18 +543,15 @@ Page({
           travel_option: null,
           remark: '',
           companion_count: this.data.companionCount
-        }
-      });
+      }, { silent: true });
       wx.hideLoading();
-      if (result.data && result.data.code === 200) {
+      if (result.code === 200) {
         this.setData({ showSuccessPopup: true, isRegistered: true, registeredCompanionCount: this.data.companionCount });
-      } else {
-        wx.showToast({ title: result.data?.msg || '报名失败', icon: 'none' });
       }
     } catch (error) {
       wx.hideLoading();
       console.error('报名失败:', error);
-      wx.showToast({ title: '网络错误', icon: 'error' });
+      wx.showToast({ title: error.response?.msg || '网络错误', icon: 'none' });
     }
   },
 

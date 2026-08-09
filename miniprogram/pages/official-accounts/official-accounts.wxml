@@ -1,0 +1,64 @@
+<view class="container">
+  <view class="tip-card">
+    <van-icon name="certificate" size="16px" color="#2f80c5" />
+    <text>白名单账号可从“官方活动管理”直接发布官方活动，并共同查看、修改全部官方活动，无需人工审核。</text>
+  </view>
+
+  <view class="search-card">
+    <view class="search-bar">
+      <van-icon name="search" size="17px" color="#8aa8c5" />
+      <input class="search-input" value="{{keyword}}" placeholder="昵称、微信号或用户标识" bindinput="onKeywordInput" bindconfirm="onSearch" confirm-type="search" />
+      <van-icon wx:if="{{keyword}}" name="clear" size="17px" color="#a5b7c8" bindtap="onClearSearch" />
+      <van-button size="small" type="info" loading="{{isSearching}}" bindtap="onSearch">搜索</van-button>
+    </view>
+
+    <view class="candidate-section" wx:if="{{hasSearched}}">
+      <view class="sub-title">搜索结果</view>
+      <view class="empty-inline" wx:if="{{!isSearching && candidateList.length === 0}}">没有可加入的用户</view>
+      <view class="user-card compact" wx:for="{{candidateList}}" wx:key="openId">
+        <view class="user-main">
+          <image class="user-avatar" src="{{item.avatarUrl}}" mode="aspectFill" wx:if="{{item.avatarUrl}}" />
+          <view class="user-avatar avatar-placeholder" wx:else><van-icon name="user-o" /></view>
+          <view class="user-info">
+            <text class="user-name">{{item.nickName || '匿名用户'}}</text>
+            <text class="user-meta" wx:if="{{item.wechatId}}">微信号：{{item.wechatId}}</text>
+            <text class="user-openid">{{item.displayOpenId}}</text>
+          </view>
+        </view>
+        <van-button size="small" type="info" loading="{{addingOpenId === item.openId}}" data-openid="{{item.openId}}" data-nickname="{{item.nickName}}" catchtap="onAdd">加入</van-button>
+      </view>
+    </view>
+  </view>
+
+  <view class="section-header">
+    <text class="section-title">官方账号（{{total}}人）</text>
+  </view>
+
+  <view class="loading-container" wx:if="{{isLoading && accountList.length === 0}}">
+    <van-loading size="40px" vertical>加载中...</van-loading>
+  </view>
+  <view class="empty-container" wx:elif="{{accountList.length === 0}}">
+    <van-icon name="friends-o" size="72" color="#c4d3e0" />
+    <text class="empty-text">暂无官方账号</text>
+  </view>
+  <view wx:else>
+    <view class="user-card" wx:for="{{accountList}}" wx:key="openId">
+      <view class="user-main">
+        <view class="avatar-wrap">
+          <image class="user-avatar" src="{{item.avatarUrl}}" mode="aspectFill" wx:if="{{item.avatarUrl}}" />
+          <view class="user-avatar avatar-placeholder" wx:else><van-icon name="user-o" /></view>
+          <text class="avatar-v">V</text>
+        </view>
+        <view class="user-info">
+          <view class="name-row">
+            <text class="user-name">{{item.nickName || '匿名用户'}}</text>
+            <text class="official-label">官方账号</text>
+          </view>
+          <text class="user-meta" wx:if="{{item.wechatId}}">微信号：{{item.wechatId}}</text>
+          <text class="user-openid">{{item.displayOpenId}}</text>
+        </view>
+      </view>
+      <van-button size="small" type="danger" plain loading="{{removingOpenId === item.openId}}" data-openid="{{item.openId}}" data-nickname="{{item.nickName}}" catchtap="onRemove">移出</van-button>
+    </view>
+  </view>
+</view>

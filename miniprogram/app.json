@@ -18,6 +18,8 @@
     "pages/my-joined-activities/my-joined-activities",
     "pages/activity-participants/activity-participants",
     "pages/verify-management/verify-management",
+    "pages/official-accounts/official-accounts",
+    "pages/official-activities/official-activities",
     "pages/notice/notice",
     "pages/blacklist/blacklist"
   ],
@@ -64,8 +66,8 @@
     "van-cell-group": "/miniprogram_npm/@vant/weapp/cell-group/index",
     "van-checkbox": "/miniprogram_npm/@vant/weapp/checkbox/index",
     "van-checkbox-group": "/miniprogram_npm/@vant/weapp/checkbox-group/index",
-    "van-radio-group": "@vant/weapp/radio-group/index",
-    "van-radio": "@vant/weapp/radio/index",
+    "van-radio-group": "/miniprogram_npm/@vant/weapp/radio-group/index",
+    "van-radio": "/miniprogram_npm/@vant/weapp/radio/index",
     "van-stepper": "/miniprogram_npm/@vant/weapp/stepper/index",
     "van-dropdown-menu": "/miniprogram_npm/@vant/weapp/dropdown-menu/index",
     "van-dropdown-item": "/miniprogram_npm/@vant/weapp/dropdown-item/index",
@@ -73,7 +75,8 @@
     "van-datetime-picker": "/miniprogram_npm/@vant/weapp/datetime-picker/index",
     "van-action-sheet": "/miniprogram_npm/@vant/weapp/action-sheet/index",
     "van-popup": "/miniprogram_npm/@vant/weapp/popup/index",
-    "van-dialog": "@vant/weapp/dialog/index",
+    "van-dialog": "/miniprogram_npm/@vant/weapp/dialog/index",
+    "van-loading": "/miniprogram_npm/@vant/weapp/loading/index",
     "lottery-popup": "/components/lottery-popup/lottery-popup"
   }
 }

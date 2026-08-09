@@ -1,3 +1,5 @@
+const { post } = require('../../utils/api');
+
 Component({
   properties: {
     show: { type: Boolean, value: false },
@@ -9,6 +11,13 @@ Component({
     attemptsLeft: 3,
     drawing: false,
     result: null
+  },
+  observers: {
+    'show, lotteryInfo': function(show, lotteryInfo) {
+      if (show && lotteryInfo) {
+        this.setData({ attemptsLeft: lotteryInfo.remaining_attempts ?? 3 });
+      }
+    }
   },
   methods: {
     onPasswordInput(e) {
@@ -27,29 +36,21 @@ Component({
 
       this.setData({ drawing: true, errorText: '' });
       try {
-        const userInfo = wx.getStorageSync('userInfo');
-        const result = await wx.cloud.callContainer({
-          config: { env: "prod-3gktwx67d1dd1e76" },
-          path: "/api/lottery/draw",
-          header: { "X-WX-SERVICE": "flask-mysql-login", "X-Wx-OpenId": userInfo?.openId, "content-type": "application/json" },
-          method: "POST",
-          data: { lottery_id: lotteryInfo.id, password }
-        });
+        const result = await post('/api/lottery/draw', {
+          lottery_id: lotteryInfo.id,
+          password
+        }, { silent: true });
         this.setData({ drawing: false });
-        if (result.data && result.data.code === 200) {
-          this.setData({ result: result.data.data });
-          this.triggerEvent('drawn', result.data.data);
-        } else {
-          const msg = result.data?.msg || '抽奖失败';
-          if (result.data?.already_drawn) {
-            this.setData({ errorText: msg });
-          } else {
-            const left = attemptsLeft - 1;
-            this.setData({ attemptsLeft: left, errorText: left > 0 ? msg : '口令错误次数已达上限' });
-          }
-        }
+        this.setData({ result: result.data });
+        this.triggerEvent('drawn', result.data);
       } catch (err) {
-        this.setData({ drawing: false, errorText: '网络错误' });
+        const response = err.response;
+        if (response) {
+          const left = response.remaining_attempts ?? attemptsLeft;
+          this.setData({ drawing: false, attemptsLeft: left, errorText: response.msg || '抽奖失败' });
+        } else {
+          this.setData({ drawing: false, errorText: '网络错误' });
+        }
       }
     },
     onClose() {

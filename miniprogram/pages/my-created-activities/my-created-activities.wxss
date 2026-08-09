@@ -151,6 +151,22 @@ page {
   flex: 1;
 }
 
+.card-badges {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.official-badge {
+  padding: 4px 10px;
+  border-radius: 20px;
+  color: #fff;
+  background-color: #2f80c5;
+  font-size: 12px;
+  font-weight: 500;
+}
+
 /* 状态徽章 - 多种状态 */
 .status-badge {
   padding: 4px 12px;

@@ -2,6 +2,7 @@ Page({
   data: {
     editActivityId: null,   // 编辑模式下的活动ID
     draftId: null,          // 草稿编辑模式下的草稿ID
+    isOfficialMode: false,  // 官方活动独立发布/共享编辑模式
     agree: false,
     canSubmit: false,
     showNotice: false,
@@ -62,6 +63,7 @@ Page({
     name: '',
     description: '',
     activityTime: '',
+    endTime: '',
     location: '',
     travel: [],
     route: '',
@@ -70,9 +72,12 @@ Page({
     formatStatus: {},
     currentTextColor: '#333333',
     colorList: ['#333333', '#ff4444', '#1989fa', '#ff8800', '#4caf50'],
-    fontSizeList: [12, 14, 16, 18, 24, 36],
-    fontSizeLabels: ['12px', '14px', '16px', '18px', '24px', '36px'],
-    currentFontSize: '16',
+    fontSizeOptions: [
+      { label: '小', value: 14 },
+      { label: '标准', value: 16 },
+      { label: '大', value: 24 }
+    ],
+    currentFontSize: 16,
     // 地图选点
     latitude: null,
     longitude: null,
@@ -84,7 +89,6 @@ Page({
     deadline: '',
     wechat: '',
     groupQR: '',
-    cover: '',
     cover: '',
     forceInsurance: 0,
     meetingPoints: [{
@@ -180,9 +184,17 @@ Page({
         this.setData({ meetingPoints: [...meetingPoints] }, () => this.checkCanSubmit());
       }
     } else {
-      this.setData({
-        [this.data.currentDatePickerField]: dateTimeStr
-      }, () => this.checkCanSubmit());
+      const field = this.data.currentDatePickerField;
+      const updates = { [field]: dateTimeStr };
+      if (field === 'activityTime') {
+        if (!this.data.deadline) {
+          updates.deadline = this.formatTime(new Date(selectedDate.getTime() - 60 * 60 * 1000));
+        }
+        if (!this.data.endTime) {
+          updates.endTime = this.formatTime(new Date(selectedDate.getTime() + 12 * 60 * 60 * 1000));
+        }
+      }
+      this.setData(updates, () => this.checkCanSubmit());
     }
     this.setData({ showDatePicker: false });
   },
@@ -205,17 +217,42 @@ Page({
     this.setData({
       showDatePicker: true,
       currentDatePickerField: field,
-      currentDatePickerTitle: field === 'activityTime' ? '选择活动时间' : '选择报名截止时间',
+      currentDatePickerTitle: {
+        activityTime: '选择活动开始时间',
+        endTime: '选择活动结束时间',
+        deadline: '选择报名截止时间'
+      }[field] || '选择时间',
       pickerValue: [yearIdx, monthIdx, dayIdx, hourIdx, minuteIndex],
       tempSelectedDateTime: defaultDate
     });
   },
 
   onLoad(options) {
-    this.initPickerData();
-    wx.cloud.init({ env: 'prod-3gktwx67d1dd1e76' });
+    const isOfficialMode = Boolean(options && options.official === '1');
+    const hasRouteToLoad = Boolean(options && options.id);
+    this.routeLoaded = !hasRouteToLoad;
+    this.routeDirty = false;
+    this.lastHydratedRoute = this.routeLoaded ? '' : null;
+    this.isHydratingEditor = false;
+    this.editorHydrationPromise = null;
 
+    this.initPickerData();
     const userInfo = wx.getStorageSync('userInfo');
+    if (isOfficialMode) {
+      if (Number(userInfo?.isOfficial) !== 1) {
+        wx.showModal({
+          title: '权限不足',
+          content: '仅官方账号可以发布或修改官方活动',
+          showCancel: false,
+          success: () => wx.navigateBack()
+        });
+        return;
+      }
+      this.setData({ isOfficialMode: true });
+      wx.setNavigationBarTitle({
+        title: options.id ? '编辑官方活动' : '发布官方活动'
+      });
+    }
     if (userInfo && userInfo.openId) {
       this.setData({ userInfo: { openId: userInfo.openId } });
 
@@ -242,12 +279,6 @@ Page({
     } else {
       wx.showToast({ title: '请先登录', icon: 'none' });
     }
-
-    // 新建模式默认报名截止时间
-    const now = new Date();
-    const defaultDeadline = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-    defaultDeadline.setHours(defaultDeadline.getHours() - 1);
-    this.setData({ deadline: this.formatTime(defaultDeadline) }, () => this.checkCanSubmit());
 
     // 编辑模式：如果传入活动 id，加载活动数据
     const { id, draft } = options;
@@ -314,16 +345,24 @@ Page({
 
     let meetingPoints = (activity.meeting_points || []).map(point => ({
       time: point.meeting_time || point.time || '',
-      location: point.location || ''
+      location: point.location || '',
+      latitude: point.latitude ?? null,
+      longitude: point.longitude ?? null
     }));
     if (meetingPoints.length === 0) meetingPoints = [{ time: '', location: '' }];
 
-    this.setData({
+    const loadedRoute = activity.route || activity.routes || '';
+    const formUpdates = {
       name: activity.name || '',
       description: activity.description || '',
       activityTime: this.formatTimeForInput(activity.activity_time),
+      endTime: this.formatTimeForInput(activity.end_time),
       location: activity.location || '',
-      route: activity.route || activity.routes || '',
+      latitude: activity.latitude ?? null,
+      longitude: activity.longitude ?? null,
+      marker: activity.latitude != null && activity.longitude != null
+        ? { id: 1, latitude: activity.latitude, longitude: activity.longitude }
+        : null,
       distance: activity.distance ? String(activity.distance) : '',
       climb: activity.climb ? String(activity.climb) : '',
       difficulty: difficulty,
@@ -332,11 +371,21 @@ Page({
       wechat: activity.wechat_id || '',
       groupQR: activity.group_qr_url || '',
       cover: activity.cover_url || '',
-      forceInsurance: activity.is_force_insurance === 1 ? 1 : 0,
+      forceInsurance: Number(activity.is_force_insurance) === 1 ? 1 : 0,
       travelOptions: newTravelOptions,
       travel: travelOptionsFromBackend,
       meetingPoints: meetingPoints
-    }, () => {
+    };
+
+    // 接口较慢时，用户可能已经开始输入；这种情况下不覆盖用户内容。
+    if (!this.routeDirty) {
+      formUpdates.route = loadedRoute;
+    }
+
+    this.setData(formUpdates, () => {
+      this.routeLoaded = true;
+      this.lastHydratedRoute = null;
+      this.syncRouteEditor();
       this.checkCanSubmit();
     });
   },
@@ -378,7 +427,10 @@ Page({
       name: this.data.name,
       description: this.data.description,
       activityTime: this.data.activityTime,
+      endTime: this.data.endTime,
       location: this.data.location,
+      latitude: this.data.latitude,
+      longitude: this.data.longitude,
       route: this.data.route,
       distance: parseInt(this.data.distance) || 0,
       climb: parseInt(this.data.climb) || 0,
@@ -395,6 +447,8 @@ Page({
   },
 
   async onSaveDraft() {
+    await this.syncRouteFromEditor();
+
     // 草稿不校验必填项，只要有任意内容即可
     const formData = this.collectFormData();
     const hasAnyContent = formData.name || formData.description || formData.location || formData.activityTime;
@@ -456,7 +510,9 @@ Page({
     return `${year}-${month}-${day} ${hour}:${minute}`;
   },
 
-  onSubmit() {
+  async onSubmit() {
+    await this.syncRouteFromEditor();
+
     // 校验用户资料完整性：手机号或微信号至少填一项
     const userInfo = wx.getStorageSync('userInfo');
     if (!userInfo.phoneNumber && !userInfo.wechatId) {
@@ -496,6 +552,20 @@ Page({
         return;
       }
     }
+    if (this.data.activityTime && this.data.endTime) {
+      const activityTs = new Date(this.data.activityTime.replace(/-/g, '/')).getTime();
+      const endTs = new Date(this.data.endTime.replace(/-/g, '/')).getTime();
+      if (endTs <= activityTs) {
+        wx.showModal({
+          title: '时间冲突',
+          content: '活动结束时间必须晚于开始时间，请修改后再提交',
+          showCancel: false,
+          confirmText: '我知道了',
+          confirmColor: '#5faee3'
+        });
+        return;
+      }
+    }
     // 校验集合点时间不能晚于活动开始时间
     if (this.data.activityTime && this.data.meetingPoints && this.data.meetingPoints.length > 0) {
       const activityTs = new Date(this.data.activityTime.replace(/-/g, '/')).getTime();
@@ -518,7 +588,9 @@ Page({
     }
 
     // 根据模式判断提交方式
-    if (this.data.editActivityId) {
+    if (this.data.isOfficialMode) {
+      this.submitOfficialActivity();
+    } else if (this.data.editActivityId) {
       this.submitEditActivity();
     } else if (this.data.draftId) {
       this.publishDraft();
@@ -529,27 +601,7 @@ Page({
 
   async publishDraft() {
     wx.showLoading({ title: '提交中...' });
-    const travelTypeMap = { 'bus': 1, 'train': 2, 'self': 3 };
-    const travelOptionsNumbers = (this.data.travel || []).map(item => travelTypeMap[item]).filter(v => v);
-    const formData = {
-      draft_id: this.data.draftId,
-      name: this.data.name,
-      description: this.data.description,
-      activityTime: this.data.activityTime,
-      location: this.data.location,
-      route: this.data.route,
-      distance: parseInt(this.data.distance) || 0,
-      climb: parseInt(this.data.climb) || 0,
-      difficulty: parseInt(this.data.difficulty) || 1,
-      maxParticipants: this.data.maxParticipants,
-      deadline: this.data.deadline,
-      cover: this.data.cover,
-      groupQR: this.data.groupQR,
-      wechat: this.data.wechat,
-      travelOptions: travelOptionsNumbers,
-      meetingPoints: this.data.meetingPoints,
-      mandatoryInsurance: this.data.forceInsurance,
-    };
+    const formData = { ...this.collectFormData(), draft_id: this.data.draftId };
     try {
       const userInfo = wx.getStorageSync('userInfo');
       // 1. 先保存草稿内容
@@ -597,26 +649,7 @@ Page({
 
   async submitNewActivity() {
     wx.showLoading({ title: '提交中...' });
-    const travelTypeMap = { 'bus': 1, 'train': 2, 'self': 3 };
-    const travelOptionsNumbers = (this.data.travel || []).map(item => travelTypeMap[item]).filter(v => v);
-    const formData = {
-      name: this.data.name,
-      description: this.data.description,
-      activityTime: this.data.activityTime,
-      location: this.data.location,
-      route: this.data.route,
-      distance: parseInt(this.data.distance) || 0,
-      climb: parseInt(this.data.climb) || 0,
-      difficulty: parseInt(this.data.difficulty) || 1,
-      maxParticipants: this.data.maxParticipants,
-      deadline: this.data.deadline,
-      cover: this.data.cover,
-      groupQR: this.data.groupQR,
-      wechat: this.data.wechat,
-      travelOptions: travelOptionsNumbers,
-      meetingPoints: this.data.meetingPoints,
-      mandatoryInsurance: this.data.forceInsurance,
-    };
+    const formData = this.collectFormData();
     try {
       const userInfo = wx.getStorageSync('userInfo');
       const result = await wx.cloud.callContainer({
@@ -648,29 +681,52 @@ Page({
     }
   },
 
+  async submitOfficialActivity() {
+    const isEditing = Boolean(this.data.editActivityId);
+    wx.showLoading({ title: isEditing ? '保存中...' : '发布中...' });
+    const formData = this.collectFormData();
+    if (isEditing) formData.activity_id = this.data.editActivityId;
+    try {
+      const userInfo = wx.getStorageSync('userInfo');
+      const result = await wx.cloud.callContainer({
+        config: { env: "prod-3gktwx67d1dd1e76" },
+        path: isEditing
+          ? "/api/activity/official-activities/update"
+          : "/api/activity/official-activities/create",
+        method: "POST",
+        header: {
+          "X-WX-SERVICE": "flask-mysql-login",
+          "X-Wx-OpenId": userInfo?.openId,
+          "Content-Type": "application/json"
+        },
+        data: formData
+      });
+      wx.hideLoading();
+      if (result.data && result.data.code === 200) {
+        wx.showToast({
+          title: isEditing ? '官方活动已更新' : '官方活动已发布',
+          icon: 'success',
+          duration: 1800
+        });
+        setTimeout(() => wx.navigateBack(), 1800);
+      } else {
+        const errMsg = result.data?.msg || '操作失败';
+        if (errMsg.includes('违规')) {
+          wx.showModal({ title: '内容安全提示', content: errMsg, showCancel: false });
+        } else {
+          wx.showToast({ title: errMsg, icon: 'none' });
+        }
+      }
+    } catch (error) {
+      wx.hideLoading();
+      console.error('保存官方活动失败', error);
+      wx.showToast({ title: '网络错误', icon: 'error' });
+    }
+  },
+
   async submitEditActivity() {
     wx.showLoading({ title: '重新提交审核...' });
-    const travelTypeMap = { 'bus': 1, 'train': 2, 'self': 3 };
-    const travelOptionsNumbers = (this.data.travel || []).map(item => travelTypeMap[item]).filter(v => v);
-    const formData = {
-      activity_id: this.data.editActivityId,
-      name: this.data.name,
-      description: this.data.description,
-      activityTime: this.data.activityTime,
-      location: this.data.location,
-      route: this.data.route,
-      distance: parseInt(this.data.distance) || 0,
-      climb: parseInt(this.data.climb) || 0,
-      difficulty: parseInt(this.data.difficulty) || 1,
-      maxParticipants: this.data.maxParticipants,
-      deadline: this.data.deadline,
-      cover: this.data.cover,
-      groupQR: this.data.groupQR,
-      wechat: this.data.wechat,
-      travelOptions: travelOptionsNumbers,
-      meetingPoints: this.data.meetingPoints,
-      mandatoryInsurance: this.data.forceInsurance,
-    };
+    const formData = { ...this.collectFormData(), activity_id: this.data.editActivityId };
     try {
       const userInfo = wx.getStorageSync('userInfo');
       const result = await wx.cloud.callContainer({
@@ -780,20 +836,127 @@ Page({
   // ====== 富文本编辑器（路线简介） ======
   onEditorReady() {
     wx.createSelectorQuery().select('#editor-route').context((res) => {
-      this.editorCtx = res.context;
-      this.setData({ editorReady: true });
-      if (this.data.route) {
-        this.editorCtx.setContents({ html: this.data.route });
+      if (!res || !res.context) {
+        console.error('路线编辑器初始化失败：未获取到 EditorContext');
+        return;
       }
+
+      this.editorCtx = res.context;
+      this.setData({ editorReady: true }, () => this.syncRouteEditor());
     }).exec();
   },
 
+  syncRouteEditor() {
+    if (!this.editorCtx || !this.routeLoaded || this.routeDirty) {
+      return Promise.resolve(false);
+    }
+
+    const html = this.data.route || '';
+    if (this.lastHydratedRoute === html) {
+      return Promise.resolve(true);
+    }
+
+    this.isHydratingEditor = true;
+    const hydrationPromise = new Promise((resolve) => {
+      let hydrationSucceeded = false;
+      try {
+        this.editorCtx.setContents({
+          html,
+          success: () => {
+            hydrationSucceeded = true;
+            this.lastHydratedRoute = html;
+          },
+          fail: (error) => {
+            console.error('路线详情回填失败', error);
+          },
+          complete: () => {
+            // setContents 可能触发 input，延后一拍再恢复用户输入监听。
+            setTimeout(() => {
+              this.isHydratingEditor = false;
+              resolve(hydrationSucceeded);
+            }, 0);
+          }
+        });
+      } catch (error) {
+        this.isHydratingEditor = false;
+        console.error('路线详情回填失败', error);
+        resolve(false);
+      }
+    });
+
+    this.editorHydrationPromise = hydrationPromise;
+    hydrationPromise.then(() => {
+      if (this.editorHydrationPromise === hydrationPromise) {
+        this.editorHydrationPromise = null;
+      }
+    });
+    return hydrationPromise;
+  },
+
+  async syncRouteFromEditor() {
+    if (this.editorHydrationPromise) {
+      await this.editorHydrationPromise;
+    }
+    if (!this.editorCtx) {
+      return this.data.route || '';
+    }
+
+    return new Promise((resolve) => {
+      try {
+        this.editorCtx.getContents({
+          success: (result) => {
+            const editorHtml = typeof result.html === 'string' ? result.html : '';
+            const editorText = typeof result.text === 'string' ? result.text.trim() : '';
+            const hydrationWasMissed = !this.routeDirty
+              && this.routeLoaded
+              && Boolean(this.data.route)
+              && this.lastHydratedRoute !== this.data.route
+              && !editorText;
+            const route = hydrationWasMissed ? this.data.route : editorHtml;
+
+            if (route === this.data.route) {
+              resolve(route);
+              return;
+            }
+            this.lastHydratedRoute = route;
+            this.setData({ route }, () => {
+              this.checkCanSubmit();
+              resolve(route);
+            });
+          },
+          fail: (error) => {
+            console.warn('读取路线详情失败，继续使用页面缓存内容', error);
+            resolve(this.data.route || '');
+          }
+        });
+      } catch (error) {
+        console.warn('读取路线详情失败，继续使用页面缓存内容', error);
+        resolve(this.data.route || '');
+      }
+    });
+  },
+
   onEditorInput(e) {
+    if (this.isHydratingEditor) return;
+    this.routeLoaded = true;
+    this.routeDirty = true;
+    this.lastHydratedRoute = e.detail.html;
     this.setData({ route: e.detail.html }, () => this.checkCanSubmit());
   },
 
   onEditorStatusChange(e) {
-    this.setData({ formatStatus: e.detail });
+    const formatStatus = e.detail || {};
+    const updates = { formatStatus };
+    if (formatStatus.color) {
+      updates.currentTextColor = formatStatus.color;
+    }
+    if (formatStatus.fontSize) {
+      const fontSize = parseInt(formatStatus.fontSize, 10);
+      if (!Number.isNaN(fontSize)) {
+        updates.currentFontSize = fontSize;
+      }
+    }
+    this.setData(updates);
   },
 
   onFormat(e) {
@@ -806,10 +969,10 @@ Page({
     }
   },
 
-  onFontSizeChange(e) {
+  onSetFontSize(e) {
     if (!this.editorCtx) return;
-    const idx = e.detail.value;
-    const size = this.data.fontSizeList[idx];
+    const size = parseInt(e.currentTarget.dataset.size, 10);
+    if (Number.isNaN(size)) return;
     this.editorCtx.format('fontSize', size + 'px');
     this.setData({ currentFontSize: size });
   },
@@ -881,30 +1044,21 @@ Page({
     let defaultTime = new Date();
     if (meetingPoint.time) defaultTime = new Date(meetingPoint.time.replace(/-/g, '/'));
     else defaultTime.setHours(10, 0, 0, 0);
-    const roundedTime = this.roundToHalfHour(defaultTime.getTime());
+    defaultTime = new Date(this.roundToHalfHour(defaultTime.getTime()));
+    this.updateDays(defaultTime.getFullYear(), defaultTime.getMonth() + 1);
     this.setData({
       showDatePicker: true,
       currentDatePickerField: `meetingPoints[${index}].time`,
       currentDatePickerTitle: `选择集合点${index + 1}时间`,
-      currentDateTime: roundedTime
+      pickerValue: [
+        this.data.years.indexOf(defaultTime.getFullYear()),
+        defaultTime.getMonth(),
+        defaultTime.getDate() - 1,
+        defaultTime.getHours(),
+        defaultTime.getMinutes() === 0 ? 0 : 1
+      ],
+      tempSelectedDateTime: defaultTime
     });
-  },
-
-  onDateTimeConfirm(e) {
-    const dateTime = new Date(e.detail);
-    const dateTimeStr = this.formatTime(dateTime);
-    if (this.data.currentDatePickerField.includes('meetingPoints')) {
-      const matches = this.data.currentDatePickerField.match(/meetingPoints\[(\d+)\]\.time/);
-      if (matches) {
-        const index = parseInt(matches[1]);
-        const { meetingPoints } = this.data;
-        meetingPoints[index].time = dateTimeStr;
-        this.setData({ meetingPoints: [...meetingPoints] }, () => this.checkCanSubmit());
-      }
-    } else {
-      this.setData({ [this.data.currentDatePickerField]: dateTimeStr }, () => this.checkCanSubmit());
-    }
-    this.setData({ showDatePicker: false });
   },
 
   onDateTimeCancel() {
@@ -954,8 +1108,12 @@ Page({
       }
     } catch (err) {
       console.error('图片安全检测失败', err);
-      // 检测失败时放行
-      return true;
+      wx.showModal({
+        title: '图片暂未通过检测',
+        content: '安全检测服务暂时不可用，请稍后重试上传。',
+        showCancel: false
+      });
+      return false;
     }
   },
 
@@ -1064,12 +1222,12 @@ Page({
 
   checkCanSubmit() {
     const {
-      agree, name, description, activityTime, location, travel, meetingPoints,
+      agree, name, description, activityTime, endTime, location, travel, meetingPoints,
       route, difficulty, maxParticipants, wechat, groupQR
     } = this.data;
     const isWechatValid = wechat && wechat.trim().length > 0;
     const requiredFields = [
-      name, description, activityTime, location, travel.length > 0,
+      name, description, activityTime, endTime, location, travel.length > 0,
       route, difficulty, maxParticipants >= 2, isWechatValid, groupQR
     ];
     const meetingPointsValid = meetingPoints.every(p => p.time && p.location);

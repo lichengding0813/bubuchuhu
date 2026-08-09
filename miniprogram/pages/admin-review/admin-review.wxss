@@ -146,6 +146,36 @@ page {
   flex: 1;
 }
 
+.card-badges {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.official-badge {
+  padding: 4px 10px;
+  border-radius: 20px;
+  color: #fff;
+  background-color: #2f80c5;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.inline-official-v {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  margin-left: 4px;
+  border-radius: 50%;
+  color: #fff;
+  background-color: #2f80c5;
+  font-size: 9px;
+  font-weight: 700;
+}
+
 .status-badge {
   padding: 4px 12px;
   border-radius: 20px;

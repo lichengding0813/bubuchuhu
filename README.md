@@ -10,6 +10,7 @@
 ## 版本历史
 
 ### v1.4.0（2026-07-29）
+- ✨ 官方活动共享管理：管理员维护账号白名单，官方账号从独立入口免审核发布并共同编辑，活动支持角标、发布者 V 认证和“只看官方”筛选
 - ✨ 首页 Tab 分页：最新活动 / 已结束活动两个 tab，分页加载、下拉刷新、回顶浮窗
 - ✨ 活动搜索：首页搜索栏支持按名称、地点搜索活动
 - ✨ 用户徒步统计：个人页累计活动 / 累计里程 / 累计爬升
@@ -20,9 +21,11 @@
 - ✨ 活动抽奖：管理员创建抽奖（选活动+配奖品+设口令），用户双入口（启动弹窗+详情页轮盘图标），资格校验（参与记录+口令3次机会），加权随机算法
 - 🔧 管理员列表加分页加载（onReachBottom）和下拉刷新
 - 🔧 个人页：管理员和普通用户菜单用分割线区分，"关于我们"移至首页 banner 点击跳转
-- 🔧 底部版本号（当前版本 v1.3.0）点击跳转更新日志页
+- 🔧 底部版本号更新为 v1.4.0，点击跳转更新日志页
 - 🔧 难度/出行筛选暂隐藏（后端已支持，下版本上线）
-- 🔧 修复 create 和 save-draft INSERT 缺 lat/lng 占位符导致的列数不匹配
+- 🔧 活动开始/结束时间完整建模，状态不再在开始时直接变为已结束
+- 🔧 地图坐标从发布、草稿、审核、详情到导航形成完整链路
+- 🔧 定时抽奖按时间自动开放，口令改为哈希保存，抽奖记录与奖品库存支持并发事务
 - 🔧 修复 home.wxml 末尾多余闭合标签导致 WXML 编译错误
 
 ### v1.3.0（2026-07-22）
@@ -34,7 +37,7 @@
 - ✨ 我发起的页面 tab 调整为：已通过 → 待审核 → 草稿箱
 - ✨ 草稿保存后弹窗提示并回首页，指引用户到「我的-我发起的-草稿箱」查看
 - ✨ 发起者须知从弹窗改为独立页面（与报名须知一致的滚动阅读体验）
-- 🔧 修复登录 500：config.py 微信 API 改 HTTP 避免 Docker 容器 SSL 证书缺失
+- 🔧 微信 API 固定使用 HTTPS，Docker 镜像安装 CA 证书
 - 🔧 修复验证答题失败：get_verify_questions 提前 close 连接导致后续 get_db 拿到失效连接
 - 🔧 修复验证答题失败：前端 verify 调用补传 X-Wx-OpenId header
 - 🔧 修复首页已拒绝活动对普通用户可见的问题
@@ -104,17 +107,16 @@
 
 ## 项目结构
 
-本仓库 master 分支包含完整的项目代码，按前端、后端、数据库分为三个目录：
+本仓库包含完整项目代码，按前端、后端、数据库分为三个目录：
 
 ```
-├── frontend/           # 前端代码（微信小程序）
-│   └── miniprogram/
-│       ├── app.js / app.json / app.wxss
-│       ├── pages/              # 各页面（首页、详情、发布、个人中心等）
-│       ├── components/         # 公共组件（验证弹窗、黑名单遮罩、活动卡片）
-│       ├── utils/              # 工具模块（时间处理、API封装、图片检测）
-│       ├── miniprogram_npm/    # Vant Weapp 组件库
-│       └── images/             # 静态资源
+├── miniprogram/        # 微信小程序源码（微信开发者工具项目根目录）
+│   ├── app.js / app.json / app.wxss
+│   ├── pages/                  # 首页、日历、详情、发布、个人中心等
+│   ├── components/             # 公共组件
+│   ├── utils/                  # 统一配置、API、时间和图片工具
+│   ├── package.json / package-lock.json
+│   └── images/                 # 静态资源
 ├── backend/            # 后端代码（Flask 应用）
 │   ├── app.py                  # Flask 主入口
 │   ├── config.py               # 集中配置模块
@@ -127,7 +129,9 @@
 │   ├── migration.sql           # 数据库迁移脚本（索引优化等）
 │   ├── migration_companion.sql # 同行人功能迁移脚本
 │   ├── migration_verify_questions.sql # 验证问题表迁移脚本
-│   └── migration_utf8mb4.sql    # 全表 utf8mb4 迁移脚本（支持 emoji）
+│   ├── migration_utf8mb4.sql    # 全表 utf8mb4 迁移脚本（支持 emoji）
+│   ├── migration_v1_4.sql       # v1.4 结束时间、坐标、抽奖与官方账号迁移
+│   └── migration_official_accounts.sql # 官方账号功能独立增量迁移
 ├── database/           # 数据库建表语句
 │   ├── users.sql
 │   ├── activities.sql
@@ -137,7 +141,7 @@
 └── miniprogram-code.jpg
 ```
 
-> 开发时也可按分支拉取：`backend` 分支（后端）、`dev` 分支（前端）、`database` 分支（数据库）。
+`node_modules/` 与微信开发者工具生成的 `miniprogram_npm/` 不进入 Git；拉取后按依赖锁文件重新构建。
 
 ## 核心功能
 
@@ -154,6 +158,7 @@
 - **撤回功能**：待审核状态的活动可一键撤回至草稿箱，继续编辑后重新提交
 - **活动状态**：草稿 → 待审核 → 报名中 → 进行中 → 已结束（后端自动更新状态）；待审核可撤回 → 草稿
 - **活动列表**：首页分「最新活动」和「已结束活动」两个板块，已拒绝活动仅管理员可见
+- **官方活动**：从「官方活动管理」独立入口发布，免人工审核；全部官方账号可共同查看和编辑，活动显示官方角标和发布者 V 认证，首页支持“只看官方”
 
 ### 报名系统
 - **报名**：勾选协议须知（强制 3 秒阅读倒计时）→ 选择同行人数 → 确认报名
@@ -174,6 +179,7 @@
 - **验证问题管理**：增删改查验证问题，支持启用/禁用（左右滑动开关）、多答案
 - **全员重新验证**：一键重置所有用户的验证状态
 - **参与人员查看**：查看活动报名人员列表
+- **官方账号管理**：按昵称、微信号或用户标识搜索用户，可加入或移出白名单；移出后仅撤销官方活动管理权限，历史官方活动保持不变
 
 ## 数据库设计
 
@@ -181,15 +187,16 @@
 
 | 表名 | 说明 | 关键字段 |
 |------|------|----------|
-| `users` | 用户表 | openId, nickName, avatarUrl, phoneNumber, wechatId, verified, needVerify, isBlacklist, isAdmin, verifyAttempts |
-| `activities` | 活动表 | id, name, description, activity_time, location, difficulty, distance, climb, max_participants, deadline, status, creator_openid, wechat_id, cover_url, group_qr_url, is_force_insurance |
-| `activity_meeting_points` | 集合点表 | id, activity_id, meeting_time (varchar), location |
+| `users` | 用户表 | openId, nickName, avatarUrl, phoneNumber, wechatId, verified, needVerify, isBlacklist, isAdmin, isOfficial, verifyAttempts |
+| `activities` | 活动表 | id, name, activity_time, end_time, location, latitude, longitude, difficulty, distance, climb, max_participants, deadline, status, is_official, created_by |
+| `activity_meeting_points` | 集合点表 | id, activity_id, meeting_time, location, latitude, longitude |
 | `activity_travel_options` | 出行方式表 | id, activity_id, travel_type (1=大巴, 2=高铁, 3=自驾), bus_qr_url |
 | `activity_participants` | 报名记录表 | id, activity_id, user_openid, nickname, phone, wechat_id, status, remark, companion_count |
 | `activity_reviews` | 活动回顾表 | id, activity_id, name, cover, time, location, participants, content |
 | `verify_questions` | 验证问题表 | id, question, answers, sort_order, is_active |
+| `activity_lotteries` / `lottery_prizes` / `lottery_records` | 抽奖配置、奖品库存与用户抽奖结果 | password_hash, start_time, end_time, remaining, draw_status |
 
-> 建表语句详见 `database/` 目录。数据库迁移脚本详见 `backend/migration.sql`、`backend/migration_companion.sql`、`backend/migration_verify_questions.sql` 和 `backend/migration_utf8mb4.sql`。全表已转 utf8mb4_unicode_ci 支持 emoji。
+> 建表语句详见 `database/`。升级现有数据库前先备份，再执行最新的 `database/migration_v1_4.sql`；如果基础 v1.4 已经部署，可只执行 `database/migration_official_accounts.sql`。回滚脚本会删除对应字段，仅供已备份环境使用。
 
 ## 部署信息
 
@@ -202,8 +209,10 @@
 
 1. 后端代码通过微信云托管控制台手动上传代码包部署
 2. Dockerfile 基于 `python:3.9-slim`，设置 `TZ=Asia/Shanghai` 修正时区，使用 Gunicorn 启动
-3. 环境变量通过 Dockerfile 的 ENV 指令或 .env 文件配置（DB_HOST、DB_PORT、DB_USER、DB_PASSWORD、DB_NAME、WX_APPID、WX_SECRET 等），详见 `.env.example`
-4. 微信 API 调用使用 `http://api.weixin.qq.com`（避免容器 CA 证书缺失问题）
+3. 仓库版 Dockerfile 不保存凭证。DB、微信和天气凭证通过云托管 Secret/环境变量注入，变量名详见 `.env.example`
+4. 微信 API 仅通过 `https://api.weixin.qq.com` 调用
+
+> 凭证策略：Git 仓库只保存安全版；本地部署版可保留私有 Dockerfile 和 `.env`，不得提交。两版同步时必须排除这些私有文件。
 
 ### 前端部署
 
@@ -234,9 +243,9 @@ python app.py
 ### 前端
 
 ```bash
-# 使用微信开发者工具打开 frontend/miniprogram/ 目录
+# 使用微信开发者工具打开 miniprogram/ 目录
 # 在工具中配置对应的 AppID
-# 执行 npm install 后在工具中「构建 npm」
+# 在 miniprogram/ 执行 npm ci，然后在工具中「构建 npm」
 ```
 
 ## API 接口概览

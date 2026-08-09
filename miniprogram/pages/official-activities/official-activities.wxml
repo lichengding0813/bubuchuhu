@@ -1,0 +1,68 @@
+<view class="page-container">
+  <view class="intro-card">
+    <view class="intro-icon">V</view>
+    <view class="intro-content">
+      <view class="intro-title">官方活动共享管理</view>
+      <view class="intro-text">官方活动无需人工审核，白名单内所有账号均可查看和修改。</view>
+    </view>
+  </view>
+
+  <button class="create-btn" bindtap="onCreate">
+    <van-icon name="plus" size="16px" />
+    <text>发布官方活动</text>
+  </button>
+
+  <view class="section-header">
+    <text class="section-title">全部官方活动</text>
+    <text class="section-count">{{total}} 个</text>
+  </view>
+
+  <view class="loading-container" wx:if="{{isLoading && activityList.length === 0}}">
+    <van-loading size="40px" vertical>加载中...</van-loading>
+  </view>
+
+  <view class="empty-container" wx:elif="{{activityList.length === 0}}">
+    <van-icon name="flag-o" size="72" color="#bfd1e1" />
+    <text>暂无官方活动</text>
+  </view>
+
+  <view class="activity-card" wx:for="{{activityList}}" wx:key="id">
+    <view class="card-header">
+      <view class="activity-name">{{item.name}}</view>
+      <view class="badges">
+        <text class="official-badge">官方</text>
+        <text class="status-badge {{item.status_class}}">{{item.status_text}}</text>
+      </view>
+    </view>
+
+    <view class="card-content">
+      <view class="info-row">
+        <van-icon name="user-o" />
+        <text>创建账号：{{item.creator_name || '未知'}}</text>
+        <text class="inline-v">V</text>
+      </view>
+      <view class="info-row">
+        <van-icon name="clock-o" />
+        <text>活动时间：{{item.activity_time_formatted}}</text>
+      </view>
+      <view class="info-row">
+        <van-icon name="location-o" />
+        <text>地点：{{item.location}}</text>
+      </view>
+      <view class="info-row">
+        <van-icon name="friends-o" />
+        <text>报名人数：{{item.participant_count}} / {{item.max_participants}}</text>
+      </view>
+      <view class="info-row">
+        <van-icon name="certificate" />
+        <text>需要购买保险：{{item.is_force_insurance === 1 ? '是' : '否'}}</text>
+      </view>
+    </view>
+
+    <view class="card-actions">
+      <button class="action-btn secondary" data-id="{{item.id}}" catchtap="onDetail">查看详情</button>
+      <button class="action-btn secondary" data-id="{{item.id}}" catchtap="onParticipants">报名人员</button>
+      <button class="action-btn primary" data-id="{{item.id}}" catchtap="onEdit">编辑活动</button>
+    </view>
+  </view>
+</view>

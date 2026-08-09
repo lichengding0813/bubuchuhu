@@ -6,7 +6,10 @@
       <image src="{{userInfo.avatarUrl}}" wx:else mode="aspectFill"></image>
     </view>
     <view class="user-info">
-      <text class="user-name">{{userInfo.nickName || '点击登录'}}</text>
+      <view class="user-name-row">
+        <text class="user-name">{{userInfo.nickName || '点击登录'}}</text>
+        <text class="profile-official-v" wx:if="{{userInfo.isOfficial === 1}}">V</text>
+      </view>
       <!-- 在用户信息卡片中的 user-badge 部分 -->
       <view class="user-badge" wx:if="{{userInfo.isLogin}}">
         <view class="badge-item verified" wx:if="{{userInfo.verified}}">
@@ -19,6 +22,9 @@
         <view class="badge-item phone" wx:if="{{userInfo.phoneNumber}}">
           <van-icon name="phone-o" class="phone-icon" />
           <text>已绑定</text>
+        </view>
+        <view class="badge-item official" wx:if="{{userInfo.isOfficial === 1}}">
+          <text>官方账号</text>
         </view>
       </view>
     </view>
@@ -73,7 +79,7 @@
   <!-- 底部版本号 -->
   <view class="version-section">
     <view class="version-toggle" bindtap="goToUpdateLog">
-      <text class="version-text">当前版本 v1.3.0</text>
+      <text class="version-text">当前版本 v1.4.0</text>
       <van-icon name="arrow" size="14" color="#999" />
     </view>
   </view>

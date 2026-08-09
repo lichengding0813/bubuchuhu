@@ -21,10 +21,12 @@ CREATE TABLE `activity_meeting_points` (
   `point_order` tinyint(4) NOT NULL COMMENT '集合点顺序',
   `meeting_time` varchar(50) NOT NULL COMMENT '集合时间（可存格式：HH:MM 或具体时间）',
   `location` varchar(255) NOT NULL COMMENT '集合地点',
+  `latitude` decimal(10,7) DEFAULT NULL COMMENT '集合点纬度',
+  `longitude` decimal(10,7) DEFAULT NULL COMMENT '集合点经度',
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `idx_activity_id` (`activity_id`),
   CONSTRAINT `activity_meeting_points_ibfk_1` FOREIGN KEY (`activity_id`) REFERENCES `activities` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='活动集合点表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='活动集合点表';
 
 SET FOREIGN_KEY_CHECKS = 1;

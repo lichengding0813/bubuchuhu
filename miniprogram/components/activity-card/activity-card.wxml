@@ -1,4 +1,5 @@
-<view class="activity-card {{isEnded ? 'ended-card' : ''}}" bindtap="onClick">
+<view class="activity-card {{isEnded ? 'ended-card' : ''}} {{activity.is_official == 1 ? 'official-activity' : ''}}" bindtap="onClick">
+  <text class="official-corner" wx:if="{{activity.is_official == 1}}">官方</text>
   <view class="card-left">
     <image 
       class="cover-image {{isEnded ? 'ended-cover' : ''}}" 
@@ -11,7 +12,7 @@
     </view>
   </view>
   <view class="card-right">
-    <view class="activity-name {{isEnded ? 'ended-name' : ''}}">
+    <view class="activity-name {{isEnded ? 'ended-name' : ''}} {{activity.is_official == 1 ? 'has-official-corner' : ''}}">
       {{activity.name}}
       <text wx:if="{{!_isEnded}}" class="status-badge {{activity.has_registered ? 'registered-badge' : _statusClass}}">{{_statusBadge}}</text>
       <text wx:else class="status-badge ended">{{_statusBadge}}</text>
