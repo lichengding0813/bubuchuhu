@@ -1,6 +1,43 @@
 <view class="new-container">
+  <view class="form-card source-card" wx:if="{{mode === 'add'}}">
+    <view class="card-title">
+      <text>关联官方活动</text>
+      <text class="required-tag">必选</text>
+    </view>
+
+    <view class="selected-source" wx:if="{{selectedActivity}}" bindtap="openActivityPicker">
+      <image class="selected-source-cover" wx:if="{{selectedActivity.cover_url}}" src="{{selectedActivity.cover_url}}" mode="aspectFill" />
+      <view class="selected-source-placeholder" wx:else>
+        <van-icon name="flag-o" size="24px" color="#5faee3" />
+      </view>
+      <view class="selected-source-info">
+        <view class="selected-source-title">
+          <text class="official-v">V</text>
+          <text>{{selectedActivity.name}}</text>
+        </view>
+        <text class="selected-source-meta">{{selectedActivity.time}} · {{selectedActivity.location}}</text>
+        <text class="selected-source-hint">已带入活动信息，点击可更换</text>
+      </view>
+      <van-icon name="arrow" color="#8aa7ba" />
+    </view>
+
+    <view class="source-trigger" wx:else bindtap="openActivityPicker">
+      <view class="source-trigger-icon">
+        <van-icon name="records" size="24px" color="#4d9fd7" />
+      </view>
+      <view class="source-trigger-copy">
+        <text class="source-trigger-title">选择已有官方活动</text>
+        <text class="source-trigger-desc">自动带入名称、时间、地点、难度、里程、爬升和报名人数</text>
+      </view>
+      <van-icon name="arrow" color="#8aa7ba" />
+    </view>
+  </view>
+
   <view class="form-card">
-    <view class="card-title">基本信息</view>
+    <view class="card-title">
+      <text>回顾信息</text>
+      <text class="imported-tip" wx:if="{{mode === 'add' && selectedActivity}}">已自动带入，可修改</text>
+    </view>
     <view class="edit-field">
       <view class="edit-label">活动名称</view>
       <input class="edit-input" model:value="{{form.name}}" data-field="name" bindinput="onInput" placeholder="请输入活动名称" />
@@ -37,6 +74,7 @@
     <view class="card-title">封面图</view>
     <view class="edit-field">
       <view class="edit-label">人合照</view>
+      <view class="field-help" wx:if="{{mode === 'add' && importedCover}}">已默认带入活动封面，可重新上传替换</view>
       <view class="upload-area" bindtap="chooseCover" data-type="cover">
         <image wx:if="{{form.cover}}" src="{{form.cover}}" mode="aspectFill" class="uploaded-image"></image>
         <view wx:else class="upload-placeholder">
@@ -95,3 +133,45 @@
 
   <van-button type="primary" block round bindtap="onSubmit" custom-class="submit-btn">{{mode === 'edit' ? '保存修改' : '立即创建'}}</van-button>
 </view>
+
+<van-popup show="{{showActivityPicker}}" position="bottom" round closeable custom-style="height: 74vh;" bind:close="closeActivityPicker">
+  <view class="source-picker">
+    <view class="source-picker-header">
+      <text class="source-picker-title">选择官方活动</text>
+      <text class="source-picker-subtitle">仅展示尚未创建回顾的官方活动</text>
+    </view>
+
+    <view class="source-search">
+      <van-icon name="search" size="17px" color="#7f9db2" />
+      <input class="source-search-input" placeholder="搜索活动名称、地点或时间" placeholder-style="color: #a1b3c0;" value="{{activityKeyword}}" bindinput="onActivityKeywordInput" />
+    </view>
+
+    <view class="source-picker-loading" wx:if="{{loadingActivities}}">
+      <van-loading size="32px" vertical>正在加载官方活动...</van-loading>
+    </view>
+
+    <view class="source-picker-empty" wx:elif="{{filteredOfficialActivities.length === 0}}">
+      <van-icon name="todo-list-o" size="48px" color="#adc3d3" />
+      <text>{{activityKeyword ? '没有匹配的官方活动' : '暂无可创建回顾的官方活动'}}</text>
+      <text class="source-picker-empty-hint" wx:if="{{!activityKeyword}}">已创建回顾的活动不会重复显示</text>
+    </view>
+
+    <scroll-view class="source-list" scroll-y wx:else>
+      <view class="source-list-item" wx:for="{{filteredOfficialActivities}}" wx:key="id" data-id="{{item.id}}" bindtap="onSelectOfficialActivity">
+        <image class="source-list-cover" wx:if="{{item.cover_url}}" src="{{item.cover_url}}" mode="aspectFill" />
+        <view class="source-list-placeholder" wx:else>
+          <van-icon name="photo-o" size="24px" color="#7faac7" />
+        </view>
+        <view class="source-list-info">
+          <view class="source-list-title-row">
+            <text class="source-list-title">{{item.name}}</text>
+            <text class="source-status">{{item.status_text}}</text>
+          </view>
+          <text class="source-list-meta">{{item.time}} · {{item.location}}</text>
+          <text class="source-list-stats">{{item.difficulty_text}} · {{item.distance || 0}}km · {{item.participant_count}}人参与</text>
+        </view>
+        <van-icon name="arrow" color="#a1b3c0" />
+      </view>
+    </scroll-view>
+  </view>
+</van-popup>

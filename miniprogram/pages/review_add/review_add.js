@@ -1,8 +1,18 @@
 // pages/review_add/review_add.js
+const { get, post, put } = require('../../utils/api');
+
 Page({
   data: {
     mode: 'add',        // 'add' 或 'edit'
     reviewId: null,
+    sourceActivityId: null,
+    selectedActivity: null,
+    officialActivities: [],
+    filteredOfficialActivities: [],
+    loadingActivities: false,
+    showActivityPicker: false,
+    activityKeyword: '',
+    importedCover: '',
     form: {
       name: '',
       time: '',
@@ -49,6 +59,7 @@ Page({
       if (editData) {
         this.setData({
           reviewId: editData.id,
+          sourceActivityId: editData.activity_id || null,
           form: {
             name: editData.name,
             time: editData.time,
@@ -67,12 +78,94 @@ Page({
       } else {
         wx.showToast({ title: '数据加载失败', icon: 'none' });
       }
+    } else {
+      this.loadOfficialActivities();
     }
   },
 
   onInput(e) {
     const field = e.currentTarget.dataset.field;
     this.setData({ [`form.${field}`]: e.detail.value });
+  },
+
+  async loadOfficialActivities() {
+    if (this.data.loadingActivities) return;
+    this.setData({ loadingActivities: true });
+    try {
+      const result = await get('/api/reviews/official-activities', {}, { silent: true });
+      const list = (result.data?.list || []).map(item => ({
+        ...item,
+        id: Number(item.id),
+        participant_count: Number(item.participant_count) || 0,
+        difficulty_text: this.formatDifficulty(item.difficulty),
+        status_text: this.getActivityStatusText(item.status)
+      }));
+      this.setData({
+        officialActivities: list,
+        filteredOfficialActivities: list
+      });
+    } catch (error) {
+      console.error('加载官方活动失败:', error);
+      wx.showToast({ title: error.response?.msg || '官方活动加载失败', icon: 'none' });
+    } finally {
+      this.setData({ loadingActivities: false });
+    }
+  },
+
+  formatDifficulty(value) {
+    if (!value) return '待定';
+    const text = String(value);
+    return text.includes('⭐') ? text : `${text}⭐`;
+  },
+
+  getActivityStatusText(status) {
+    return ({ 1: '报名中', 3: '进行中', 4: '已结束' })[Number(status)] || '已发布';
+  },
+
+  openActivityPicker() {
+    this.setData({ showActivityPicker: true });
+    if (!this.data.loadingActivities && this.data.officialActivities.length === 0) {
+      this.loadOfficialActivities();
+    }
+  },
+
+  closeActivityPicker() {
+    this.setData({ showActivityPicker: false });
+  },
+
+  onActivityKeywordInput(e) {
+    const keyword = String(e.detail.value || '').trim().toLowerCase();
+    const filtered = this.data.officialActivities.filter(item => {
+      const content = `${item.name || ''} ${item.location || ''} ${item.time || ''}`.toLowerCase();
+      return !keyword || content.includes(keyword);
+    });
+    this.setData({
+      activityKeyword: e.detail.value,
+      filteredOfficialActivities: filtered
+    });
+  },
+
+  onSelectOfficialActivity(e) {
+    const activityId = Number(e.currentTarget.dataset.id);
+    const activity = this.data.officialActivities.find(item => item.id === activityId);
+    if (!activity) return;
+
+    const hasCustomCover = this.data.form.cover && this.data.form.cover !== this.data.importedCover;
+    const importedCover = activity.cover_url || '';
+    this.setData({
+      sourceActivityId: activity.id,
+      selectedActivity: activity,
+      importedCover,
+      showActivityPicker: false,
+      'form.name': activity.name || '',
+      'form.time': activity.time || '',
+      'form.location': activity.location || '',
+      'form.difficulty': activity.difficulty_text,
+      'form.distance': activity.distance ?? '',
+      'form.climb': activity.climb ?? '',
+      'form.participants': activity.participant_count,
+      'form.cover': hasCustomCover ? this.data.form.cover : importedCover
+    });
   },
 
   // ====== 富文本编辑器 ======
@@ -247,8 +340,13 @@ Page({
   },
 
   async onSubmit() {
-    const { mode, reviewId, form, submitting } = this.data;
+    const { mode, reviewId, sourceActivityId, form, submitting } = this.data;
     if (submitting) return;
+
+    if (mode === 'add' && !sourceActivityId) {
+      wx.showToast({ title: '请先选择官方活动', icon: 'none' });
+      return;
+    }
 
     if (!form.name || !form.time || !form.location) {
       wx.showToast({ title: '请填写必填项', icon: 'none' });
@@ -261,6 +359,7 @@ Page({
     try {
       let result;
       const submitData = {
+        activity_id: sourceActivityId,
         name: form.name,
         time: form.time,
         location: form.location,
@@ -276,31 +375,13 @@ Page({
       };
 
       if (mode === 'edit') {
-        result = await wx.cloud.callContainer({
-          config: { env: "prod-3gktwx67d1dd1e76" },
-          path: `/api/reviews/${reviewId}`,
-          method: "PUT",
-          header: {
-            "X-WX-SERVICE": "flask-mysql-login",
-            "content-type": "application/json"
-          },
-          data: submitData
-        });
+        result = await put(`/api/reviews/${reviewId}`, submitData, { silent: true });
       } else {
-        result = await wx.cloud.callContainer({
-          config: { env: "prod-3gktwx67d1dd1e76" },
-          path: "/api/reviews",
-          method: "POST",
-          header: {
-            "X-WX-SERVICE": "flask-mysql-login",
-            "content-type": "application/json"
-          },
-          data: submitData
-        });
+        result = await post('/api/reviews', submitData, { silent: true });
       }
 
       wx.hideLoading();
-      if (result.data && result.data.code === 200) {
+      if (result && result.code === 200) {
         wx.showToast({ title: mode === 'edit' ? '保存成功' : '创建成功', icon: 'success' });
 
         if (mode === 'edit') {
@@ -321,7 +402,7 @@ Page({
           }
         }, 1500);
       } else {
-        throw new Error(result.data?.msg || '操作失败');
+        throw new Error(result?.msg || '操作失败');
       }
     } catch (error) {
       wx.hideLoading();

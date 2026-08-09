@@ -17,6 +17,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 DROP TABLE IF EXISTS `activity_reviews`;
 CREATE TABLE `activity_reviews` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
+  `activity_id` int(11) DEFAULT NULL COMMENT '关联的官方活动ID',
   `name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
   `time` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
   `location` varchar(200) COLLATE utf8mb4_unicode_ci NOT NULL,
@@ -33,7 +34,9 @@ CREATE TABLE `activity_reviews` (
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `status` tinyint(4) DEFAULT '1',
-  PRIMARY KEY (`id`)
+  PRIMARY KEY (`id`),
+  KEY `idx_activity_id` (`activity_id`),
+  CONSTRAINT `fk_activity_reviews_activity` FOREIGN KEY (`activity_id`) REFERENCES `activities` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 SET FOREIGN_KEY_CHECKS = 1;

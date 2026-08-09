@@ -20,6 +20,7 @@
 - ✨ 管理员看板：审核页顶部统计卡片（待审核/已通过/总用户/本周报名）
 - ✨ 活动日历：月视图日历页，日期标记活动数量，点击查看当天活动列表
 - ✨ 活动抽奖：管理员创建抽奖（选活动+配奖品+设口令），用户双入口（启动弹窗+详情页轮盘图标），资格校验（参与记录+口令3次机会），加权随机算法
+- ✨ 活动回顾导入：新建回顾时选择已有官方活动，自动带入活动信息、报名人数和活动封面，并防止同一官方活动重复创建有效回顾
 - 🔧 管理员列表加分页加载（onReachBottom）和下拉刷新
 - 🔧 个人页：管理员和普通用户菜单用分割线区分，"关于我们"移至首页 banner 点击跳转
 - 🔧 底部版本号更新为 v1.4.0，点击跳转更新日志页
@@ -133,7 +134,7 @@
 │   ├── migration_companion.sql # 同行人功能迁移脚本
 │   ├── migration_verify_questions.sql # 验证问题表迁移脚本
 │   ├── migration_utf8mb4.sql    # 全表 utf8mb4 迁移脚本（支持 emoji）
-│   ├── migration_v1_4.sql       # v1.4 结束时间、坐标、抽奖与官方账号迁移
+│   ├── migration_v1_4.sql       # v1.4 时间、坐标、抽奖、官方账号与回顾关联迁移
 │   └── migration_official_accounts.sql # 官方账号功能独立增量迁移
 ├── database/           # 数据库建表语句
 │   ├── users.sql
@@ -175,7 +176,8 @@
 ### 活动回顾
 - **回顾列表**：展示所有已发布的活动回顾
 - **回顾详情**：图文展示活动精彩瞬间
-- **新建回顾**：管理员可创建活动回顾，上传图片，活动总结支持富文本编辑
+- **新建回顾**：管理员从尚未创建回顾的官方活动中选择来源，系统自动带入名称、时间、地点、难度、里程、爬升、有效报名人数和活动封面；基础信息可微调，活动总结支持富文本编辑
+- **来源约束**：新回顾必须关联官方活动，后端校验官方标记并阻止重复创建；历史未关联回顾仍可继续查看和编辑
 
 ### 管理员功能
 - **活动审核**：查看待审核活动，通过或拒绝（待审核菜单显示数量徽标）
@@ -196,11 +198,11 @@
 | `activity_meeting_points` | 集合点表 | id, activity_id, meeting_time, location, latitude, longitude |
 | `activity_travel_options` | 出行方式表 | id, activity_id, travel_type (1=大巴, 2=高铁, 3=自驾), bus_qr_url |
 | `activity_participants` | 报名记录表 | id, activity_id, user_openid, nickname, phone, wechat_id, status, remark, companion_count |
-| `activity_reviews` | 活动回顾表 | id, activity_id, name, cover, time, location, participants, content |
+| `activity_reviews` | 活动回顾表 | id, activity_id, name, time, location, participants, summary, cover |
 | `verify_questions` | 验证问题表 | id, question, answers, sort_order, is_active |
 | `activity_lotteries` / `lottery_prizes` / `lottery_records` | 抽奖配置、奖品库存与用户抽奖结果 | password_hash, start_time, end_time, remaining, draw_status |
 
-> 建表语句详见 `database/`。升级现有数据库前先备份，再执行最新的 `database/migration_v1_4.sql`；如果基础 v1.4 已经部署，可只执行 `database/migration_official_accounts.sql`。回滚脚本会删除对应字段，仅供已备份环境使用。
+> 建表语句详见 `database/`。升级现有数据库前先备份，再执行最新的 `database/migration_v1_4.sql`；脚本可重复执行，并会补齐活动回顾关联官方活动所需的 `activity_reviews.activity_id`。回滚脚本会删除对应字段，仅供已备份环境使用。
 
 ## 部署信息
 
@@ -301,3 +303,4 @@ python app.py
 | GET | `/api/reviews` | 活动回顾列表 |
 | GET | `/api/reviews/<id>` | 活动回顾详情 |
 | POST | `/api/reviews` | 新建活动回顾 |
+| GET | `/api/reviews/official-activities` | 获取尚未创建回顾的官方活动 |

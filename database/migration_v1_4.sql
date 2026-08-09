@@ -45,6 +45,8 @@ CALL add_column_if_missing('activity_meeting_points', 'latitude',
     '`latitude` decimal(10,7) DEFAULT NULL COMMENT ''集合点纬度'' AFTER `location`');
 CALL add_column_if_missing('activity_meeting_points', 'longitude',
     '`longitude` decimal(10,7) DEFAULT NULL COMMENT ''集合点经度'' AFTER `latitude`');
+CALL add_column_if_missing('activity_reviews', 'activity_id',
+    '`activity_id` int(11) DEFAULT NULL COMMENT ''关联的官方活动ID'' AFTER `id`');
 
 DROP PROCEDURE `add_column_if_missing`;
 
@@ -73,7 +75,31 @@ DELIMITER ;
 CALL add_index_if_missing('activities', 'idx_status_end_time', '`status`,`end_time`');
 CALL add_index_if_missing('activities', 'idx_status_official_created', '`status`,`is_official`,`created_at`');
 CALL add_index_if_missing('users', 'idx_isOfficial', '`isOfficial`');
+CALL add_index_if_missing('activity_reviews', 'idx_activity_id', '`activity_id`');
 DROP PROCEDURE `add_index_if_missing`;
+
+DROP PROCEDURE IF EXISTS `add_review_activity_fk_if_missing`;
+DELIMITER $$
+CREATE PROCEDURE `add_review_activity_fk_if_missing`()
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.KEY_COLUMN_USAGE
+        WHERE CONSTRAINT_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'activity_reviews'
+          AND COLUMN_NAME = 'activity_id'
+          AND REFERENCED_TABLE_NAME = 'activities'
+          AND REFERENCED_COLUMN_NAME = 'id'
+    ) THEN
+        ALTER TABLE `activity_reviews`
+            ADD CONSTRAINT `fk_activity_reviews_activity`
+            FOREIGN KEY (`activity_id`) REFERENCES `activities` (`id`)
+            ON DELETE SET NULL ON UPDATE CASCADE;
+    END IF;
+END$$
+DELIMITER ;
+
+CALL add_review_activity_fk_if_missing();
+DROP PROCEDURE `add_review_activity_fk_if_missing`;
 
 -- 官方活动只由独立发布入口创建；兼容旧版待审核官方活动。
 UPDATE `activities`
@@ -205,6 +231,7 @@ WHERE TABLE_SCHEMA = DATABASE()
     (TABLE_NAME = 'activities' AND COLUMN_NAME IN ('end_time', 'latitude', 'longitude', 'is_official'))
     OR (TABLE_NAME = 'users' AND COLUMN_NAME = 'isOfficial')
     OR (TABLE_NAME = 'activity_meeting_points' AND COLUMN_NAME IN ('latitude', 'longitude'))
+    OR (TABLE_NAME = 'activity_reviews' AND COLUMN_NAME = 'activity_id')
   )
 ORDER BY TABLE_NAME, ORDINAL_POSITION;
 
