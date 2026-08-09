@@ -26,7 +26,10 @@
     <view wx:if="{{dayActivities.length === 0}}" class="empty-text">当天暂无活动</view>
     <view wx:for="{{dayActivities}}" wx:key="id" class="day-card" bindtap="onActivityClick" data-id="{{item.id}}">
       <text class="day-name">{{item.name}}</text>
-      <text class="calendar-official-badge" wx:if="{{item.is_official == 1}}">官方</text>
+      <view class="calendar-official-badge official-chip" wx:if="{{item.is_official == 1}}">
+        <image class="official-mascot official-mascot--tiny" src="/images/official-badge.png" mode="aspectFit" />
+        <text>官方</text>
+      </view>
       <text class="day-location">{{item.location}}</text>
     </view>
   </view>

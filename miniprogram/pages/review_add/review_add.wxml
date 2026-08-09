@@ -12,7 +12,7 @@
       </view>
       <view class="selected-source-info">
         <view class="selected-source-title">
-          <text class="official-v">V</text>
+          <image class="official-mascot" src="/images/official-badge.png" mode="aspectFit" />
           <text>{{selectedActivity.name}}</text>
         </view>
         <text class="selected-source-meta">{{selectedActivity.time}} · {{selectedActivity.location}}</text>
@@ -131,7 +131,7 @@
     </view>
   </view>
 
-  <van-button type="primary" block round bindtap="onSubmit" custom-class="submit-btn">{{mode === 'edit' ? '保存修改' : '立即创建'}}</van-button>
+  <van-button type="info" block round bindtap="onSubmit" custom-class="submit-btn">{{mode === 'edit' ? '保存修改' : '立即创建'}}</van-button>
 </view>
 
 <van-popup show="{{showActivityPicker}}" position="bottom" round closeable custom-style="height: 74vh;" bind:close="closeActivityPicker">

@@ -5,6 +5,7 @@ page {
 
 .detail-container {
   padding: 0 16px 80px 16px;
+  background: #f4f8fb;
 }
 
 /* 轮播图 */

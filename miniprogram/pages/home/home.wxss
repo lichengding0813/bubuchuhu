@@ -216,6 +216,11 @@ page {
   background: #4d9fd7;
 }
 
+.official-filter .official-mascot {
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.92);
+}
+
 .mini-official-v {
   display: inline-flex;
   align-items: center;
@@ -416,7 +421,7 @@ page {
 }
 
 .activity-name.has-official-corner {
-  padding-right: 52px;
+  padding-right: 64px;
 }
 
 .card-info {

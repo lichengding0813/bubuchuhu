@@ -8,7 +8,7 @@
     <view class="user-info">
       <view class="user-name-row">
         <text class="user-name">{{userInfo.nickName || '点击登录'}}</text>
-        <text class="profile-official-v" wx:if="{{userInfo.isOfficial === 1}}">V</text>
+        <image class="profile-official-v" wx:if="{{userInfo.isOfficial === 1}}" src="/images/official-badge.png" mode="aspectFit" />
       </view>
       <!-- 在用户信息卡片中的 user-badge 部分 -->
       <view class="user-badge" wx:if="{{userInfo.isLogin}}">

@@ -44,7 +44,10 @@
   <view class="card-header">
     <view class="activity-name">{{item.name}}</view>
     <view class="card-badges">
-      <view class="official-badge" wx:if="{{item.is_official == 1}}">官方</view>
+      <view class="official-badge official-chip" wx:if="{{item.is_official == 1}}">
+        <image class="official-mascot official-mascot--tiny" src="/images/official-badge.png" mode="aspectFit" />
+        <text>官方</text>
+      </view>
       <view class="status-badge {{item.status === 0 ? 'pending' : (item.status === 2 ? 'rejected' : 'all')}}">
         {{item.status === 0 ? '待审核' : (item.status === 2 ? '已驳回' : '已审核')}}
       </view>
@@ -55,7 +58,7 @@
     <view class="info-row">
       <van-icon name="user-o" />
       <text>发起人：{{item.creator_name || '未知'}}</text>
-      <text class="inline-official-v" wx:if="{{item.is_official == 1}}">V</text>
+      <image class="official-mascot official-mascot--tiny" wx:if="{{item.is_official == 1}}" src="/images/official-badge.png" mode="aspectFit" />
     </view>
     <view class="info-row">
       <van-icon name="clock-o" />

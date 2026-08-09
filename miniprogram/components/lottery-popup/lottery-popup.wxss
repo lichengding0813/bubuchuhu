@@ -1,5 +1,5 @@
 .lottery-mask { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 100; }
-.lottery-popup { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 320px; background: #fff; border-radius: 16px; z-index: 101; overflow: hidden; }
+.lottery-popup { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 320px; background: #fff; border: 1px solid rgba(157, 191, 214, 0.3); border-radius: 20px; box-shadow: 0 14px 34px rgba(38, 78, 106, 0.2); z-index: 101; overflow: hidden; }
 .popup-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid #f0f0f0; }
 .popup-title { font-size: 16px; font-weight: 600; color: #1e4d7c; }
 .popup-body { padding: 24px 20px; text-align: center; }

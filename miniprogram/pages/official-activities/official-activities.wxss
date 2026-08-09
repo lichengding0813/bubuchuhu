@@ -19,17 +19,9 @@ page {
 }
 
 .intro-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
   flex-shrink: 0;
-  width: 68rpx;
-  height: 68rpx;
-  border-radius: 50%;
-  color: #fff;
-  background-color: #2f80c5;
-  font-size: 34rpx;
-  font-weight: 700;
+  width: 88rpx;
+  height: 88rpx;
 }
 
 .intro-content {

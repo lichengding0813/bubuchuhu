@@ -6,7 +6,7 @@ page {
 }
 
 .profile-container {
-  background-color: #f0faff;
+  background-color: #f4f8fb;
   min-height: 100vh;
   padding: 20rpx 30rpx 40rpx;
 }
@@ -14,7 +14,7 @@ page {
 /* 用户信息卡片 - 渐变蓝色 */
 .user-card {
   background: linear-gradient(135deg, #96c9ff 0%, #5faee3 100%);
-  border-radius: 24rpx;
+  border-radius: 40rpx;
   padding: 40rpx 30rpx;
   display: flex;
   align-items: center;
@@ -65,17 +65,9 @@ page {
 }
 
 .profile-official-v {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 36rpx;
-  height: 36rpx;
-  border-radius: 50%;
-  color: #2f80c5;
-  background-color: #fff;
-  font-size: 22rpx;
-  font-weight: 700;
-  box-shadow: 0 2rpx 6rpx rgba(0, 70, 130, 0.25);
+  flex-shrink: 0;
+  width: 48rpx;
+  height: 48rpx;
 }
 
 .user-meta {

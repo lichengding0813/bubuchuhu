@@ -1,5 +1,8 @@
 <view class="activity-card {{isEnded ? 'ended-card' : ''}} {{activity.is_official == 1 ? 'official-activity' : ''}}" bindtap="onClick">
-  <text class="official-corner" wx:if="{{activity.is_official == 1}}">官方</text>
+  <view class="official-corner" wx:if="{{activity.is_official == 1}}">
+    <image class="official-mascot" src="/images/official-badge.png" mode="aspectFit" />
+    <text>官方</text>
+  </view>
   <view class="card-left">
     <image 
       class="cover-image {{isEnded ? 'ended-cover' : ''}}" 

@@ -54,7 +54,10 @@
       <view class="card-header">
         <view class="activity-name">{{item.name || '未命名活动'}}</view>
         <view class="card-badges">
-          <view class="official-badge" wx:if="{{item.is_official == 1}}">官方</view>
+          <view class="official-badge official-chip" wx:if="{{item.is_official == 1}}">
+            <image class="official-mascot official-mascot--tiny" src="/images/official-badge.png" mode="aspectFit" />
+            <text>官方</text>
+          </view>
           <view class="status-badge draft">草稿</view>
         </view>
       </view>
@@ -91,7 +94,10 @@
       <view class="card-header">
         <view class="activity-name">{{item.name}}</view>
         <view class="card-badges">
-          <view class="official-badge" wx:if="{{item.is_official == 1}}">官方</view>
+          <view class="official-badge official-chip" wx:if="{{item.is_official == 1}}">
+            <image class="official-mascot official-mascot--tiny" src="/images/official-badge.png" mode="aspectFit" />
+            <text>官方</text>
+          </view>
           <view class="status-badge {{item.status === 0 ? 'pending' : (item.status === 1 ? 'approved' : (item.status === 2 ? 'rejected' : (item.status === 3 ? 'ongoing' : 'ended')))}}">
             {{item.status === 0 ? '待审核' : (item.status === 1 ? '已通过' : (item.status === 2 ? '已驳回' : (item.status === 3 ? '进行中' : '已结束')))}}
           </view>

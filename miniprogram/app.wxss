@@ -1,10 +1,147 @@
-/**app.wxss**/
-.container {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
+/** app.wxss **/
+/*
+ * Home v1.4 视觉基线
+ * 页面只保留业务差异，通用背景、卡片、标题和主操作色在这里统一。
+ */
+page {
+  min-height: 100%;
+  background: #f4f8fb !important;
+  color: #173f63;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.form-card,
+.info-card,
+.content-card,
+.review-card,
+.activity-card,
+.participant-card,
+.lottery-card,
+.question-card,
+.update-card,
+.intro-card,
+.tip-card,
+.search-card,
+.day-card,
+.menu-list,
+.stats-card,
+.hike-stats-card {
+  border-color: rgba(157, 191, 214, 0.3) !important;
+  border-radius: 20px !important;
+  box-shadow: 0 8px 22px rgba(44, 89, 120, 0.075) !important;
+}
+
+.user-card,
+.date-grid {
+  border-color: rgba(157, 191, 214, 0.3) !important;
+  border-radius: 20px !important;
+  box-shadow: 0 8px 22px rgba(44, 89, 120, 0.075) !important;
+}
+
+.user-card.compact {
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+.about-container,
+.profile-container,
+.detail-container,
+.settings-container {
+  background-color: #f4f8fb !important;
+}
+
+.stat-card {
+  border-color: rgba(157, 191, 214, 0.28) !important;
+  border-radius: 18px !important;
+  box-shadow: 0 6px 18px rgba(44, 89, 120, 0.065) !important;
+}
+
+.featured-card {
+  border-radius: 24px !important;
+}
+
+.section-title,
+.card-title,
+.form-title,
+.day-title,
+.contact-title,
+.popup-title {
+  color: #163f5d !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.2px;
+}
+
+.nav-title,
+.month-title,
+.intro-title,
+.activity-title {
+  color: #163f5d !important;
+  font-weight: 700 !important;
+}
+
+.section-title {
+  padding-left: 0 !important;
+  border-left: 0 !important;
+}
+
+.card-title {
+  padding-left: 0 !important;
+  border-left: 0 !important;
+}
+
+.section-title::before {
+  display: none !important;
+}
+
+/* Vant primary 默认是绿色，显式收口到 Home 主蓝色。 */
+.submit-btn,
+.create-btn {
+  --button-primary-color: #fff;
+  --button-primary-background-color: #4d9fd7;
+  --button-primary-border-color: #4d9fd7;
+  --button-info-color: #fff;
+  --button-info-background-color: #4d9fd7;
+  --button-info-border-color: #4d9fd7;
+  --button-border-radius: 24px;
+}
+
+/* 官方认证统一使用萝卜人，不再绘制文字 V。 */
+.official-mascot {
+  display: inline-block;
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  vertical-align: middle;
+}
+
+.official-mascot--tiny {
+  width: 18px;
+  height: 18px;
+}
+
+.official-mascot--medium {
+  width: 30px;
+  height: 30px;
+}
+
+.official-mascot--large {
+  width: 44px;
+  height: 44px;
+}
+
+.official-chip {
+  display: inline-flex !important;
   align-items: center;
-  justify-content: space-between;
-  padding: 200rpx 0;
-  box-sizing: border-box;
-} 
+  justify-content: center;
+  gap: 3px;
+  padding: 3px 8px 3px 4px !important;
+  border: 1px solid rgba(95, 174, 227, 0.3) !important;
+  border-radius: 14px !important;
+  color: #347ba9 !important;
+  background: rgba(245, 251, 255, 0.96) !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  line-height: 1.2;
+  white-space: nowrap;
+  box-shadow: 0 3px 9px rgba(42, 113, 163, 0.1) !important;
+}

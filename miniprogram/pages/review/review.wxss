@@ -33,7 +33,7 @@ page {
 .review-card {
   display: flex;
   background-color: white;
-  border-radius: 16px;
+  border-radius: 20px;
   margin-bottom: 16px;
   padding: 12px;
   box-shadow: 0 4px 12px rgba(0, 130, 210, 0.08);
@@ -83,12 +83,12 @@ page {
   right: 30px;
   width: 56px;
   height: 56px;
-  background: #1989fa;
+  background: linear-gradient(135deg, #65b9ec 0%, #3e8dcc 100%);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 8px 20px rgba(44, 91, 124, 0.2);
   z-index: 100;
 }
 

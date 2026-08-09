@@ -15,16 +15,27 @@
   top: 9px;
   right: 9px;
   z-index: 2;
-  padding: 3px 8px;
-  border-radius: 12px;
-  color: #fff;
-  background: linear-gradient(135deg, #4b9bd3, #2169ad);
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 8px 3px 4px;
+  border: 1px solid rgba(95, 174, 227, 0.3);
+  border-radius: 14px;
+  color: #347ba9;
+  background: rgba(245, 251, 255, 0.96);
   font-size: 11px;
   font-weight: 600;
+  box-shadow: 0 3px 9px rgba(42, 113, 163, 0.1);
+}
+
+.official-mascot {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
 }
 
 .activity-name.has-official-corner {
-  margin-right: 48px;
+  margin-right: 60px;
 }
 
 .ended-card {

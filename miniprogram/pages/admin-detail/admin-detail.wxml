@@ -9,7 +9,10 @@
   <view class="info-card">
     <view class="activity-title-row">
       <view class="activity-title">{{activityDetail.name}}</view>
-      <text class="official-title-badge" wx:if="{{activityDetail.is_official == 1}}">官方</text>
+      <view class="official-title-badge official-chip" wx:if="{{activityDetail.is_official == 1}}">
+        <image class="official-mascot official-mascot--tiny" src="/images/official-badge.png" mode="aspectFit" />
+        <text>官方</text>
+      </view>
     </view>
     <view class="activity-meta">
       <view class="meta-item">
@@ -55,7 +58,7 @@
       <view class="organizer-detail">
         <view class="organizer-name-row">
           <text class="organizer-name">{{activityDetail.creator_name || activityDetail.organizer}}</text>
-          <text class="official-v" wx:if="{{activityDetail.is_official == 1}}">V</text>
+          <image class="official-mascot" wx:if="{{activityDetail.is_official == 1}}" src="/images/official-badge.png" mode="aspectFit" />
         </view>
         <text class="organizer-wechat">微信号：{{activityDetail.wechat_id || activityDetail.wechat}}</text>
       </view>

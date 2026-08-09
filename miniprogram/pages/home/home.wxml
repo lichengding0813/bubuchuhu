@@ -53,7 +53,7 @@
         <text class="section-title">发现活动</text>
       </view>
       <view class="official-filter {{filterOfficial ? 'active' : ''}}" bindtap="onToggleOfficial">
-        <text class="mini-official-v">V</text>
+        <image class="official-mascot official-mascot--tiny" src="/images/official-badge.png" mode="aspectFit" />
         <text>只看官方</text>
       </view>
     </view>
@@ -96,9 +96,10 @@
           </view>
         </view>
 
-        <text class="official-corner" wx:if="{{item.isOfficial}}">
-          <text class="corner-v">V</text> 官方
-        </text>
+        <view class="official-corner official-chip" wx:if="{{item.isOfficial}}">
+          <image class="official-mascot official-mascot--tiny" src="/images/official-badge.png" mode="aspectFit" />
+          <text>官方</text>
+        </view>
 
         <view class="card-right">
           <view class="activity-name {{item.isOfficial ? 'has-official-corner' : ''}}">{{item.name}}</view>

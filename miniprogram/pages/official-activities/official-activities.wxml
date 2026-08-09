@@ -1,6 +1,6 @@
 <view class="page-container">
   <view class="intro-card">
-    <view class="intro-icon">V</view>
+    <image class="intro-icon official-mascot official-mascot--large" src="/images/official-badge.png" mode="aspectFit" />
     <view class="intro-content">
       <view class="intro-title">官方活动共享管理</view>
       <view class="intro-text">官方活动无需人工审核，白名单内所有账号均可查看和修改。</view>
@@ -30,7 +30,10 @@
     <view class="card-header">
       <view class="activity-name">{{item.name}}</view>
       <view class="badges">
-        <text class="official-badge">官方</text>
+        <view class="official-badge official-chip">
+          <image class="official-mascot official-mascot--tiny" src="/images/official-badge.png" mode="aspectFit" />
+          <text>官方</text>
+        </view>
         <text class="status-badge {{item.status_class}}">{{item.status_text}}</text>
       </view>
     </view>
@@ -39,7 +42,7 @@
       <view class="info-row">
         <van-icon name="user-o" />
         <text>创建账号：{{item.creator_name || '未知'}}</text>
-        <text class="inline-v">V</text>
+        <image class="official-mascot official-mascot--tiny" src="/images/official-badge.png" mode="aspectFit" />
       </view>
       <view class="info-row">
         <van-icon name="clock-o" />

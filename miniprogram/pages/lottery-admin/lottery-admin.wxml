@@ -1,7 +1,7 @@
 <view class="lottery-container">
   <view class="header">
     <text class="title">活动抽奖管理</text>
-    <van-button size="small" type="primary" custom-class="create-btn" bindtap="showCreateForm">创建抽奖</van-button>
+    <van-button size="small" type="info" custom-class="create-btn" bindtap="showCreateForm">创建抽奖</van-button>
   </view>
 
   <view wx:if="{{lotteryList.length === 0}}" class="empty">
@@ -72,6 +72,6 @@
       <view class="add-prize-btn" bindtap="addPrize">+ 添加奖品档位</view>
     </view>
 
-    <van-button type="primary" block bindtap="onCreateLottery" custom-class="submit-btn">发布抽奖</van-button>
+    <van-button type="info" block bindtap="onCreateLottery" custom-class="submit-btn">发布抽奖</van-button>
   </view>
 </van-popup>

@@ -47,12 +47,15 @@
         <view class="avatar-wrap">
           <image class="user-avatar" src="{{item.avatarUrl}}" mode="aspectFill" wx:if="{{item.avatarUrl}}" />
           <view class="user-avatar avatar-placeholder" wx:else><van-icon name="user-o" /></view>
-          <text class="avatar-v">V</text>
+          <image class="avatar-v" src="/images/official-badge.png" mode="aspectFit" />
         </view>
         <view class="user-info">
           <view class="name-row">
             <text class="user-name">{{item.nickName || '匿名用户'}}</text>
-            <text class="official-label">官方账号</text>
+            <view class="official-label official-chip">
+              <image class="official-mascot official-mascot--tiny" src="/images/official-badge.png" mode="aspectFit" />
+              <text>官方账号</text>
+            </view>
           </view>
           <text class="user-meta" wx:if="{{item.wechatId}}">微信号：{{item.wechatId}}</text>
           <text class="user-openid">{{item.displayOpenId}}</text>

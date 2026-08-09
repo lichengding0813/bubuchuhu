@@ -1,6 +1,6 @@
 <view class="publish-container">
   <view class="official-publish-banner" wx:if="{{isOfficialMode}}">
-    <text class="official-banner-v">V</text>
+    <image class="official-banner-v" src="/images/official-badge.png" mode="aspectFit" />
     <view>
       <view class="official-banner-title">官方活动</view>
       <view class="official-banner-desc">保存后直接发布，全部官方账号均可查看和修改</view>
