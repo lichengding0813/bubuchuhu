@@ -588,6 +588,12 @@ page {
   white-space: nowrap;
 }
 
+.source-list-title .activity-title-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .source-status {
   flex-shrink: 0;
   padding: 3px 7px;

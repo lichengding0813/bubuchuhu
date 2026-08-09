@@ -1,3 +1,5 @@
+<wxs module="activityUtil" src="../../utils/activity.wxs" />
+
 <view class="detail-container">
   <!-- 活动封面图 -->
   <view class="cover-section">
@@ -8,7 +10,10 @@
   <!-- 活动基本信息卡片 -->
   <view class="info-card">
     <view class="activity-title-row">
-      <view class="activity-title">{{activityDetail.name}}</view>
+      <view class="activity-title activity-title-with-brand">
+        <image class="activity-brand-mascot" wx:if="{{activityUtil.hasBubuchuhuPrefix(activityDetail.name)}}" src="/images/official-badge.png" mode="aspectFit" />
+        <text class="activity-title-text">{{activityDetail.name}}</text>
+      </view>
       <view class="official-title-badge official-chip" wx:if="{{activityDetail.is_official == 1}}">
         <image class="official-mascot official-mascot--tiny" src="/images/official-badge.png" mode="aspectFit" />
         <text>官方</text>

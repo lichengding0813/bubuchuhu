@@ -43,6 +43,12 @@ CALL add_official_index_if_missing('users', 'idx_isOfficial', '`isOfficial`');
 CALL add_official_index_if_missing('activities', 'idx_status_official_created', '`status`,`is_official`,`created_at`');
 DROP PROCEDURE `add_official_index_if_missing`;
 
+-- 历史品牌活动回填：活动名称以【步步出沪】开头的记录统一标记为官方活动。
+UPDATE `activities`
+SET `is_official` = 1
+WHERE `is_official` = 0
+  AND LEFT(`name`, CHAR_LENGTH('【步步出沪】')) = '【步步出沪】';
+
 -- 官方活动只由独立发布入口创建；兼容旧版待审核官方活动。
 UPDATE `activities`
 SET `status` = 1, `reject_reason` = NULL, `reject_time` = NULL

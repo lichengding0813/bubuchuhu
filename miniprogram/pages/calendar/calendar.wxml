@@ -1,4 +1,6 @@
 <!-- 活动日历 -->
+<wxs module="activityUtil" src="../../utils/activity.wxs" />
+
 <view class="calendar-container">
   <!-- 月份切换 -->
   <view class="month-header">
@@ -25,7 +27,10 @@
     <view class="day-title">{{selectedDate}} 活动</view>
     <view wx:if="{{dayActivities.length === 0}}" class="empty-text">当天暂无活动</view>
     <view wx:for="{{dayActivities}}" wx:key="id" class="day-card" bindtap="onActivityClick" data-id="{{item.id}}">
-      <text class="day-name">{{item.name}}</text>
+      <view class="day-name activity-title-with-brand">
+        <image class="activity-brand-mascot" wx:if="{{activityUtil.hasBubuchuhuPrefix(item.name)}}" src="/images/official-badge.png" mode="aspectFit" />
+        <text class="activity-title-text">{{item.name}}</text>
+      </view>
       <view class="calendar-official-badge official-chip" wx:if="{{item.is_official == 1}}">
         <image class="official-mascot official-mascot--tiny" src="/images/official-badge.png" mode="aspectFit" />
         <text>官方</text>

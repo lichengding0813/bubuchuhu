@@ -1,3 +1,5 @@
+<wxs module="activityUtil" src="../../utils/activity.wxs" />
+
 <view class="page-container">
   <view class="intro-card">
     <image class="intro-icon official-mascot official-mascot--large" src="/images/official-badge.png" mode="aspectFit" />
@@ -28,7 +30,10 @@
 
   <view class="activity-card" wx:for="{{activityList}}" wx:key="id">
     <view class="card-header">
-      <view class="activity-name">{{item.name}}</view>
+      <view class="activity-name activity-title-with-brand">
+        <image class="activity-brand-mascot" wx:if="{{activityUtil.hasBubuchuhuPrefix(item.name)}}" src="/images/official-badge.png" mode="aspectFit" />
+        <text class="activity-title-text">{{item.name}}</text>
+      </view>
       <view class="badges">
         <view class="official-badge official-chip">
           <image class="official-mascot official-mascot--tiny" src="/images/official-badge.png" mode="aspectFit" />

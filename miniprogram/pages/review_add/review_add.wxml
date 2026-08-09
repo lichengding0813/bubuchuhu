@@ -1,3 +1,5 @@
+<wxs module="activityUtil" src="../../utils/activity.wxs" />
+
 <view class="new-container">
   <view class="form-card source-card" wx:if="{{mode === 'add'}}">
     <view class="card-title">
@@ -164,7 +166,10 @@
         </view>
         <view class="source-list-info">
           <view class="source-list-title-row">
-            <text class="source-list-title">{{item.name}}</text>
+            <view class="source-list-title activity-title-with-brand">
+              <image class="activity-brand-mascot" wx:if="{{activityUtil.hasBubuchuhuPrefix(item.name)}}" src="/images/official-badge.png" mode="aspectFit" />
+              <text class="activity-title-text">{{item.name}}</text>
+            </view>
             <text class="source-status">{{item.status_text}}</text>
           </view>
           <text class="source-list-meta">{{item.time}} · {{item.location}}</text>

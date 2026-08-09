@@ -88,6 +88,18 @@
   justify-content: space-between;
 }
 
+.activity-brand-mascot {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  margin-right: 6px;
+}
+
+.activity-title-text {
+  flex: 1;
+  min-width: 0;
+}
+
 .ended-name {
   color: #666;
 }

@@ -1,3 +1,5 @@
+<wxs module="activityUtil" src="../../utils/activity.wxs" />
+
 <!-- 统计卡片 -->
 <view class="stats-section">
   <view class="stat-card">
@@ -52,7 +54,10 @@
 
     <view wx:for="{{draftList}}" wx:key="id" class="activity-card draft-card">
       <view class="card-header">
-        <view class="activity-name">{{item.name || '未命名活动'}}</view>
+        <view class="activity-name activity-title-with-brand">
+          <image class="activity-brand-mascot" wx:if="{{activityUtil.hasBubuchuhuPrefix(item.name)}}" src="/images/official-badge.png" mode="aspectFit" />
+          <text class="activity-title-text">{{item.name || '未命名活动'}}</text>
+        </view>
         <view class="card-badges">
           <view class="official-badge official-chip" wx:if="{{item.is_official == 1}}">
             <image class="official-mascot official-mascot--tiny" src="/images/official-badge.png" mode="aspectFit" />
@@ -92,7 +97,10 @@
   <block wx:else>
     <view wx:for="{{activityList}}" wx:key="id" class="activity-card">
       <view class="card-header">
-        <view class="activity-name">{{item.name}}</view>
+        <view class="activity-name activity-title-with-brand">
+          <image class="activity-brand-mascot" wx:if="{{activityUtil.hasBubuchuhuPrefix(item.name)}}" src="/images/official-badge.png" mode="aspectFit" />
+          <text class="activity-title-text">{{item.name}}</text>
+        </view>
         <view class="card-badges">
           <view class="official-badge official-chip" wx:if="{{item.is_official == 1}}">
             <image class="official-mascot official-mascot--tiny" src="/images/official-badge.png" mode="aspectFit" />

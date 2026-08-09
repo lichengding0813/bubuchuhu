@@ -1,4 +1,6 @@
 <!-- pages/review/review.wxml - 列表页增加新建入口 -->
+<wxs module="activityUtil" src="../../utils/activity.wxs" />
+
 <view class="review-container">
   <!-- 管理员新建按钮 -->
   <view class="admin-add-btn" wx:if="{{isAdmin}}" bindtap="onAddReview">
@@ -14,7 +16,10 @@
   >
     <view class="review-cover"><image class="review-cover" src="{{item.cover}}" mode="aspectFill" /></view>
     <view class="review-info">
-      <text class="review-name">{{item.name}}</text>
+      <view class="review-name activity-title-with-brand">
+        <image class="activity-brand-mascot" wx:if="{{activityUtil.hasBubuchuhuPrefix(item.name)}}" src="/images/official-badge.png" mode="aspectFit" />
+        <text class="activity-title-text">{{item.name}}</text>
+      </view>
       <view class="review-meta">
         <text>{{item.time}} · {{item.location}}</text>
       </view>

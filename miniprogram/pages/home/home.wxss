@@ -424,6 +424,14 @@ page {
   padding-right: 64px;
 }
 
+.activity-name .activity-title-text {
+  display: -webkit-box;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
 .card-info {
   display: flex;
   flex-direction: column;

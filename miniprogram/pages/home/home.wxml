@@ -1,3 +1,5 @@
+<wxs module="activityUtil" src="../../utils/activity.wxs" />
+
 <view class="home-page">
   <!-- 品牌视觉区 -->
   <view class="hero-shell">
@@ -102,7 +104,10 @@
         </view>
 
         <view class="card-right">
-          <view class="activity-name {{item.isOfficial ? 'has-official-corner' : ''}}">{{item.name}}</view>
+          <view class="activity-name activity-title-with-brand {{item.isOfficial ? 'has-official-corner' : ''}}">
+            <image class="activity-brand-mascot" wx:if="{{activityUtil.hasBubuchuhuPrefix(item.name)}}" src="/images/official-badge.png" mode="aspectFit" />
+            <text class="activity-title-text">{{item.name}}</text>
+          </view>
 
           <view class="card-info">
             <view class="info-item">

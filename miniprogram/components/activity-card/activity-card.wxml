@@ -1,3 +1,5 @@
+<wxs module="activityUtil" src="../../utils/activity.wxs" />
+
 <view class="activity-card {{isEnded ? 'ended-card' : ''}} {{activity.is_official == 1 ? 'official-activity' : ''}}" bindtap="onClick">
   <view class="official-corner" wx:if="{{activity.is_official == 1}}">
     <image class="official-mascot" src="/images/official-badge.png" mode="aspectFit" />
@@ -16,7 +18,8 @@
   </view>
   <view class="card-right">
     <view class="activity-name {{isEnded ? 'ended-name' : ''}} {{activity.is_official == 1 ? 'has-official-corner' : ''}}">
-      {{activity.name}}
+      <image class="activity-brand-mascot" wx:if="{{activityUtil.hasBubuchuhuPrefix(activity.name)}}" src="/images/official-badge.png" mode="aspectFit" />
+      <text class="activity-title-text">{{activity.name}}</text>
       <text wx:if="{{!_isEnded}}" class="status-badge {{activity.has_registered ? 'registered-badge' : _statusClass}}">{{_statusBadge}}</text>
       <text wx:else class="status-badge ended">{{_statusBadge}}</text>
     </view>
