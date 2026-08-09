@@ -1,7 +1,7 @@
 
 # 步步出沪 | 徒然好想走
 
-> 「步步出沪 | 徒然好想走」是一个以五月天粉丝群体为核心的户外徒步活动管理小程序。用户可以发起徒步活动、报名参与、查看活动回顾，管理员可以审核活动、管理用户状态。小程序集成了微信云托管服务，实现前后端一体化部署。
+> 「步步出沪 | 徒然好想走」是一个以五月天粉丝群体为核心的户外徒步活动管理小程序。用户可以发现、发起和报名徒步活动，也可以查看活动回顾；普通活动沿用管理员审核流程，官方白名单账号则可从独立入口免审核发布，并共同维护官方活动。小程序集成微信云托管服务，实现前后端一体化部署。
 
 ## 扫码体验
 
@@ -11,7 +11,8 @@
 
 ### v1.4.0（2026-07-29）
 - ✨ 官方活动共享管理：管理员维护账号白名单，官方账号从独立入口免审核发布并共同编辑，活动支持角标、发布者 V 认证和“只看官方”筛选
-- ✨ 首页 Tab 分页：最新活动 / 已结束活动两个 tab，分页加载、下拉刷新、回顶浮窗
+- 🎨 首页视觉焕新：品牌 Banner 与悬浮搜索框、发起活动/活动日历双快捷入口、首张精选大图卡和后续紧凑活动卡
+- ✨ 首页 Tab 分页：近期活动 / 往期活动两个 tab，分页加载、下拉刷新、回顶浮窗
 - ✨ 活动搜索：首页搜索栏支持按名称、地点搜索活动
 - ✨ 用户徒步统计：个人页累计活动 / 累计里程 / 累计爬升
 - ✨ 天气预报：活动详情页 7 天天气卡片（心知天气）
@@ -26,6 +27,8 @@
 - 🔧 活动开始/结束时间完整建模，状态不再在开始时直接变为已结束
 - 🔧 地图坐标从发布、草稿、审核、详情到导航形成完整链路
 - 🔧 定时抽奖按时间自动开放，口令改为哈希保存，抽奖记录与奖品库存支持并发事务
+- 🔧 统一“我报名的”“我发起的”和审核页面中的保险必购字段，修复活动要求购买保险但列表显示为“否”的问题
+- 🔧 首页剩余名额增加边界保护，接口数据短暂不一致时不再显示负数
 - 🔧 修复 home.wxml 末尾多余闭合标签导致 WXML 编译错误
 
 ### v1.3.0（2026-07-22）
@@ -122,7 +125,7 @@
 │   ├── config.py               # 集中配置模块
 │   ├── db_utils.py             # 数据库连接池
 │   ├── middleware.py           # 鉴权中间件
-│   ├── routes/                 # 路由蓝图（活动、管理、回顾）
+│   ├── routes/                 # 路由蓝图（活动、管理、回顾、抽奖）
 │   ├── Dockerfile              # 云托管容器构建
 │   ├── requirements.txt        # Python 依赖
 │   ├── .env.example            # 环境变量模板
@@ -136,7 +139,7 @@
 │   ├── users.sql
 │   ├── activities.sql
 │   ├── activity_participants.sql
-│   └── ...（共 10 个表）
+│   └── ...                     # 其他建表与增量迁移脚本
 ├── README.md
 └── miniprogram-code.jpg
 ```
@@ -154,10 +157,10 @@
 ### 活动管理
 - **发布活动**：填写活动名称、描述、时间、地点、出行方式（大巴/高铁/自驾）、集合点、路线（富文本）、难度（点击星级）、人数限制、报名截止时间、强制保险等
 - **草稿箱**：发起活动时可暂存草稿，在「我发起的 - 草稿箱」中查看、编辑或删除；草稿保存后提示并回首页
-- **活动审核**：管理员审核活动（通过/拒绝），拒绝后可修改重新提交
+- **活动审核**：普通活动由管理员审核（通过/拒绝），拒绝后可修改重新提交；官方活动不进入该审核队列
 - **撤回功能**：待审核状态的活动可一键撤回至草稿箱，继续编辑后重新提交
 - **活动状态**：草稿 → 待审核 → 报名中 → 进行中 → 已结束（后端自动更新状态）；待审核可撤回 → 草稿
-- **活动列表**：首页分「最新活动」和「已结束活动」两个板块，已拒绝活动仅管理员可见
+- **活动列表**：首页提供「近期活动 / 往期活动」切换、关键词搜索和“只看官方”筛选；首条活动使用精选大图卡，其余使用紧凑横卡
 - **官方活动**：从「官方活动管理」独立入口发布，免人工审核；全部官方账号可共同查看和编辑，活动显示官方角标和发布者 V 认证，首页支持“只看官方”
 
 ### 报名系统
@@ -167,6 +170,7 @@
 - **报名人员查看**：发起人可查看报名人员列表，统计仅计有效报名（不含已取消），已取消报名折叠展示
 - **协议须知**：参与者须知、大巴免责声明、自驾/高铁免责声明、发起者须知（均为独立页面，滚动阅读）
 - **报名状态**：实时显示剩余名额、已报名状态
+- **保险提示**：是否必须购买户外保险由活动配置统一决定，并在“我报名的”“我发起的”和审核页面保持一致
 
 ### 活动回顾
 - **回顾列表**：展示所有已发布的活动回顾
@@ -227,7 +231,7 @@
 
 ```bash
 # 克隆仓库（master 包含全部代码，也可单独拉 backend 分支）
-git clone https://gitee.com/sinkdream0813/bubuchuhu.git
+git clone https://github.com/lichengding0813/bubuchuhu.git
 cd bubuchuhu/backend
 
 # 安装依赖
@@ -255,9 +259,15 @@ python app.py
 | POST | `/login` | 用户登录/注册 |
 | POST | `/verify` | 验证问题校验 |
 | POST | `/update_profile` | 更新用户资料 |
+| GET | `/user/stats` | 获取用户徒步统计 |
+| GET | `/api/weather` | 获取活动地点天气预报 |
 | GET | `/api/activity/list` | 获取活动列表 |
 | GET | `/api/activity/detail` | 获取活动详情 |
 | POST | `/api/activity/create` | 创建活动 |
+| GET | `/api/activity/calendar` | 获取日历活动数据 |
+| GET | `/api/activity/official-activities` | 获取官方账号共享活动列表 |
+| POST | `/api/activity/official-activities/create` | 免审核创建官方活动 |
+| POST | `/api/activity/official-activities/update` | 官方账号共同编辑官方活动 |
 | POST | `/api/activity/update-rejected` | 修改被拒绝的活动 |
 | POST | `/api/activity/save-draft` | 保存活动草稿 |
 | GET | `/api/activity/my-drafts` | 获取草稿列表 |
@@ -269,7 +279,8 @@ python app.py
 | POST | `/api/activity/update-status` | 批量更新活动状态 |
 | GET | `/api/activity/my-activities-with-audit` | 我发起的活动 |
 | GET | `/api/activity/my-participations-grouped` | 我报名的活动 |
-| POST | `/api/admin/review` | 管理员审核活动 |
+| GET | `/api/admin/dashboard` | 获取管理员看板统计 |
+| POST | `/api/admin/review-activity` | 管理员审核普通活动 |
 | GET | `/api/admin/blacklist` | 获取黑名单用户列表 |
 | POST | `/api/admin/remove-blacklist` | 解封黑名单用户 |
 | POST | `/api/admin/reset-all-verification` | 全员重新验证 |
@@ -277,6 +288,16 @@ python app.py
 | POST | `/api/admin/verify-questions` | 添加验证问题 |
 | PUT | `/api/admin/verify-questions/<id>` | 更新验证问题 |
 | DELETE | `/api/admin/verify-questions/<id>` | 删除验证问题 |
+| GET | `/api/admin/official-accounts` | 获取官方账号白名单 |
+| GET | `/api/admin/official-account-candidates` | 搜索可加入白名单的用户 |
+| POST | `/api/admin/official-accounts` | 添加官方账号 |
+| POST | `/api/admin/official-accounts/remove` | 移除官方账号 |
+| POST | `/api/admin/lottery/create` | 创建活动抽奖 |
+| GET | `/api/admin/lottery/list` | 获取抽奖管理列表 |
+| POST | `/api/admin/lottery/end` | 提前结束抽奖 |
+| POST | `/api/lottery/check` | 检查用户可参与的抽奖 |
+| POST | `/api/lottery/draw` | 校验口令并抽奖 |
+| GET | `/api/lottery/my-result` | 获取用户抽奖结果 |
 | GET | `/api/reviews` | 活动回顾列表 |
 | GET | `/api/reviews/<id>` | 活动回顾详情 |
 | POST | `/api/reviews` | 新建活动回顾 |
