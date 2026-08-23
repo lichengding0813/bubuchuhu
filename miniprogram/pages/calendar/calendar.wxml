@@ -40,7 +40,10 @@
           <text class="weather-text">{{selectedWeather.text_day}}</text>
         </view>
       </view>
-      <text class="weather-temp">{{selectedWeather.low}}° ~ {{selectedWeather.high}}°</text>
+      <view class="weather-side">
+        <text class="weather-temp">{{selectedWeather.low}}° ~ {{selectedWeather.high}}°</text>
+        <text class="weather-source">数据来源：{{selectedWeather.source}}</text>
+      </view>
     </view>
     <view class="weather-note" wx:elif="{{weatherMessage && dayActivities.length > 0}}">{{weatherMessage}}</view>
     <view wx:if="{{dayActivities.length === 0}}" class="empty-text">当天暂无活动</view>

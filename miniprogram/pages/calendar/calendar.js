@@ -133,7 +133,10 @@ Page({
   },
 
   async loadSelectedDateWeather(dateStr, activities) {
-    const firstActivity = (activities || []).find(item => item.location);
+    const firstActivity = (activities || []).find(item => (
+      item.location || (item.latitude !== null && item.latitude !== undefined
+        && item.longitude !== null && item.longitude !== undefined)
+    ));
     if (!firstActivity) {
       this.setData({ selectedWeather: null, weatherLoading: false, weatherMessage: '' });
       return;
@@ -141,16 +144,18 @@ Page({
 
     this.setData({ weatherLoading: true, selectedWeather: null, weatherMessage: '' });
     try {
-      const result = await get('/api/weather', {
+      const result = await get('/api/activity/calendar-weather', {
+        date: dateStr,
         city: firstActivity.location,
         latitude: firstActivity.latitude,
         longitude: firstActivity.longitude
       }, { silent: true });
-      const daily = result.data?.daily || [];
-      const forecast = daily.find(item => item.date === dateStr);
-      if (forecast) {
+      if (result.data?.date === dateStr) {
         this.setData({
-          selectedWeather: { ...forecast, city: result.data.city || firstActivity.location },
+          selectedWeather: {
+            ...result.data,
+            city: result.data.city || firstActivity.location
+          },
           weatherMessage: ''
         });
       } else {
@@ -161,7 +166,10 @@ Page({
       }
     } catch (err) {
       console.log('日历天气加载失败（可忽略）:', err);
-      this.setData({ selectedWeather: null, weatherMessage: '天气暂时无法获取' });
+      this.setData({
+        selectedWeather: null,
+        weatherMessage: err.response?.msg || '天气暂时无法获取'
+      });
     } finally {
       this.setData({ weatherLoading: false });
     }

@@ -190,3 +190,44 @@ def weather_location_candidates(city='', latitude=None, longitude=None):
         if candidate and candidate not in unique:
             unique.append(candidate)
     return unique[:6]
+
+
+def validate_weather_date(value, today=None):
+    """校验单日天气日期；预报接口支持近期历史和未来 16 天。"""
+    try:
+        target = datetime.strptime(str(value or ''), '%Y-%m-%d').date()
+    except (TypeError, ValueError):
+        return None, '日期参数无效'
+
+    current = today or datetime.now().date()
+    if target < current - timedelta(days=92):
+        return None, '仅支持查询最近92天的天气'
+    if target > current + timedelta(days=15):
+        return None, '仅支持查询未来15天的天气预报'
+    return target, None
+
+
+def weather_code_summary(code):
+    """将 WMO 天气代码转换为小程序展示文本和 Vant 图标。"""
+    try:
+        value = int(code)
+    except (TypeError, ValueError):
+        return '天气未知', 'cloud-o'
+
+    if value == 0:
+        return '晴', 'sunny-o'
+    if value in (1, 2):
+        return '晴间多云', 'cloud'
+    if value == 3:
+        return '阴', 'cloud-o'
+    if value in (45, 48):
+        return '雾', 'warn-o'
+    if value in (51, 53, 55, 56, 57):
+        return '毛毛雨', 'rain-o'
+    if value in (61, 63, 65, 66, 67, 80, 81, 82):
+        return '雨', 'rain-o'
+    if value in (71, 73, 75, 77, 85, 86):
+        return '雪', 'snow-o'
+    if value in (95, 96, 99):
+        return '雷雨', 'rain-o'
+    return '天气未知', 'cloud-o'

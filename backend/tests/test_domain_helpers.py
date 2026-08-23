@@ -13,6 +13,8 @@ from domain import (
     normalize_official_activity_data,
     published_activity_status,
     validate_activity_payload,
+    validate_weather_date,
+    weather_code_summary,
     weather_location_candidates,
 )
 
@@ -135,6 +137,18 @@ class WeatherLocationTests(unittest.TestCase):
     def test_scenic_spot_falls_back_to_nearby_weather_city(self):
         self.assertIn('萍乡', weather_location_candidates('武功山'))
         self.assertIn('安吉', weather_location_candidates('龙王潭'))
+
+    def test_selected_weather_date_is_limited_to_available_range(self):
+        today = datetime(2026, 8, 23).date()
+        target, error = validate_weather_date('2026-08-30', today)
+        self.assertEqual(target.isoformat(), '2026-08-30')
+        self.assertIsNone(error)
+        _, error = validate_weather_date('2026-09-10', today)
+        self.assertIn('未来15天', error)
+
+    def test_wmo_weather_code_is_converted_for_miniprogram(self):
+        self.assertEqual(weather_code_summary(0), ('晴', 'sunny-o'))
+        self.assertEqual(weather_code_summary(95), ('雷雨', 'rain-o'))
 
 
 if __name__ == '__main__':

@@ -2,17 +2,77 @@ from flask import Blueprint, request, jsonify, g
 from datetime import datetime, timedelta
 import secrets
 import logging
+import os
+import time
+import requests
 from db_utils import get_db
 from domain import (
     activity_times,
     normalize_official_activity_data,
     published_activity_status,
     validate_activity_payload,
+    validate_weather_date,
+    weather_code_summary,
+    weather_location_candidates,
 )
 
 from middleware import check_verified_and_blacklist
 
 activity_bp = Blueprint('activity', __name__)
+
+_calendar_weather_cache = {}
+_CALENDAR_WEATHER_CACHE_TTL = 30 * 60
+_WEATHER_CA_BUNDLE = '/etc/ssl/certs/ca-certificates.crt'
+_weather_session = requests.Session()
+# 云托管环境变量中可能存在 HTTPS 代理，固定公网天气接口无需继承代理。
+_weather_session.trust_env = False
+
+
+def _weather_request(url, params):
+    verify = _WEATHER_CA_BUNDLE if os.path.isfile(_WEATHER_CA_BUNDLE) else True
+    return _weather_session.get(url, params=params, timeout=(3, 6), verify=verify)
+
+
+def _valid_coordinates(latitude, longitude):
+    try:
+        lat = float(latitude)
+        lon = float(longitude)
+    except (TypeError, ValueError):
+        return None
+    if -90 <= lat <= 90 and -180 <= lon <= 180:
+        return lat, lon
+    return None
+
+
+def _resolve_weather_location(city, latitude, longitude):
+    coordinates = _valid_coordinates(latitude, longitude)
+    if coordinates:
+        return coordinates[0], coordinates[1], city or '活动地点'
+
+    for candidate in weather_location_candidates(city):
+        if ':' in candidate:
+            continue
+        response = _weather_request(
+            'https://geocoding-api.open-meteo.com/v1/search',
+            {
+                'name': candidate,
+                'count': 1,
+                'language': 'zh',
+                'countryCode': 'CN',
+            },
+        )
+        if response.status_code >= 500:
+            response.raise_for_status()
+        if response.status_code != 200:
+            continue
+        data = response.json()
+        results = data.get('results') or []
+        if results:
+            location = results[0]
+            coordinates = _valid_coordinates(location.get('latitude'), location.get('longitude'))
+            if coordinates:
+                return coordinates[0], coordinates[1], location.get('name') or candidate
+    return None
 
 
 def generate_activity_no():
@@ -1738,3 +1798,71 @@ def get_activity_calendar():
     finally:
         if cursor: cursor.close()
         if conn: conn.close()
+
+
+@activity_bp.route('/calendar-weather', methods=['GET'])
+@check_verified_and_blacklist
+def get_calendar_weather():
+    """按日历选中日期返回单日天气，不依赖业务天气密钥。"""
+    date_text = str(request.args.get('date') or '').strip()
+    city = str(request.args.get('city') or '').strip()
+    target_date, date_error = validate_weather_date(date_text)
+    if date_error:
+        return jsonify({'code': 422, 'msg': date_error})
+    if len(city) > 100:
+        return jsonify({'code': 400, 'msg': '地点参数无效'})
+
+    try:
+        resolved = _resolve_weather_location(
+            city,
+            request.args.get('latitude'),
+            request.args.get('longitude'),
+        )
+        if not resolved:
+            return jsonify({'code': 404, 'msg': '无法识别活动地点，请重新选择地图位置'})
+
+        latitude, longitude, resolved_city = resolved
+        cache_key = f'{target_date.isoformat()}|{latitude:.4f}|{longitude:.4f}'
+        cached = _calendar_weather_cache.get(cache_key)
+        if cached and time.time() - cached['ts'] < _CALENDAR_WEATHER_CACHE_TTL:
+            return jsonify(cached['response'])
+
+        response = _weather_request(
+            'https://api.open-meteo.com/v1/forecast',
+            {
+                'latitude': latitude,
+                'longitude': longitude,
+                'daily': 'weather_code,temperature_2m_max,temperature_2m_min',
+                'timezone': 'Asia/Shanghai',
+                'start_date': target_date.isoformat(),
+                'end_date': target_date.isoformat(),
+            },
+        )
+        response.raise_for_status()
+        provider_data = response.json()
+        daily = provider_data.get('daily') or {}
+        dates = daily.get('time') or []
+        codes = daily.get('weather_code') or []
+        highs = daily.get('temperature_2m_max') or []
+        lows = daily.get('temperature_2m_min') or []
+        if not dates or not codes or not highs or not lows:
+            return jsonify({'code': 404, 'msg': '该日期暂无天气数据'})
+
+        text_day, icon = weather_code_summary(codes[0])
+        result = {'code': 200, 'data': {
+            'city': resolved_city,
+            'date': dates[0],
+            'text_day': text_day,
+            'high': highs[0],
+            'low': lows[0],
+            'icon': icon,
+            'source': 'Open-Meteo',
+        }}
+        _calendar_weather_cache[cache_key] = {'ts': time.time(), 'response': result}
+        return jsonify(result)
+    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError):
+        logging.exception('连接单日天气服务失败')
+        return jsonify({'code': 502, 'msg': '天气服务暂时不可用'})
+    except (requests.exceptions.RequestException, ValueError, TypeError):
+        logging.exception('获取单日天气失败')
+        return jsonify({'code': 502, 'msg': '天气服务暂时不可用'})
