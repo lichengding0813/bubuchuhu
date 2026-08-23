@@ -120,6 +120,17 @@ def effective_lottery_status(lottery, now=None):
     return 1
 
 
+def lottery_activity_error(activity):
+    """抽奖只能关联已发布或已结束的官方活动。"""
+    if not activity:
+        return '活动不存在'
+    if int(activity.get('is_official') or 0) != 1:
+        return '只有官方活动可以创建抽奖'
+    if int(activity.get('status')) not in (1, 3, 4):
+        return '该官方活动当前不能创建抽奖'
+    return None
+
+
 def weather_location_candidates(city='', latitude=None, longitude=None):
     """生成天气服务位置候选：优先坐标，再尝试地点与行政区名称。"""
     candidates = []

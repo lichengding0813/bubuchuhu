@@ -9,7 +9,7 @@ from flask import Blueprint, g, jsonify, request
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from db_utils import get_db
-from domain import effective_lottery_status
+from domain import effective_lottery_status, lottery_activity_error
 from middleware import check_admin, check_verified_and_blacklist
 
 
@@ -45,6 +45,37 @@ def _close(cursor):
 
 
 # ==================== 管理员接口 ====================
+@lottery_bp.route('/admin/lottery/official-activities', methods=['GET'])
+@check_verified_and_blacklist
+@check_admin
+def list_lottery_official_activities():
+    """返回尚无进行中抽奖的官方活动，供创建抽奖时选择。"""
+    cursor = None
+    try:
+        cursor = get_db().cursor()
+        cursor.execute("""
+            SELECT a.id, a.name, a.activity_time, a.status, a.cover_url, a.is_official
+            FROM activities a
+            WHERE a.is_official = 1
+              AND a.status IN (1, 3, 4)
+              AND NOT EXISTS (
+                  SELECT 1
+                  FROM activity_lotteries l
+                  WHERE l.activity_id = a.id
+                    AND l.status <> 2
+                    AND l.end_time >= NOW()
+              )
+            ORDER BY a.activity_time DESC, a.id DESC
+            LIMIT 100
+        """)
+        return jsonify({'code': 200, 'data': cursor.fetchall()})
+    except Exception:
+        logging.exception("获取可创建抽奖的官方活动失败")
+        return jsonify({'code': 500, 'msg': '服务器内部错误'})
+    finally:
+        _close(cursor)
+
+
 @lottery_bp.route('/admin/lottery/create', methods=['POST'])
 @check_verified_and_blacklist
 @check_admin
@@ -90,12 +121,16 @@ def create_lottery():
     cursor = None
     try:
         cursor = conn.cursor()
-        cursor.execute("SELECT id, status FROM activities WHERE id = %s FOR UPDATE", (activity_id,))
+        cursor.execute(
+            "SELECT id, status, is_official FROM activities WHERE id = %s FOR UPDATE",
+            (activity_id,)
+        )
         activity = cursor.fetchone()
         if not activity:
             return jsonify({'code': 404, 'msg': '活动不存在'})
-        if activity['status'] not in (1, 3, 4):
-            return jsonify({'code': 400, 'msg': '只有已审核的活动可以创建抽奖'})
+        activity_error = lottery_activity_error(activity)
+        if activity_error:
+            return jsonify({'code': 400, 'msg': activity_error})
 
         cursor.execute(
             "SELECT id FROM activity_lotteries "

@@ -39,10 +39,11 @@
     <view class="form-title">创建抽奖</view>
     
     <view class="form-item">
-      <text class="form-label">选择活动</text>
+      <text class="form-label">选择官方活动</text>
       <picker mode="selector" range="{{activityOptions}}" range-key="name" bindchange="onActivityChange" value="{{activityIndex}}">
-        <view class="picker-value">{{activityOptions[activityIndex] ? activityOptions[activityIndex].name : '请选择活动'}}</view>
+        <view class="picker-value">{{activityOptions[activityIndex] ? activityOptions[activityIndex].name : '请选择官方活动'}}</view>
       </picker>
+      <text class="form-hint">仅显示尚无进行中抽奖的官方活动</text>
     </view>
 
     <view class="form-item">
@@ -100,6 +101,6 @@
       <view class="add-prize-btn" bindtap="addPrize">+ 添加奖品档位</view>
     </view>
 
-    <van-button type="info" block bindtap="onCreateLottery" custom-class="submit-btn">发布抽奖</van-button>
+    <van-button type="info" block bindtap="onCreateLottery" custom-class="submit-btn">发布官方活动抽奖</van-button>
   </view>
 </van-popup>

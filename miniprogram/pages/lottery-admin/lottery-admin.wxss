@@ -171,6 +171,13 @@ page {
   font-weight: 600;
 }
 
+.form-hint {
+  display: block;
+  margin-top: 6px;
+  color: #91a5b3;
+  font-size: 11px;
+}
+
 .form-input,
 .picker-value,
 .prize-name-input,

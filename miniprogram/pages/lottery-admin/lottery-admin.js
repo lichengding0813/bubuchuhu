@@ -46,7 +46,11 @@ Page({
   },
 
   async showCreateForm() {
-    await this.loadActivities();
+    const hasActivities = await this.loadActivities();
+    if (!hasActivities) {
+      wx.showToast({ title: '暂无可创建抽奖的官方活动', icon: 'none' });
+      return;
+    }
     const start = new Date();
     start.setMinutes(start.getMinutes() + 5, 0, 0);
     const end = new Date(start.getTime() + 60 * 60 * 1000);
@@ -68,31 +72,22 @@ Page({
       const userInfo = wx.getStorageSync('userInfo');
       const result = await wx.cloud.callContainer({
         config: { env: "prod-3gktwx67d1dd1e76" },
-        path: "/api/admin/pending-activities",
+        path: "/api/admin/lottery/official-activities",
         header: { "X-WX-SERVICE": "flask-mysql-login", "X-Wx-OpenId": userInfo?.openId, "content-type": "application/json" },
-        method: "GET",
-        data: { page: 1, size: 50 }
+        method: "GET"
       });
       if (result.data && result.data.code === 200) {
-        const allActivities = result.data.data.list || [];
-        const validActivities = allActivities.filter(a => a.status === 1 || a.status === 3 || a.status === 4);
-        if (validActivities.length === 0) {
-          const listResult = await wx.cloud.callContainer({
-            config: { env: "prod-3gktwx67d1dd1e76" },
-            path: "/api/activity/list",
-            header: { "X-WX-SERVICE": "flask-mysql-login", "X-Wx-OpenId": userInfo?.openId, "content-type": "application/json" },
-            method: "GET",
-            data: { page: 1, size: 50 }
-          });
-          if (listResult.data && listResult.data.code === 200) {
-            this.setData({ activityOptions: listResult.data.data.list || [] });
-          }
-        } else {
-          this.setData({ activityOptions: validActivities });
-        }
+        const officialActivities = (result.data.data || []).filter(item => Number(item.is_official) === 1);
+        this.setData({ activityOptions: officialActivities, activityIndex: 0 });
+        return officialActivities.length > 0;
       }
+      this.setData({ activityOptions: [], activityIndex: 0 });
+      return false;
     } catch (err) {
       console.error('加载活动列表失败:', err);
+      this.setData({ activityOptions: [], activityIndex: 0 });
+      wx.showToast({ title: '官方活动加载失败', icon: 'none' });
+      return false;
     }
   },
 
@@ -217,7 +212,11 @@ Page({
       formStartDate, formStartTime, formEndDate, formEndTime, prizeList
     } = this.data;
     if (!activityOptions[activityIndex]) {
-      wx.showToast({ title: '请选择活动', icon: 'none' });
+      wx.showToast({ title: '请选择官方活动', icon: 'none' });
+      return;
+    }
+    if (Number(activityOptions[activityIndex].is_official) !== 1) {
+      wx.showToast({ title: '只有官方活动可以创建抽奖', icon: 'none' });
       return;
     }
     if (!formPassword) {

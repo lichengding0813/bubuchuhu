@@ -9,6 +9,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from domain import (
     activity_times,
     effective_lottery_status,
+    lottery_activity_error,
     normalize_official_activity_data,
     published_activity_status,
     validate_activity_payload,
@@ -71,6 +72,17 @@ class LotteryRuleTests(unittest.TestCase):
             'end_time': now + timedelta(minutes=1),
         }
         self.assertEqual(effective_lottery_status(lottery, now), 1)
+
+    def test_only_official_published_activity_can_create_lottery(self):
+        self.assertEqual(
+            lottery_activity_error({'is_official': 0, 'status': 1}),
+            '只有官方活动可以创建抽奖',
+        )
+        self.assertEqual(
+            lottery_activity_error({'is_official': 1, 'status': 0}),
+            '该官方活动当前不能创建抽奖',
+        )
+        self.assertIsNone(lottery_activity_error({'is_official': 1, 'status': 4}))
 
 
 class PublishedActivityStatusTests(unittest.TestCase):
