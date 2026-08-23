@@ -11,6 +11,7 @@ CREATE TABLE `lottery_prizes` (
   `tier_level` int(11) NOT NULL COMMENT '奖项排序',
   `quantity` int(11) NOT NULL DEFAULT '0' COMMENT '初始数量',
   `remaining` int(11) NOT NULL DEFAULT '0' COMMENT '剩余数量',
+  `image_url` varchar(500) DEFAULT '' COMMENT '奖品图片',
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_lottery_tier` (`lottery_id`,`tier_level`),

@@ -29,6 +29,20 @@
 
   <view class="day-activities" wx:if="{{selectedDate}}">
     <view class="day-title">{{selectedDateLabel}}活动</view>
+    <view class="weather-inline-card weather-loading" wx:if="{{weatherLoading}}">
+      <van-loading size="18px">天气加载中...</van-loading>
+    </view>
+    <view class="weather-inline-card" wx:elif="{{selectedWeather}}">
+      <view class="weather-main">
+        <van-icon name="{{selectedWeather.icon}}" size="26px" color="#4d9fd7" />
+        <view class="weather-copy">
+          <text class="weather-city">{{selectedWeather.city}}</text>
+          <text class="weather-text">{{selectedWeather.text_day}}</text>
+        </view>
+      </view>
+      <text class="weather-temp">{{selectedWeather.low}}° ~ {{selectedWeather.high}}°</text>
+    </view>
+    <view class="weather-note" wx:elif="{{weatherMessage && dayActivities.length > 0}}">{{weatherMessage}}</view>
     <view wx:if="{{dayActivities.length === 0}}" class="empty-text">当天暂无活动</view>
 
     <view wx:for="{{dayActivities}}" wx:for-index="cardIndex" wx:key="id" class="activity-card {{cardIndex === 0 ? 'featured-card' : ''}} {{item.isEnded ? 'ended-card' : ''}}" bindtap="onActivityClick" data-id="{{item.id}}">
@@ -36,7 +50,7 @@
         <image class="cover-image" src="{{item.coverUrl}}" mode="aspectFill" wx:if="{{item.coverUrl}}" />
         <view class="default-cover" wx:else>
           <view class="default-cover-icon"><van-icon name="photo-o" size="{{cardIndex === 0 ? '40px' : '28px'}}" color="#7da9c8" /></view>
-          <text wx:if="{{cardIndex === 0}}">下一站，去山野</text>
+          <text wx:if="{{cardIndex === 0}}">一步步走过当时心愿</text>
         </view>
       </view>
 

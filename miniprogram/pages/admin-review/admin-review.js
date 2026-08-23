@@ -2,9 +2,6 @@ Page({
   data: {
     currentTab: 'pending',
     activityList: [],
-    pendingCount: 0,
-    totalCount: 0,
-    dashboard: {},
     isLoading: false,
     page: 1,
     pageSize: 10,
@@ -21,19 +18,16 @@ Page({
 
   onLoad() {
     this.initUserData();
-    this.loadDashboard();
   },
 
   onShow() {
     if (this.data.userInfo && this.data.userInfo.verified === 1) {
       this.loadActivities(true);
-      this.loadDashboard();
     }
   },
 
   onPullDownRefresh() {
     this.loadActivities(true);
-    this.loadDashboard();
     setTimeout(() => wx.stopPullDownRefresh(), 1000);
   },
 
@@ -63,9 +57,6 @@ Page({
     
     this.setData({ userInfo });
     
-    // 获取总活动数量（无论哪个tab都显示）
-    this.loadTotalCount();
-    
     // 检查是否需要验证
     if (userInfo.needVerify === 1 && userInfo.isBlacklist === 0) {
       this.showVerifyDialog();
@@ -73,58 +64,6 @@ Page({
       this.setData({ showLockedDialog: true });
     } else if (userInfo.verified === 1) {
       this.loadActivities(true);
-    }
-  },
-
-  // 获取总活动数量
-  async loadTotalCount() {
-    try {
-      const userInfo = this.data.userInfo || wx.getStorageSync('userInfo');
-      
-      const result = await wx.cloud.callContainer({
-        config: { env: "prod-3gktwx67d1dd1e76" },
-        path: "/api/activity/list",
-        header: {
-          "X-WX-SERVICE": "flask-mysql-login",
-          "X-Wx-OpenId": userInfo?.openId,
-          "content-type": "application/json"
-        },
-        method: "GET",
-        data: {
-          page: 1,
-          size: 1
-        }
-      });
-      
-      if (result.data && result.data.code === 200) {
-        const total = result.data.data.total || 0;
-        this.setData({ totalCount: total });
-        console.log('总活动数量:', total);
-      }
-    } catch (error) {
-      console.error('获取总活动数量失败:', error);
-    }
-  },
-
-  async loadDashboard() {
-    try {
-      const userInfo = wx.getStorageSync('userInfo');
-      if (!userInfo?.openId) return;
-      const result = await wx.cloud.callContainer({
-        config: { env: "prod-3gktwx67d1dd1e76" },
-        path: "/api/admin/dashboard",
-        header: {
-          "X-WX-SERVICE": "flask-mysql-login",
-          "X-Wx-OpenId": userInfo.openId,
-          "content-type": "application/json"
-        },
-        method: "GET"
-      });
-      if (result.data && result.data.code === 200) {
-        this.setData({ dashboard: result.data.data });
-      }
-    } catch (error) {
-      console.error('加载看板失败:', error);
     }
   },
 
@@ -183,13 +122,11 @@ Page({
         if (currentTab === 'pending') {
           activities = result.data.data.list || [];
           total = result.data.data.total || 0;
-          this.setData({ pendingCount: total });
           console.log('待审核列表数量:', activities.length);
           console.log('待审核总数:', total);
         } else {
           activities = result.data.data.list || [];
           total = result.data.data.total || 0;
-          this.setData({ totalCount: total });
           console.log('全部列表数量:', activities.length);
           console.log('全部总数:', total);
         }

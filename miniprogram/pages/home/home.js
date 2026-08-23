@@ -13,7 +13,6 @@ Page({
     userInfo: null,
     isLoading: false,
     // 搜索筛选
-    searchKeyword: '',
     filterDifficulty: '',
     filterTravel: '',
     filterOfficial: false,
@@ -150,7 +149,7 @@ Page({
     }
   },
 
-  // 获取活动列表（分页+tab+搜索筛选）
+  // 获取活动列表（分页 + tab + 筛选）
   async getActivityList(reset = false) {
     if (this.data.isLoading) return;
     if (reset) {
@@ -160,9 +159,8 @@ Page({
     }
 
     try {
-      const { currentTab, page, pageSize, searchKeyword, filterDifficulty, filterTravel, filterOfficial } = this.data;
+      const { currentTab, page, pageSize, filterDifficulty, filterTravel, filterOfficial } = this.data;
       const params = { page, size: pageSize, tab: currentTab };
-      if (searchKeyword) params.keyword = searchKeyword;
       if (filterDifficulty !== '') params.difficulty = filterDifficulty;
       if (filterTravel !== '') params.travel = filterTravel;
       if (filterOfficial) params.official = 1;
@@ -489,19 +487,7 @@ Page({
     wx.navigateTo({ url: `/pages/details/details?id=${id}` });
   },
 
-  // ====== 搜索筛选 ======
-  onSearchInput(e) {
-    this.setData({ searchKeyword: e.detail.value });
-  },
-
-  onSearchConfirm() {
-    this.getActivityList(true);
-  },
-
-  onClearSearch() {
-    this.setData({ searchKeyword: '' }, () => this.getActivityList(true));
-  },
-
+  // ====== 活动筛选 ======
   onFilterDifficulty(e) {
     const value = e.currentTarget.dataset.value;
     this.setData({ filterDifficulty: value === '' ? '' : value }, () => this.getActivityList(true));

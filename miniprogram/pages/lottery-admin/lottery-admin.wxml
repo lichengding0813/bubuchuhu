@@ -21,6 +21,7 @@
       <view class="info-row"><text>参与人数：{{item.draw_count}}</text></view>
       <view class="prize-list">
         <view wx:for="{{item.prizes}}" wx:for-item="prize" wx:key="id" class="prize-item">
+          <image class="prize-thumb" wx:if="{{prize.image_url}}" src="{{prize.image_url}}" mode="aspectFill" />
           <text>{{prize.tier_name}}</text>
           <text class="prize-remain">{{prize.remaining}}/{{prize.quantity}}</text>
         </view>
@@ -49,17 +50,26 @@
       <input class="form-input" placeholder="用户抽奖口令" value="{{formPassword}}" bindinput="onPasswordInput" />
     </view>
 
-    <view class="form-row">
-      <view class="form-item half">
-        <text class="form-label">开始时间</text>
+    <view class="form-item">
+      <text class="form-label">开始时间（精确到分钟）</text>
+      <view class="datetime-picker-row">
         <picker mode="date" bindchange="onStartDateChange" value="{{formStartDate}}">
           <view class="picker-value">{{formStartDate || '选择日期'}}</view>
         </picker>
+        <picker mode="time" bindchange="onStartTimeChange" value="{{formStartTime}}">
+          <view class="picker-value">{{formStartTime || '选择时间'}}</view>
+        </picker>
       </view>
-      <view class="form-item half">
-        <text class="form-label">结束时间</text>
+    </view>
+
+    <view class="form-item">
+      <text class="form-label">结束时间（精确到分钟）</text>
+      <view class="datetime-picker-row">
         <picker mode="date" bindchange="onEndDateChange" value="{{formEndDate}}">
           <view class="picker-value">{{formEndDate || '选择日期'}}</view>
+        </picker>
+        <picker mode="time" bindchange="onEndTimeChange" value="{{formEndTime}}">
+          <view class="picker-value">{{formEndTime || '选择时间'}}</view>
         </picker>
       </view>
     </view>
@@ -67,9 +77,25 @@
     <view class="form-item">
       <text class="form-label">奖品配置</text>
       <view wx:for="{{prizeList}}" wx:key="index" class="prize-config">
-        <input class="prize-name-input" placeholder="档位名称" value="{{item.tier_name}}" data-index="{{index}}" bindinput="onPrizeNameInput" />
-        <input class="prize-qty-input" type="number" placeholder="份数" value="{{item.quantity}}" data-index="{{index}}" bindinput="onPrizeQtyInput" />
-        <van-icon name="delete-o" size="20" color="#ff6b6b" bindtap="removePrize" data-index="{{index}}" />
+        <view class="prize-config-main">
+          <input class="prize-name-input" placeholder="档位名称" value="{{item.tier_name}}" data-index="{{index}}" bindinput="onPrizeNameInput" />
+          <input class="prize-qty-input" type="number" placeholder="份数" value="{{item.quantity}}" data-index="{{index}}" bindinput="onPrizeQtyInput" />
+          <van-icon name="delete-o" size="20" color="#ff6b6b" bindtap="removePrize" data-index="{{index}}" />
+        </view>
+        <view class="prize-image-row">
+          <view class="prize-image-upload" bindtap="onPrizeImageTap" data-index="{{index}}">
+            <image wx:if="{{item.image_url}}" src="{{item.image_url}}" mode="aspectFill" />
+            <view wx:else class="prize-image-placeholder">
+              <van-loading wx:if="{{uploadingPrizeIndex === index}}" size="20px" />
+              <block wx:else>
+                <van-icon name="photograph" size="20px" />
+                <text>上传奖品图</text>
+              </block>
+            </view>
+          </view>
+          <view class="remove-prize-image" wx:if="{{item.image_url}}" bindtap="onRemovePrizeImage" data-index="{{index}}">移除图片</view>
+          <text class="prize-image-tip" wx:else>选填，中奖后会展示给用户</text>
+        </view>
       </view>
       <view class="add-prize-btn" bindtap="addPrize">+ 添加奖品档位</view>
     </view>

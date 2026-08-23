@@ -198,6 +198,48 @@ page {
   border-radius: 10px;
 }
 
+.location-field-row,
+.meeting-location-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.location-field-row van-field,
+.meeting-location-row van-field {
+  flex: 1;
+  min-width: 0;
+}
+
+.location-picker-btn,
+.meeting-map-btn {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  color: #3f91c9;
+  border: 1px solid rgba(95, 174, 227, 0.42);
+  background: #eef8fe;
+}
+
+.location-picker-btn {
+  gap: 4px;
+  min-width: 92px;
+  height: 40px;
+  padding: 0 10px;
+  border-radius: 13px;
+  box-sizing: border-box;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.meeting-map-btn {
+  width: 40px;
+  height: 40px;
+  margin-right: 8px;
+  border-radius: 12px;
+}
+
 .submit-btn {
   margin-top: 24px;
   margin-bottom: 20px;
@@ -334,6 +376,28 @@ page {
   border-radius: 30px !important;
   height: 44px !important;
   line-height: 44px !important;
+}
+
+.publish-primary-button,
+.publish-secondary-button {
+  overflow: hidden;
+  width: 100% !important;
+  height: 48px !important;
+  border-radius: 24px !important;
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  line-height: 48px !important;
+}
+
+.publish-primary-button {
+  --button-info-background-color: #4d9fd7;
+  --button-info-border-color: #4d9fd7;
+}
+
+.publish-secondary-button {
+  color: #4d9fd7 !important;
+  border-color: #77b7e2 !important;
+  background: #fff !important;
 }
 
 .date-picker-header {

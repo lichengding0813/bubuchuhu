@@ -243,8 +243,7 @@ Page({
   },
 
   onLotteryDrawn(e) {
-    this.setData({ lotteryDrawn: true, showLotteryPopup: false });
-    wx.showToast({ title: e.detail.prize_name, icon: 'none', duration: 3000 });
+    this.setData({ lotteryDrawn: true });
   },
 
   async loadWeather(city) {

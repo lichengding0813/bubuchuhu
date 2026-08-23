@@ -29,6 +29,7 @@
 
   <block wx:if="{{result}}">
     <view class="popup-body result-body">
+      <image class="result-prize-image" wx:if="{{result.prize_image_url}}" src="{{result.prize_image_url}}" mode="aspectFill" />
       <view class="result-icon {{result.prize_id ? 'win' : 'lose'}}">{{result.prize_id ? '🎉' : '😊'}}</view>
       <text class="result-text {{result.prize_id ? 'win-text' : 'lose-text'}}">{{result.prize_name}}</text>
       <text class="result-activity">{{result.activity_name}}</text>

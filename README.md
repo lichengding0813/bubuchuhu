@@ -9,6 +9,14 @@
 
 ## 版本历史
 
+### v1.4.2（2026-08-23）
+- 🏠 首页移除搜索区域，无封面活动文案更新为「一步步走过当时心愿」
+- 🗺️ 发起活动补齐地图选点隐私声明、显式入口和失败反馈，统一发布/暂存按钮样式
+- ⛅ 日历在选择有活动的日期后，按首个活动地点展示对应天气
+- 📖 活动回顾移除所选活动名称前的萝卜人，并由前后端共同阻止重复发布
+- 🎁 抽奖奖项支持图片，开始和结束时间均精确到分钟，中奖结果展示奖品图
+- 👤 白名单为空时可一键将当前管理员设为首个官方账号，缩短搜索按钮，并移除审核页数据看板
+
 ### v1.4.1（2026-08-23）
 - 🔧 微信登录配置回退：恢复 7 月 22 日稳定包的微信 API 默认地址与 requests 请求行为，仅保留错误日志脱敏
 - 🎨 活动标题不再重复展示萝卜人，仅保留“官方”标签和账号认证徽章；结束活动展示实际参与人数
@@ -142,6 +150,7 @@
 │   ├── migration_verify_questions.sql # 验证问题表迁移脚本
 │   ├── migration_utf8mb4.sql    # 全表 utf8mb4 迁移脚本（支持 emoji）
 │   ├── migration_v1_4.sql       # v1.4 时间、坐标、抽奖、官方账号与回顾关联迁移
+│   ├── migration_v1_4_2.sql     # v1.4.2 奖品图与官方账号初始化迁移
 │   └── migration_official_accounts.sql # 官方账号功能独立增量迁移
 ├── database/           # 数据库建表语句
 │   ├── users.sql
@@ -209,7 +218,7 @@
 | `verify_questions` | 验证问题表 | id, question, answers, sort_order, is_active |
 | `activity_lotteries` / `lottery_prizes` / `lottery_records` | 抽奖配置、奖品库存与用户抽奖结果 | password_hash, start_time, end_time, remaining, draw_status |
 
-> 建表语句详见 `database/`。升级现有数据库前先备份，再执行最新的 `database/migration_v1_4.sql`；脚本可重复执行，并会补齐活动回顾关联官方活动所需的 `activity_reviews.activity_id`。回滚脚本会删除对应字段，仅供已备份环境使用。
+> 建表语句详见 `database/`。已经完成 v1.4 升级的环境，本次只需备份后执行 `database/migration_v1_4_2.sql`，补齐 `lottery_prizes.image_url`。官方白名单为空时，由管理员在页面上二次确认后初始化自己的账号，不自动扩大权限。全新数据库直接执行最新的 `database/migration_v1_4.sql`。
 
 ## 部署信息
 

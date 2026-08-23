@@ -83,11 +83,13 @@ def get_review_official_activities():
                 WHERE status = 1
                 GROUP BY activity_id
             ) pc ON pc.activity_id = a.id
-            LEFT JOIN activity_reviews r
-              ON r.activity_id = a.id AND r.status = 1
             WHERE a.is_official = 1
               AND a.status IN (1, 3, 4)
-              AND r.id IS NULL
+              AND NOT EXISTS (
+                  SELECT 1
+                  FROM activity_reviews r
+                  WHERE r.activity_id = a.id AND r.status = 1
+              )
             ORDER BY
               CASE a.status WHEN 4 THEN 0 WHEN 3 THEN 1 ELSE 2 END,
               a.activity_time DESC,

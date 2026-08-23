@@ -11,13 +11,6 @@
       </view>
     </view>
 
-    <view class="search-section">
-      <view class="search-bar">
-        <van-icon name="search" size="18px" color="#6f93af" />
-        <input class="search-input" placeholder="搜索活动名称或目的地" placeholder-style="color: #9aaebb;" value="{{searchKeyword}}" bindinput="onSearchInput" bindconfirm="onSearchConfirm" confirm-type="search" />
-        <van-icon wx:if="{{searchKeyword}}" name="clear" size="17px" color="#9fb2c2" bindtap="onClearSearch" />
-      </view>
-    </view>
   </view>
 
   <!-- 快捷入口 -->
@@ -87,7 +80,7 @@
             <view class="default-cover-icon">
               <van-icon name="photo-o" size="{{cardIndex === 0 ? '40px' : '28px'}}" color="#7da9c8" />
             </view>
-            <text wx:if="{{cardIndex === 0}}">下一站，去山野</text>
+            <text wx:if="{{cardIndex === 0}}">一步步走过当时心愿</text>
           </view>
         </view>
 

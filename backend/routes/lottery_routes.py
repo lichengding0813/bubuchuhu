@@ -71,6 +71,7 @@ def create_lottery():
     tier_levels = set()
     for prize in prizes:
         tier_name = str(prize.get('tier_name') or '').strip()
+        image_url = str(prize.get('image_url') or '').strip()
         try:
             tier_level = int(prize.get('tier_level'))
             quantity = int(prize.get('quantity'))
@@ -78,10 +79,12 @@ def create_lottery():
             return jsonify({'code': 400, 'msg': '奖项等级和数量必须是整数'})
         if not tier_name or len(tier_name) > 100 or tier_level < 1 or quantity < 1:
             return jsonify({'code': 400, 'msg': '奖项名称、等级或数量无效'})
+        if len(image_url) > 500 or (image_url and not image_url.startswith(('cloud://', 'https://'))):
+            return jsonify({'code': 400, 'msg': '奖品图片地址无效'})
         if tier_level in tier_levels:
             return jsonify({'code': 400, 'msg': '奖项等级不能重复'})
         tier_levels.add(tier_level)
-        normalized_prizes.append((tier_name, tier_level, quantity))
+        normalized_prizes.append((tier_name, tier_level, quantity, image_url))
 
     conn = get_db()
     cursor = None
@@ -110,11 +113,12 @@ def create_lottery():
         lottery_id = cursor.lastrowid
 
         cursor.executemany("""
-            INSERT INTO lottery_prizes (lottery_id, tier_name, tier_level, quantity, remaining)
-            VALUES (%s, %s, %s, %s, %s)
+            INSERT INTO lottery_prizes
+                (lottery_id, tier_name, tier_level, quantity, remaining, image_url)
+            VALUES (%s, %s, %s, %s, %s, %s)
         """, [
-            (lottery_id, name, level, quantity, quantity)
-            for name, level, quantity in normalized_prizes
+            (lottery_id, name, level, quantity, quantity, image_url)
+            for name, level, quantity, image_url in normalized_prizes
         ])
         conn.commit()
         return jsonify({'code': 200, 'msg': '抽奖已创建', 'data': {'lottery_id': lottery_id}})
@@ -148,7 +152,7 @@ def list_lotteries():
                 if lottery.get(field):
                     lottery[field] = lottery[field].strftime('%Y-%m-%d %H:%M')
             cursor.execute(
-                "SELECT id, tier_name, tier_level, quantity, remaining "
+                "SELECT id, tier_name, tier_level, quantity, remaining, image_url "
                 "FROM lottery_prizes WHERE lottery_id = %s ORDER BY tier_level",
                 (lottery['id'],)
             )
@@ -320,7 +324,7 @@ def draw_lottery():
             )
 
         cursor.execute("""
-            SELECT id, tier_name, tier_level, remaining
+            SELECT id, tier_name, tier_level, remaining, image_url
             FROM lottery_prizes
             WHERE lottery_id = %s AND remaining > 0 AND tier_level <> 99
             ORDER BY tier_level
@@ -340,6 +344,7 @@ def draw_lottery():
 
         prize_id = won_prize['id'] if won_prize else None
         prize_name = won_prize['tier_name'] if won_prize else '谢谢参与'
+        prize_image_url = won_prize.get('image_url') if won_prize else ''
         if won_prize:
             cursor.execute(
                 "UPDATE lottery_prizes SET remaining = remaining - 1 "
@@ -365,6 +370,7 @@ def draw_lottery():
 
         return jsonify({'code': 200, 'data': {
             'prize_name': prize_name,
+            'prize_image_url': prize_image_url,
             'prize_id': prize_id,
             'activity_name': lottery['activity_name'],
             'lottery_id': lottery_id,
@@ -391,7 +397,8 @@ def my_lottery_result():
             params.append(lottery_id)
         cursor.execute(f"""
             SELECT r.id, r.lottery_id, r.prize_id, r.password_attempts, r.drawn_at,
-                   p.tier_name AS prize_name, a.name AS activity_name
+                   p.tier_name AS prize_name, p.image_url AS prize_image_url,
+                   a.name AS activity_name
             FROM lottery_records r
             JOIN activity_lotteries l ON r.lottery_id = l.id
             JOIN activities a ON l.activity_id = a.id

@@ -38,7 +38,13 @@
       <!-- 活动地点 -->
       <view class="form-item">
         <view class="item-label">活动地点<text class="required-star">*</text></view>
-        <van-field value="{{location}}" bind:input="onInput" data-field="location" placeholder="请输入或点击右侧地图选点" border="{{false}}" right-icon="location-o" bind:click-icon="onChooseActivityLocation" />
+        <view class="location-field-row">
+          <van-field value="{{location}}" bind:input="onInput" data-field="location" placeholder="请输入活动地点" border="{{false}}" />
+          <view class="location-picker-btn" bindtap="onChooseActivityLocation">
+            <van-icon name="location-o" size="18px" />
+            <text>地图选点</text>
+          </view>
+        </view>
         <view wx:if="{{latitude && longitude}}" class="map-preview">
           <map latitude="{{latitude}}" longitude="{{longitude}}" markers="{{[marker]}}" style="width:100%;height:160rpx;border-radius:12rpx;" />
         </view>
@@ -76,7 +82,12 @@
           <!-- 集合时间 -->
           <van-field value="{{item.time}}" bind:click-input="onMeetingTimePickerClick" data-index="{{index}}" placeholder="集合时间 *" readonly right-icon="arrow" />
           <!-- 集合地点 - 修复版本 -->
-          <van-field value="{{item.location}}" bind:input="onMeetingLocationInput" data-index="{{index}}" placeholder="集合地点 *" right-icon="location-o" bind:click-icon="onChooseMeetingLocation" />
+          <view class="meeting-location-row">
+            <van-field value="{{item.location}}" bind:input="onMeetingLocationInput" data-index="{{index}}" placeholder="集合地点 *" />
+            <view class="meeting-map-btn" bindtap="onChooseMeetingLocation" data-index="{{index}}">
+              <van-icon name="location-o" size="18px" />
+            </view>
+          </view>
         </van-cell-group>
       </view>
     </view>
@@ -186,13 +197,13 @@
       </view>
 
       <view class="submit-btn">
-        <van-button type="info" block form-type="submit" disabled="{{!canSubmit}}">
+        <van-button type="info" block form-type="submit" disabled="{{!canSubmit}}" custom-class="publish-primary-button">
           {{isOfficialMode ? (editActivityId ? '保存官方活动' : '直接发布官方活动') : '发起活动'}}
         </van-button>
       </view>
 
       <view class="draft-btn" wx:if="{{!editActivityId && !isOfficialMode}}">
-        <van-button plain block bindtap="onSaveDraft">
+        <van-button type="info" plain block bindtap="onSaveDraft" custom-class="publish-secondary-button">
           暂存草稿
         </van-button>
       </view>

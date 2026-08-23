@@ -59,6 +59,7 @@ Page({
   },
 
   async onSearch() {
+    if (this.data.isSearching) return;
     const keyword = this.data.keyword.trim();
     if (!keyword) {
       wx.showToast({ title: '请输入昵称、微信号或用户标识', icon: 'none' });
@@ -136,6 +137,30 @@ Page({
           wx.showToast({ title: '网络错误', icon: 'error' });
         } finally {
           this.setData({ removingOpenId: '' });
+        }
+      }
+    });
+  },
+
+  onBootstrapCurrentAdmin() {
+    wx.showModal({
+      title: '初始化官方账号',
+      content: '确定将当前管理员账号设为首个官方账号吗？该账号将可免审核发布并编辑全部官方活动。',
+      confirmText: '确认初始化',
+      confirmColor: '#2f80c5',
+      success: async (modalResult) => {
+        if (!modalResult.confirm) return;
+        try {
+          const result = await this.request('/api/admin/official-accounts/bootstrap', 'POST');
+          if (result.code === 200) {
+            const openid = result.data?.openId;
+            if (openid) this.updateCurrentUserOfficial(openid, 1);
+            await this.loadAccounts();
+            wx.showToast({ title: '初始化成功', icon: 'success' });
+          }
+        } catch (error) {
+          console.error('初始化官方账号失败', error);
+          wx.showToast({ title: error.response?.msg || '初始化失败', icon: 'none' });
         }
       }
     });

@@ -805,32 +805,63 @@ Page({
 
   // 活动地点地图选点
   onChooseActivityLocation() {
-    wx.chooseLocation({
-      success: (res) => {
-        this.setData({
-          location: res.name || res.address,
-          latitude: res.latitude,
-          longitude: res.longitude,
-          marker: { id: 1, latitude: res.latitude, longitude: res.longitude }
-        }, () => this.checkCanSubmit());
-      }
+    this.chooseLocationWithFeedback((res) => {
+      this.setData({
+        location: res.name || res.address,
+        latitude: res.latitude,
+        longitude: res.longitude,
+        marker: { id: 1, latitude: res.latitude, longitude: res.longitude }
+      }, () => this.checkCanSubmit());
     });
   },
 
   // 集合点地图选点
   onChooseMeetingLocation(e) {
     const index = e.currentTarget.dataset.index;
-    wx.chooseLocation({
-      success: (res) => {
-        const { meetingPoints } = this.data;
-        if (meetingPoints[index]) {
-          meetingPoints[index].location = res.name || res.address;
-          meetingPoints[index].latitude = res.latitude;
-          meetingPoints[index].longitude = res.longitude;
-          this.setData({ meetingPoints: [...meetingPoints] }, () => this.checkCanSubmit());
-        }
+    this.chooseLocationWithFeedback((res) => {
+      const { meetingPoints } = this.data;
+      if (meetingPoints[index]) {
+        meetingPoints[index].location = res.name || res.address;
+        meetingPoints[index].latitude = res.latitude;
+        meetingPoints[index].longitude = res.longitude;
+        this.setData({ meetingPoints: [...meetingPoints] }, () => this.checkCanSubmit());
       }
     });
+  },
+
+  chooseLocationWithFeedback(onSuccess) {
+    const openChooser = () => {
+      wx.chooseLocation({
+        success: onSuccess,
+        fail: (error) => this.handleChooseLocationFailure(error)
+      });
+    };
+
+    if (typeof wx.requirePrivacyAuthorize === 'function') {
+      wx.requirePrivacyAuthorize({
+        success: openChooser,
+        fail: () => wx.showToast({ title: '请先同意隐私保护指引', icon: 'none' })
+      });
+      return;
+    }
+    openChooser();
+  },
+
+  handleChooseLocationFailure(error) {
+    const message = String(error?.errMsg || '');
+    if (message.includes('cancel')) return;
+    if (message.includes('auth deny') || message.includes('authorize')) {
+      wx.showModal({
+        title: '需要位置权限',
+        content: '请在设置中允许使用位置，用于选择活动地点。',
+        confirmText: '去设置',
+        success: (result) => {
+          if (result.confirm) wx.openSetting();
+        }
+      });
+      return;
+    }
+    wx.showToast({ title: '地图暂不可用，可先手动输入', icon: 'none' });
   },
 
   // ====== 富文本编辑器（路线简介） ======

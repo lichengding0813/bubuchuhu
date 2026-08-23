@@ -23,6 +23,14 @@
     "pages/notice/notice",
     "pages/blacklist/blacklist"
   ],
+  "permission": {
+    "scope.userLocation": {
+      "desc": "用于在发起活动时选择活动地点和集合地点"
+    }
+  },
+  "requiredPrivateInfos": [
+    "chooseLocation"
+  ],
   "tabBar": {
     "color": "#7f8c8d",
     "selectedColor": "#96c9ff",

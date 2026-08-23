@@ -12,7 +12,6 @@
       </view>
       <view class="selected-source-info">
         <view class="selected-source-title">
-          <image class="official-mascot" src="/images/official-badge.png" mode="aspectFit" />
           <text>{{selectedActivity.name}}</text>
         </view>
         <text class="selected-source-meta">{{selectedActivity.time}} · {{selectedActivity.location}}</text>

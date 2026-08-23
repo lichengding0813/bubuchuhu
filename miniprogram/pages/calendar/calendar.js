@@ -9,7 +9,10 @@ Page({
     selectedDate: '',
     selectedDateLabel: '',
     dayActivities: [],
-    activityMap: {}
+    activityMap: {},
+    selectedWeather: null,
+    weatherLoading: false,
+    weatherMessage: ''
   },
 
   onLoad() {
@@ -62,13 +65,29 @@ Page({
   prevMonth() {
     let { year, month } = this.data;
     if (month === 1) { year--; month = 12; } else { month--; }
-    this.setData({ year, month, selectedDate: '', selectedDateLabel: '', dayActivities: [] }, () => this.loadCalendar());
+    this.setData({
+      year,
+      month,
+      selectedDate: '',
+      selectedDateLabel: '',
+      dayActivities: [],
+      selectedWeather: null,
+      weatherMessage: ''
+    }, () => this.loadCalendar());
   },
 
   nextMonth() {
     let { year, month } = this.data;
     if (month === 12) { year++; month = 1; } else { month++; }
-    this.setData({ year, month, selectedDate: '', selectedDateLabel: '', dayActivities: [] }, () => this.loadCalendar());
+    this.setData({
+      year,
+      month,
+      selectedDate: '',
+      selectedDateLabel: '',
+      dayActivities: [],
+      selectedWeather: null,
+      weatherMessage: ''
+    }, () => this.loadCalendar());
   },
 
   async onDateTap(e) {
@@ -78,7 +97,9 @@ Page({
     this.setData({
       selectedDate: dateStr,
       selectedDateLabel: `${dateParts[0]}年${dateParts[1]}月${dateParts[2]}日`,
-      dayActivities: []
+      dayActivities: [],
+      selectedWeather: null,
+      weatherMessage: ''
     });
     try {
       const { year, month } = this.data;
@@ -104,9 +125,41 @@ Page({
           };
         });
         this.setData({ dayActivities });
+        this.loadSelectedDateWeather(dateStr, dayActivities);
       }
     } catch (err) {
       console.error('加载当日活动失败:', err);
+    }
+  },
+
+  async loadSelectedDateWeather(dateStr, activities) {
+    const firstActivity = (activities || []).find(item => item.location);
+    if (!firstActivity) {
+      this.setData({ selectedWeather: null, weatherLoading: false, weatherMessage: '' });
+      return;
+    }
+
+    this.setData({ weatherLoading: true, selectedWeather: null, weatherMessage: '' });
+    try {
+      const result = await get('/api/weather', { city: firstActivity.location }, { silent: true });
+      const daily = result.data?.daily || [];
+      const forecast = daily.find(item => item.date === dateStr);
+      if (forecast) {
+        this.setData({
+          selectedWeather: { ...forecast, city: result.data.city || firstActivity.location },
+          weatherMessage: ''
+        });
+      } else {
+        this.setData({
+          selectedWeather: null,
+          weatherMessage: '该日期暂不在未来 7 天天气范围内'
+        });
+      }
+    } catch (err) {
+      console.log('日历天气加载失败（可忽略）:', err);
+      this.setData({ selectedWeather: null, weatherMessage: '天气暂时无法获取' });
+    } finally {
+      this.setData({ weatherLoading: false });
     }
   },
 

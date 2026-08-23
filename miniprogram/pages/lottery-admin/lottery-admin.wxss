@@ -115,11 +115,20 @@ page {
 }
 
 .prize-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   padding: 5px 10px;
   border-radius: 12px;
   color: #4c83a8;
   background: #eaf5fc;
   font-size: 11px;
+}
+
+.prize-thumb {
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
 }
 
 .prize-remain {
@@ -181,6 +190,16 @@ page {
   gap: 12px;
 }
 
+.datetime-picker-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  gap: 9px;
+}
+
+.datetime-picker-row picker {
+  min-width: 0;
+}
+
 .form-item.half {
   flex: 1;
   min-width: 0;
@@ -188,9 +207,20 @@ page {
 
 .prize-config {
   display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  margin-bottom: 10px;
+  border: 1px solid #e1ebf2;
+  border-radius: 15px;
+  background: #fff;
+}
+
+.prize-config-main,
+.prize-image-row {
+  display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 9px;
 }
 
 .prize-name-input {
@@ -200,6 +230,44 @@ page {
 
 .prize-qty-input {
   width: 74px;
+}
+
+.prize-image-upload {
+  display: flex;
+  width: 72px;
+  height: 58px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 1px dashed #91c6e8;
+  border-radius: 12px;
+  color: #4d9fd7;
+  background: #f1f9fe;
+}
+
+.prize-image-upload image {
+  width: 100%;
+  height: 100%;
+}
+
+.prize-image-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 9px;
+}
+
+.remove-prize-image {
+  color: #ce6262;
+  font-size: 11px;
+}
+
+.prize-image-tip {
+  color: #91a5b3;
+  font-size: 10px;
 }
 
 .add-prize-btn {

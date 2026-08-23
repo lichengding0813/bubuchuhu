@@ -1,27 +1,7 @@
-<!-- 统计卡片 -->
-<view class="stats-section">
-  <view class="stat-card">
-    <view class="stat-number">{{dashboard.pending_count || 0}}</view>
-    <view class="stat-label">待审核</view>
-  </view>
-  <view class="stat-card">
-    <view class="stat-number">{{dashboard.approved_count || 0}}</view>
-    <view class="stat-label">已通过</view>
-  </view>
-  <view class="stat-card">
-    <view class="stat-number">{{dashboard.total_users || 0}}</view>
-    <view class="stat-label">总用户</view>
-  </view>
-  <view class="stat-card">
-    <view class="stat-number">{{dashboard.this_week_signups || 0}}</view>
-    <view class="stat-label">本周报名</view>
-  </view>
-</view>
-
 <!-- 活动列表 -->
 <view class="list-section">
   <view class="section-header">
-    <text class="section-title">待审核活动</text>
+    <text class="section-title">{{currentTab === 'pending' ? '待审核活动' : '全部活动'}}</text>
     <view class="filter-tabs">
       <text class="tab {{currentTab === 'pending' ? 'active' : ''}}" bindtap="switchTab" data-tab="pending">待审核</text>
       <text class="tab {{currentTab === 'all' ? 'active' : ''}}" bindtap="switchTab" data-tab="all">全部</text>

@@ -140,6 +140,7 @@ CREATE TABLE IF NOT EXISTS `lottery_prizes` (
   `tier_level` int(11) NOT NULL,
   `quantity` int(11) NOT NULL DEFAULT '0',
   `remaining` int(11) NOT NULL DEFAULT '0',
+  `image_url` varchar(500) DEFAULT '',
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_lottery_tier` (`lottery_id`,`tier_level`),
@@ -199,6 +200,16 @@ BEGIN
 
     ALTER TABLE `activity_lotteries`
         MODIFY COLUMN `password_hash` varchar(255) NOT NULL;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'lottery_prizes'
+          AND COLUMN_NAME = 'image_url'
+    ) THEN
+        ALTER TABLE `lottery_prizes`
+            ADD COLUMN `image_url` varchar(500) DEFAULT '' AFTER `remaining`;
+    END IF;
 
     IF NOT EXISTS (
         SELECT 1 FROM information_schema.COLUMNS

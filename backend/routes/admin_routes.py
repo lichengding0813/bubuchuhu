@@ -501,6 +501,51 @@ def get_official_accounts():
             conn.close()
 
 
+@admin_bp.route('/official-accounts/bootstrap', methods=['POST'])
+@check_verified_and_blacklist
+@check_admin
+def bootstrap_official_account():
+    """白名单为空时，由当前管理员主动初始化自己为首个官方账号。"""
+    conn = None
+    cursor = None
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute("SELECT openId FROM users WHERE isOfficial = 1 LIMIT 1 FOR UPDATE")
+        if cursor.fetchone():
+            return jsonify({'code': 409, 'msg': '官方账号已初始化，请使用搜索添加白名单'})
+
+        cursor.execute("""
+            SELECT openId, nickName, avatarUrl, wechatId, isAdmin, isOfficial
+            FROM users
+            WHERE openId = %s AND isAdmin = 1
+            FOR UPDATE
+        """, (g.openid,))
+        account = cursor.fetchone()
+        if not account:
+            return jsonify({'code': 403, 'msg': '当前账号不是管理员'})
+
+        cursor.execute("UPDATE users SET isOfficial = 1 WHERE openId = %s", (g.openid,))
+        conn.commit()
+        _invalidate_user_cache(g.openid)
+        account['isOfficial'] = 1
+        return jsonify({
+            'code': 200,
+            'msg': '已将当前管理员设为首个官方账号',
+            'data': account,
+        })
+    except Exception:
+        if conn:
+            conn.rollback()
+        logging.exception("初始化官方账号失败")
+        return jsonify({'code': 500, 'msg': '服务器内部错误，请稍后重试'})
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+
 @admin_bp.route('/official-account-candidates', methods=['GET'])
 @check_verified_and_blacklist
 @check_admin
