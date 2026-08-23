@@ -633,6 +633,10 @@ def user_stats():
             cursor.close()
 # ==================== 天气预报（代理心知天气） ====================
 WEATHER_API_KEY = os.environ.get('WEATHER_API_KEY', '')
+try:
+    WEATHER_FORECAST_DAYS = min(max(int(os.environ.get('WEATHER_FORECAST_DAYS', '3')), 1), 15)
+except ValueError:
+    WEATHER_FORECAST_DAYS = 3
 _weather_cache = {}
 _WEATHER_CACHE_TTL = 30 * 60
 
@@ -669,9 +673,25 @@ def get_weather():
             resp = requests.get(url, params={
                 'key': WEATHER_API_KEY,
                 'location': location,
-                'start': 0, 'days': 7
-            }, timeout=5)
-            data = resp.json()
+                'language': 'zh-Hans',
+                'unit': 'c',
+                'start': 0,
+                'days': WEATHER_FORECAST_DAYS,
+            }, timeout=(3, 5))
+            try:
+                data = resp.json()
+            except ValueError:
+                logging.warning("天气供应商返回了非 JSON 响应，HTTP %s", resp.status_code)
+                return jsonify({'code': 502, 'msg': '天气服务暂时不可用'})
+
+            provider_code = str(data.get('status_code') or '')
+            if provider_code:
+                # 地点或坐标无法识别时继续尝试下一个候选；其余错误不再重复请求。
+                if provider_code in ('AP010010', 'AP010011', 'AP010017'):
+                    continue
+                logging.warning("天气供应商请求失败，code=%s，HTTP %s", provider_code, resp.status_code)
+                return jsonify({'code': 502, 'msg': '天气服务暂时不可用'})
+
             results = data.get('results', [])
             if results:
                 break
@@ -694,8 +714,11 @@ def get_weather():
         _weather_cache[cache_key] = {'ts': time.time(), 'response': result}
         return jsonify(result)
     except requests.exceptions.Timeout:
-        return jsonify({'code': 500, 'msg': '天气服务超时'})
-    except Exception as e:
+        return jsonify({'code': 504, 'msg': '天气服务响应超时'})
+    except requests.exceptions.RequestException:
+        logging.exception("连接天气供应商失败")
+        return jsonify({'code': 502, 'msg': '天气服务暂时不可用'})
+    except Exception:
         logging.exception("获取天气失败")
         return jsonify({'code': 500, 'msg': '天气服务异常'})
 

@@ -120,6 +120,10 @@ class WeatherLocationTests(unittest.TestCase):
         self.assertIn('绍兴市', candidates)
         self.assertIn('绍兴', candidates)
 
+    def test_scenic_spot_falls_back_to_nearby_weather_city(self):
+        self.assertIn('萍乡', weather_location_candidates('武功山'))
+        self.assertIn('安吉', weather_location_candidates('龙王潭'))
+
 
 if __name__ == '__main__':
     unittest.main()

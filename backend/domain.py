@@ -139,6 +139,23 @@ def weather_location_candidates(city='', latitude=None, longitude=None):
         if first_part:
             candidates.append(first_part)
 
+        # 历史活动多使用景区名且没有坐标，补充常见目的地对应的天气城市。
+        scenic_aliases = (
+            ('武功山', '萍乡'),
+            ('龙王潭', '安吉'),
+            ('安吉', '安吉'),
+            ('上虞', '绍兴'),
+            ('九溪', '杭州'),
+            ('天目山', '杭州'),
+            ('大明山', '杭州'),
+            ('清凉峰', '杭州'),
+            ('莫干山', '湖州'),
+            ('四明山', '宁波'),
+        )
+        for keyword, weather_city in scenic_aliases:
+            if keyword in text:
+                candidates.append(weather_city)
+
         municipality = re.search(r'(北京|上海|天津|重庆|香港|澳门)', text)
         if municipality:
             candidates.append(municipality.group(1))

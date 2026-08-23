@@ -156,7 +156,7 @@ Page({
       } else {
         this.setData({
           selectedWeather: null,
-          weatherMessage: '该日期暂不在未来 7 天天气范围内'
+          weatherMessage: '该日期暂不在近期天气预报范围内'
         });
       }
     } catch (err) {

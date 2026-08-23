@@ -397,6 +397,20 @@ page {
   margin-top: -8px;
 }
 
+.weather-state {
+  display: flex;
+  min-height: 54px;
+  align-items: center;
+  justify-content: center;
+  color: #7f9bb3;
+  font-size: 12px;
+}
+
+.weather-error {
+  border-radius: 10px;
+  background: #f7fbfe;
+}
+
 .weather-scroll {
   white-space: nowrap;
   display: flex;

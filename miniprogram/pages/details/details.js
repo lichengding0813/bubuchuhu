@@ -4,6 +4,8 @@ Page({
   data: {
     activityId: null,
     weather: {},
+    weatherLoading: false,
+    weatherMessage: '',
     hasLottery: false,
     lotteryInfo: {},
     lotteryCountdown: '',
@@ -318,13 +320,20 @@ Page({
   },
 
   async loadWeather(city, latitude, longitude) {
+    this.setData({ weatherLoading: true, weatherMessage: '', weather: {} });
     try {
       const result = await get('/api/weather', { city, latitude, longitude }, { silent: true });
-      if (result.code === 200) {
-        this.setData({ weather: result.data });
+      const daily = result.data?.daily || [];
+      if (result.code === 200 && daily.length > 0) {
+        this.setData({ weather: result.data, weatherMessage: '' });
+      } else {
+        this.setData({ weather: {}, weatherMessage: '暂无天气预报' });
       }
     } catch (err) {
       console.log('天气加载失败（可忽略）:', err);
+      this.setData({ weather: {}, weatherMessage: err.response?.msg || '天气暂时无法获取' });
+    } finally {
+      this.setData({ weatherLoading: false });
     }
   },
 
