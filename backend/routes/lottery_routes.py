@@ -206,6 +206,69 @@ def list_lotteries():
         _close(cursor)
 
 
+@lottery_bp.route('/admin/lottery/records', methods=['GET'])
+@check_verified_and_blacklist
+@check_admin
+def list_lottery_records():
+    lottery_id = request.args.get('lottery_id', type=int)
+    if not lottery_id:
+        return jsonify({'code': 400, 'msg': '缺少抽奖ID'})
+
+    cursor = None
+    try:
+        cursor = get_db().cursor()
+        cursor.execute("""
+            SELECT l.id, a.name AS activity_name
+            FROM activity_lotteries l
+            JOIN activities a ON l.activity_id = a.id
+            WHERE l.id = %s
+        """, (lottery_id,))
+        lottery = cursor.fetchone()
+        if not lottery:
+            return jsonify({'code': 404, 'msg': '抽奖不存在'})
+
+        cursor.execute("""
+            SELECT r.id, r.user_openid, r.drawn_at,
+                   u.nickName AS nickname, u.avatarUrl AS avatar_url,
+                   u.wechatId AS wechat_id,
+                   p.tier_name AS prize_name, p.image_url AS prize_image_url
+            FROM lottery_records r
+            LEFT JOIN users u ON r.user_openid = u.openId
+            LEFT JOIN lottery_prizes p ON r.prize_id = p.id
+            WHERE r.lottery_id = %s AND r.draw_status = 1
+            ORDER BY r.drawn_at DESC, r.id DESC
+            LIMIT 500
+        """, (lottery_id,))
+        records = cursor.fetchall()
+        winning_count = 0
+        for record in records:
+            if record.get('drawn_at'):
+                record['drawn_at'] = record['drawn_at'].strftime('%Y-%m-%d %H:%M')
+            openid = str(record.pop('user_openid', '') or '')
+            record['display_id'] = (
+                f'{openid[:7]}…{openid[-5:]}' if len(openid) > 14 else openid
+            )
+            record['nickname'] = record.get('nickname') or '匿名用户'
+            record['is_winner'] = bool(record.get('prize_name'))
+            if record['is_winner']:
+                winning_count += 1
+            else:
+                record['prize_name'] = '未中奖'
+
+        return jsonify({'code': 200, 'data': {
+            'lottery_id': lottery_id,
+            'activity_name': lottery['activity_name'],
+            'total': len(records),
+            'winning_count': winning_count,
+            'list': records,
+        }})
+    except Exception:
+        logging.exception("获取抽奖记录失败")
+        return jsonify({'code': 500, 'msg': '服务器内部错误'})
+    finally:
+        _close(cursor)
+
+
 @lottery_bp.route('/admin/lottery/end', methods=['POST'])
 @check_verified_and_blacklist
 @check_admin

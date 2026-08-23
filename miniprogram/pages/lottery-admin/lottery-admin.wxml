@@ -27,8 +27,9 @@
         </view>
       </view>
     </view>
-    <view class="card-footer" wx:if="{{item.status !== 2}}">
-      <van-button size="small" type="danger" bindtap="onEndLottery" data-id="{{item.id}}">结束抽奖</van-button>
+    <view class="card-footer">
+      <view class="record-btn" bindtap="onViewRecords" data-id="{{item.id}}" data-name="{{item.activity_name}}">查看记录</view>
+      <van-button wx:if="{{item.status !== 2}}" size="small" type="danger" bindtap="onEndLottery" data-id="{{item.id}}">结束抽奖</van-button>
     </view>
   </view>
 </view>
@@ -101,6 +102,42 @@
       <view class="add-prize-btn" bindtap="addPrize">+ 添加奖品档位</view>
     </view>
 
-    <van-button type="info" block bindtap="onCreateLottery" custom-class="submit-btn">发布官方活动抽奖</van-button>
+    <view class="immutable-tip"><van-icon name="info-o" size="14px" /><text>发布后不可修改活动、时间、口令和奖品</text></view>
+    <van-button type="info" block loading="{{submitting}}" disabled="{{submitting}}" bindtap="onCreateLottery" custom-class="submit-btn">发布官方活动抽奖</van-button>
+  </view>
+</van-popup>
+
+<!-- 抽奖记录 -->
+<van-popup show="{{showRecords}}" position="bottom" custom-style="border-radius:16px 16px 0 0;height:72vh;" bind:close="hideRecords">
+  <view class="records-container">
+    <view class="records-header">
+      <view>
+        <view class="records-title">抽奖记录</view>
+        <view class="records-activity">{{recordInfo.activity_name}}</view>
+      </view>
+      <van-icon name="cross" size="20px" color="#8ca2b2" bindtap="hideRecords" />
+    </view>
+    <view class="records-summary">
+      <text>参与 {{recordInfo.total}} 人</text>
+      <text>中奖 {{recordInfo.winning_count}} 人</text>
+    </view>
+    <view class="records-loading" wx:if="{{recordsLoading}}"><van-loading size="24px">加载中...</van-loading></view>
+    <view class="records-empty" wx:elif="{{recordInfo.list.length === 0}}">暂无抽奖记录</view>
+    <scroll-view class="records-list" scroll-y wx:else>
+      <view class="record-item" wx:for="{{recordInfo.list}}" wx:key="id">
+        <image class="record-avatar" wx:if="{{item.avatar_url}}" src="{{item.avatar_url}}" mode="aspectFill" />
+        <view class="record-avatar record-avatar-empty" wx:else><van-icon name="user-o" /></view>
+        <view class="record-user">
+          <text class="record-name">{{item.nickname}}</text>
+          <text class="record-wechat" wx:if="{{item.wechat_id}}">微信号：{{item.wechat_id}}</text>
+          <text class="record-id" wx:else>{{item.display_id}}</text>
+          <text class="record-time">{{item.drawn_at}}</text>
+        </view>
+        <view class="record-result {{item.is_winner ? 'winner' : ''}}">
+          <image wx:if="{{item.prize_image_url}}" src="{{item.prize_image_url}}" mode="aspectFill" />
+          <text>{{item.prize_name}}</text>
+        </view>
+      </view>
+    </scroll-view>
   </view>
 </van-popup>

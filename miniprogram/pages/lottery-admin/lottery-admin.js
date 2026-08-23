@@ -9,6 +9,10 @@ Page({
   data: {
     lotteryList: [],
     showForm: false,
+    submitting: false,
+    showRecords: false,
+    recordsLoading: false,
+    recordInfo: { activity_name: '', total: 0, winning_count: 0, list: [] },
     activityOptions: [],
     activityIndex: 0,
     formPassword: '',
@@ -64,7 +68,43 @@ Page({
   },
 
   hideCreateForm() {
+    if (this.data.submitting) return;
     this.setData({ showForm: false });
+  },
+
+  hideRecords() {
+    this.setData({ showRecords: false });
+  },
+
+  async onViewRecords(e) {
+    const lotteryId = Number(e.currentTarget.dataset.id);
+    const activityName = e.currentTarget.dataset.name || '';
+    if (!lotteryId) return;
+    this.setData({
+      showRecords: true,
+      recordsLoading: true,
+      recordInfo: { activity_name: activityName, total: 0, winning_count: 0, list: [] }
+    });
+    try {
+      const userInfo = wx.getStorageSync('userInfo');
+      const result = await wx.cloud.callContainer({
+        config: { env: "prod-3gktwx67d1dd1e76" },
+        path: "/api/admin/lottery/records",
+        header: { "X-WX-SERVICE": "flask-mysql-login", "X-Wx-OpenId": userInfo?.openId, "content-type": "application/json" },
+        method: "GET",
+        data: { lottery_id: lotteryId }
+      });
+      if (result.data && result.data.code === 200) {
+        this.setData({ recordInfo: result.data.data });
+      } else {
+        wx.showToast({ title: result.data?.msg || '记录加载失败', icon: 'none' });
+      }
+    } catch (error) {
+      console.error('加载抽奖记录失败:', error);
+      wx.showToast({ title: '记录加载失败', icon: 'none' });
+    } finally {
+      this.setData({ recordsLoading: false });
+    }
   },
 
   async loadActivities() {
@@ -244,6 +284,30 @@ Page({
       return;
     }
 
+    const selectedActivity = activityOptions[activityIndex];
+    const payload = {
+      activity_id: selectedActivity.id,
+      password: formPassword,
+      start_time: `${formStartDate} ${formStartTime}`,
+      end_time: `${formEndDate} ${formEndTime}`,
+      prizes: validPrizes
+    };
+    const prizeSummary = validPrizes.map(item => `${item.tier_name}×${item.quantity}`).join('、');
+    wx.showModal({
+      title: '确认发布抽奖',
+      content: `活动：${selectedActivity.name}\n时间：${payload.start_time} 至 ${payload.end_time}\n奖品：${prizeSummary}\n\n发布后活动、时间、口令和奖品均不可修改，只能提前结束抽奖。`,
+      confirmText: '确认发布',
+      confirmColor: '#4d9fd7',
+      success: (modalResult) => {
+        if (modalResult.confirm) this.submitLottery(payload);
+      }
+    });
+  },
+
+  async submitLottery(payload) {
+    if (this.data.submitting) return;
+    this.setData({ submitting: true });
+
     try {
       const userInfo = wx.getStorageSync('userInfo');
       const result = await wx.cloud.callContainer({
@@ -251,13 +315,7 @@ Page({
         path: "/api/admin/lottery/create",
         header: { "X-WX-SERVICE": "flask-mysql-login", "X-Wx-OpenId": userInfo?.openId, "content-type": "application/json" },
         method: "POST",
-        data: {
-          activity_id: activityOptions[activityIndex].id,
-          password: formPassword,
-          start_time: `${formStartDate} ${formStartTime}`,
-          end_time: `${formEndDate} ${formEndTime}`,
-          prizes: validPrizes
-        }
+        data: payload
       });
       if (result.data && result.data.code === 200) {
         wx.showToast({ title: '抽奖已创建', icon: 'success' });
@@ -277,6 +335,8 @@ Page({
     } catch (err) {
       console.error('创建抽奖失败:', err);
       wx.showToast({ title: '网络错误', icon: 'none' });
+    } finally {
+      this.setData({ submitting: false });
     }
   },
 
