@@ -26,17 +26,19 @@ Component({
     'activity': function(activity) {
       if (!activity || !activity.id) return;
 
-      const participantCount = activity.participant_count || 0;
+      const participantCount = Number(activity.participant_count) || 0;
       const remainCount = (activity.max_participants || 0) - participantCount;
+      const isEnded = this.properties.isEnded || Number(activity.status) === 4;
 
       this.setData({
         _time: formatActivityTime(activity.activity_time),
         _difficulty: getDifficultyText(activity.difficulty),
         _remainCount: remainCount,
         _totalCount: activity.max_participants || 0,
+        _participantCount: participantCount,
         _statusBadge: this._getStatusBadge(activity, remainCount),
         _statusClass: this._getStatusClass(activity.status),
-        _isEnded: this.properties.isEnded
+        _isEnded: isEnded
       });
     }
   },
@@ -46,6 +48,7 @@ Component({
     _difficulty: '',
     _remainCount: 0,
     _totalCount: 0,
+    _participantCount: 0,
     _statusBadge: '',
     _statusClass: '',
     _isEnded: false

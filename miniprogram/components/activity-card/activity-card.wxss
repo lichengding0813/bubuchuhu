@@ -88,13 +88,6 @@
   justify-content: space-between;
 }
 
-.activity-brand-mascot {
-  flex-shrink: 0;
-  width: 20px;
-  height: 20px;
-  margin-right: 6px;
-}
-
 .activity-title-text {
   flex: 1;
   min-width: 0;
@@ -174,5 +167,10 @@
 
 .remain-count.warning {
   color: #ff6b6b;
+  font-weight: 500;
+}
+
+.participant-count {
+  color: #5f7fa3;
   font-weight: 500;
 }

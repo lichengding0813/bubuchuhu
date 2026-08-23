@@ -174,7 +174,7 @@ Page({
         const total = result.data.total || 0;
 
         const formattedList = activities.map(item => {
-          const participantCount = item.participant_count || 0;
+          const participantCount = Number(item.participant_count) || 0;
           const remainCount = Math.max(item.max_participants - participantCount, 0);
           return {
             id: item.id,
@@ -183,12 +183,14 @@ Page({
             location: item.location,
             remainCount,
             totalCount: item.max_participants,
+            participantCount,
             difficulty: this.getDifficultyText(item.difficulty),
             statusBadge: this.getStatusBadge(item.status, remainCount, item.has_registered),
             statusClass: this.getStatusClass(item.status),
             coverUrl: item.cover_url,
             has_registered: item.has_registered,
-            isOfficial: Number(item.is_official) === 1
+            isOfficial: Number(item.is_official) === 1,
+            isEnded: Number(item.status) === 4
           };
         });
 

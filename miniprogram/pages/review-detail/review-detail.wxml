@@ -1,5 +1,3 @@
-<wxs module="activityUtil" src="../../utils/activity.wxs" />
-
 <view class="detail-container">
   <!-- 不再有顶部的编辑栏 -->
 
@@ -37,7 +35,6 @@
   <!-- 基础信息卡片 -->
   <view class="info-card">
     <view class="activity-title activity-title-with-brand">
-      <image class="activity-brand-mascot" wx:if="{{activityUtil.hasBubuchuhuPrefix(reviewData.name)}}" src="/images/official-badge.png" mode="aspectFit" />
       <text class="activity-title-text">{{reviewData.name}}</text>
     </view>
     <view class="activity-meta">

@@ -1,7 +1,0 @@
-function hasBubuchuhuPrefix(name) {
-  return typeof name === 'string' && name.indexOf('【步步出沪】') === 0;
-}
-
-module.exports = {
-  hasBubuchuhuPrefix: hasBubuchuhuPrefix
-};

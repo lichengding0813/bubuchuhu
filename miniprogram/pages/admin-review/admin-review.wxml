@@ -1,5 +1,3 @@
-<wxs module="activityUtil" src="../../utils/activity.wxs" />
-
 <!-- 统计卡片 -->
 <view class="stats-section">
   <view class="stat-card">
@@ -45,7 +43,6 @@
 <view wx:for="{{activityList}}" wx:key="id" class="activity-card" bindtap="onActivityClick" data-id="{{item.id}}">
   <view class="card-header">
     <view class="activity-name activity-title-with-brand">
-      <image class="activity-brand-mascot" wx:if="{{activityUtil.hasBubuchuhuPrefix(item.name)}}" src="/images/official-badge.png" mode="aspectFit" />
       <text class="activity-title-text">{{item.name}}</text>
     </view>
     <view class="card-badges">
@@ -75,7 +72,7 @@
     </view>
     <view class="info-row">
       <van-icon name="user-o" />
-      <text>报名人数：{{item.participant_count}}/{{item.max_participants}}</text>
+      <text>{{item.status === 4 ? '参与人数：' + item.participant_count : '报名人数：' + item.participant_count + '/' + item.max_participants}}</text>
     </view>
     <view class="info-row">
       <van-icon name="certificate" />

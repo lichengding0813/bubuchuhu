@@ -52,7 +52,7 @@ page {
 .search-section {
   position: relative;
   z-index: 2;
-  margin-top: -22px;
+  margin-top: -12px;
   padding: 0 10px;
 }
 
@@ -132,6 +132,7 @@ page {
   flex: 1;
   min-width: 0;
   flex-direction: column;
+  justify-content: center;
 }
 
 .quick-title {
@@ -139,23 +140,6 @@ page {
   font-weight: 600;
   line-height: 1.45;
   white-space: nowrap;
-}
-
-.quick-desc {
-  overflow: hidden;
-  margin-top: 2px;
-  font-size: 9.5px;
-  line-height: 1.35;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.publish-action .quick-desc {
-  color: rgba(255, 255, 255, 0.76);
-}
-
-.calendar-action .quick-desc {
-  color: #8ca2b2;
 }
 
 .quick-arrow {
@@ -176,21 +160,8 @@ page {
   padding: 14px 18px 12px;
 }
 
-.section-heading > view:first-child {
-  display: flex;
-  flex-direction: column;
-}
-
-.section-eyebrow {
-  color: #76a7c7;
-  font-size: 9px;
-  font-weight: 600;
-  letter-spacing: 2px;
-  line-height: 1.4;
-}
-
 .section-title {
-  margin-top: 2px;
+  margin-top: 0;
   color: #163f5d;
   font-size: 22px;
   font-weight: 700;

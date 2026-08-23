@@ -1,5 +1,3 @@
-<wxs module="activityUtil" src="../../utils/activity.wxs" />
-
 <view class="home-page">
   <!-- 品牌视觉区 -->
   <view class="hero-shell">
@@ -30,7 +28,6 @@
       </view>
       <view class="quick-copy">
         <text class="quick-title">发起活动</text>
-        <text class="quick-desc">分享你的下一段路线</text>
       </view>
       <van-icon name="arrow" size="15px" class="quick-arrow" />
     </view>
@@ -41,7 +38,6 @@
       </view>
       <view class="quick-copy">
         <text class="quick-title">活动日历</text>
-        <text class="quick-desc">按日期查看出行计划</text>
       </view>
       <van-icon name="arrow" size="15px" class="quick-arrow" />
     </view>
@@ -50,10 +46,7 @@
   <!-- 活动发现 -->
   <view class="activity-explore">
     <view class="section-heading">
-      <view>
-        <text class="section-eyebrow">WEEKEND PLAN</text>
-        <text class="section-title">发现活动</text>
-      </view>
+      <text class="section-title">发现活动</text>
       <view class="official-filter {{filterOfficial ? 'active' : ''}}" bindtap="onToggleOfficial">
         <image class="official-mascot official-mascot--tiny" src="/images/official-badge.png" mode="aspectFit" />
         <text>只看官方</text>
@@ -105,7 +98,6 @@
 
         <view class="card-right">
           <view class="activity-name activity-title-with-brand {{item.isOfficial ? 'has-official-corner' : ''}}">
-            <image class="activity-brand-mascot" wx:if="{{activityUtil.hasBubuchuhuPrefix(item.name)}}" src="/images/official-badge.png" mode="aspectFit" />
             <text class="activity-title-text">{{item.name}}</text>
           </view>
 
@@ -123,8 +115,8 @@
           <view class="card-footer">
             <view class="card-meta">
               <text class="meta-pill difficulty-pill">{{item.difficulty}}</text>
-              <text class="meta-pill capacity-pill {{item.remainCount < 5 && currentTab === 'ongoing' ? 'warning' : ''}}" wx:if="{{currentTab === 'ongoing'}}">余 {{item.remainCount}} / {{item.totalCount}}</text>
-              <text class="meta-pill capacity-pill" wx:else>名额 {{item.totalCount}}</text>
+              <text class="meta-pill capacity-pill {{item.remainCount < 5 ? 'warning' : ''}}" wx:if="{{!item.isEnded}}">余 {{item.remainCount}} / {{item.totalCount}}</text>
+              <text class="meta-pill capacity-pill" wx:else>参与 {{item.participantCount}} 人</text>
             </view>
             <text class="status-badge {{item.has_registered && currentTab === 'ongoing' ? 'registered-badge' : item.statusClass}}">{{item.statusBadge}}</text>
           </view>

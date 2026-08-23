@@ -1,41 +1,65 @@
 <!-- 活动日历 -->
-<wxs module="activityUtil" src="../../utils/activity.wxs" />
-
 <view class="calendar-container">
-  <!-- 月份切换 -->
   <view class="month-header">
-    <view class="month-arrow" bindtap="prevMonth"><van-icon name="arrow-left" /></view>
+    <view class="month-arrow" bindtap="prevMonth" aria-label="上个月">
+      <van-icon name="arrow-left" size="20px" color="#315f80" />
+    </view>
     <text class="month-title">{{year}}年{{month}}月</text>
-    <view class="month-arrow" bindtap="nextMonth"><van-icon name="arrow-right" /></view>
+    <view class="month-arrow" bindtap="nextMonth" aria-label="下个月">
+      <van-icon name="arrow" size="20px" color="#315f80" />
+    </view>
   </view>
 
-  <!-- 星期表头 -->
+  <view class="calendar-legend">
+    <view class="legend-item"><view class="legend-swatch today-swatch"></view><text>今天</text></view>
+    <view class="legend-item"><view class="legend-swatch selected-swatch"></view><text>已选择</text></view>
+    <view class="legend-item"><view class="legend-dot"></view><text>有活动</text></view>
+  </view>
+
   <view class="week-header">
     <text wx:for="{{['日','一','二','三','四','五','六']}}" wx:key="*this" class="week-day">{{item}}</text>
   </view>
 
-  <!-- 日期网格 -->
   <view class="date-grid">
-    <view wx:for="{{days}}" wx:key="*this" class="date-cell {{item.isEmpty ? 'empty' : ''}} {{item.isToday ? 'today' : ''}} {{item.hasActivity ? 'has-activity' : ''}}" bindtap="onDateTap" data-date="{{item.dateStr}}">
+    <view wx:for="{{days}}" wx:key="key" class="date-cell {{item.isEmpty ? 'empty' : ''}} {{item.isToday ? 'today' : ''}} {{item.dateStr === selectedDate ? 'selected' : ''}} {{item.hasActivity ? 'has-activity' : ''}}" bindtap="onDateTap" data-date="{{item.dateStr}}">
       <text class="date-num">{{item.day}}</text>
       <view class="date-dot" wx:if="{{item.hasActivity}}"></view>
     </view>
   </view>
 
-  <!-- 当天活动列表 -->
   <view class="day-activities" wx:if="{{selectedDate}}">
-    <view class="day-title">{{selectedDate}} 活动</view>
+    <view class="day-title">{{selectedDateLabel}}活动</view>
     <view wx:if="{{dayActivities.length === 0}}" class="empty-text">当天暂无活动</view>
-    <view wx:for="{{dayActivities}}" wx:key="id" class="day-card" bindtap="onActivityClick" data-id="{{item.id}}">
-      <view class="day-name activity-title-with-brand">
-        <image class="activity-brand-mascot" wx:if="{{activityUtil.hasBubuchuhuPrefix(item.name)}}" src="/images/official-badge.png" mode="aspectFit" />
-        <text class="activity-title-text">{{item.name}}</text>
+
+    <view wx:for="{{dayActivities}}" wx:for-index="cardIndex" wx:key="id" class="activity-card {{cardIndex === 0 ? 'featured-card' : ''}} {{item.isEnded ? 'ended-card' : ''}}" bindtap="onActivityClick" data-id="{{item.id}}">
+      <view class="card-left">
+        <image class="cover-image" src="{{item.coverUrl}}" mode="aspectFill" wx:if="{{item.coverUrl}}" />
+        <view class="default-cover" wx:else>
+          <view class="default-cover-icon"><van-icon name="photo-o" size="{{cardIndex === 0 ? '40px' : '28px'}}" color="#7da9c8" /></view>
+          <text wx:if="{{cardIndex === 0}}">下一站，去山野</text>
+        </view>
       </view>
-      <view class="calendar-official-badge official-chip" wx:if="{{item.is_official == 1}}">
+
+      <view class="official-corner official-chip" wx:if="{{item.isOfficial}}">
         <image class="official-mascot official-mascot--tiny" src="/images/official-badge.png" mode="aspectFit" />
         <text>官方</text>
       </view>
-      <text class="day-location">{{item.location}}</text>
+
+      <view class="card-right">
+        <view class="activity-name {{item.isOfficial ? 'has-official-corner' : ''}}">{{item.name}}</view>
+        <view class="card-info">
+          <view class="info-item"><van-icon name="clock-o" /><text>{{item.time}}</text></view>
+          <view class="info-item"><van-icon name="location-o" /><text>{{item.location}}</text></view>
+        </view>
+        <view class="card-footer">
+          <view class="card-meta">
+            <text class="meta-pill difficulty-pill">{{item.difficultyText}}</text>
+            <text class="meta-pill capacity-pill {{item.remainCount < 5 ? 'warning' : ''}}" wx:if="{{!item.isEnded}}">余 {{item.remainCount}} / {{item.totalCount}}</text>
+            <text class="meta-pill capacity-pill" wx:else>参与 {{item.participantCount}} 人</text>
+          </view>
+          <text class="status-badge {{item.has_registered && !item.isEnded ? 'registered-badge' : item.statusClass}}">{{item.statusBadge}}</text>
+        </view>
+      </view>
     </view>
   </view>
 </view>

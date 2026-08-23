@@ -5,9 +5,16 @@ FROM python:3.9-slim
 # 与 db_utils 中 SET time_zone='+8:00' 对齐，修复 lastLoginTime 等时间字段差 8 小时的问题）
 ENV TZ=Asia/Shanghai
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates tzdata \
+    && update-ca-certificates \
     && ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime \
     && echo "Asia/Shanghai" > /etc/timezone \
     && rm -rf /var/lib/apt/lists/*
+
+# requests 显式使用系统证书库；微信请求默认不继承容器 HTTPS_PROXY。
+ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt \
+    REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt \
+    WX_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt \
+    WX_TRUST_ENV_PROXY=0
 
 # 创建非 root 用户
 RUN groupadd -r appuser && useradd -r -g appuser appuser

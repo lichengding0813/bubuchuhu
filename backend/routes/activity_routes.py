@@ -1689,16 +1689,27 @@ def get_activity_calendar():
         if date:
             # 查询指定日期的活动列表
             cursor.execute("""
-                SELECT id, name, location, activity_time, is_official
-                FROM activities
-                WHERE status NOT IN (0, -1, 2)
-                AND DATE(activity_time) = %s
-                ORDER BY activity_time ASC
-            """, (date,))
+                SELECT a.id, a.name, a.location, a.activity_time, a.difficulty,
+                       a.max_participants, a.status, a.cover_url, a.is_official,
+                       COALESCE(pc.participant_count, 0) AS participant_count,
+                       CASE WHEN mine.activity_id IS NULL THEN FALSE ELSE TRUE END AS has_registered
+                FROM activities a
+                LEFT JOIN (
+                    SELECT activity_id, SUM(companion_count + 1) AS participant_count
+                    FROM activity_participants
+                    WHERE status = 1
+                    GROUP BY activity_id
+                ) pc ON pc.activity_id = a.id
+                LEFT JOIN (
+                    SELECT DISTINCT activity_id
+                    FROM activity_participants
+                    WHERE user_openid = %s AND status = 1
+                ) mine ON mine.activity_id = a.id
+                WHERE a.status NOT IN (0, -1, 2)
+                AND DATE(a.activity_time) = %s
+                ORDER BY a.activity_time ASC
+            """, (g.openid, date))
             list_data = cursor.fetchall()
-            for item in list_data:
-                if item.get('activity_time'):
-                    item['activity_time'] = item['activity_time'].strftime('%m/%d %H:%M')
             return jsonify({'code': 200, 'data': {'list': list_data}})
 
         # 查询当月每天的活动数量

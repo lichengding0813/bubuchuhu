@@ -146,18 +146,12 @@ page {
   box-shadow: 0 3px 9px rgba(42, 113, 163, 0.1) !important;
 }
 
-/* 【步步出沪】品牌活动标题标识 */
+/* 活动标题排版 */
 .activity-title-with-brand {
   display: flex !important;
   min-width: 0;
   align-items: flex-start;
   gap: 6px;
-}
-
-.activity-brand-mascot {
-  flex-shrink: 0;
-  width: 20px;
-  height: 20px;
 }
 
 .activity-title-text {

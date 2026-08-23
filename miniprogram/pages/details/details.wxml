@@ -1,5 +1,3 @@
-<wxs module="activityUtil" src="../../utils/activity.wxs" />
-
 <view class="detail-container">
   <!-- 活动封面图 -->
   <view class="cover-section">
@@ -11,7 +9,6 @@
   <view class="info-card">
     <view class="activity-title-row">
       <view class="activity-title activity-title-with-brand">
-        <image class="activity-brand-mascot" wx:if="{{activityUtil.hasBubuchuhuPrefix(activityDetail.name)}}" src="/images/official-badge.png" mode="aspectFit" />
         <text class="activity-title-text">{{activityDetail.name}}</text>
       </view>
       <view class="official-title-badge official-chip" wx:if="{{activityDetail.isOfficial}}">
@@ -43,8 +40,8 @@
         <text class="stat-value">{{activityDetail.climb}}m</text>
       </view>
       <view class="stat-item">
-        <text class="stat-label">名额</text>
-        <text class="stat-value">{{activityDetail.remainCount}}/{{activityDetail.totalCount}}</text>
+        <text class="stat-label">{{activityDetail.rawStatus === 4 ? '参与人数' : '剩余名额'}}</text>
+        <text class="stat-value">{{activityDetail.rawStatus === 4 ? activityDetail.participantCount + '人' : activityDetail.remainCount + '/' + activityDetail.totalCount}}</text>
       </view>
     </view>
   </view>

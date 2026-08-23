@@ -1,5 +1,3 @@
-<wxs module="activityUtil" src="../../utils/activity.wxs" />
-
 <!-- 统计卡片（可选，直接显示进行中/已结束数量） -->
 <view class="stats-section">
   <view class="stat-card">
@@ -37,7 +35,6 @@
   <view wx:for="{{currentList}}" wx:key="id" class="activity-card" bindtap="onActivityClick" data-id="{{item.activity_id}}">
     <view class="card-header">
       <view class="activity-name activity-title-with-brand">
-        <image class="activity-brand-mascot" wx:if="{{activityUtil.hasBubuchuhuPrefix(item.name)}}" src="/images/official-badge.png" mode="aspectFit" />
         <text class="activity-title-text">{{item.name}}</text>
       </view>
       <view class="official-badge official-chip" wx:if="{{item.is_official == 1}}">

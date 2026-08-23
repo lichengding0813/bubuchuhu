@@ -1,51 +1,403 @@
 /* pages/calendar/calendar.wxss */
-page { background-color: #e6f7ff; height: 100%; overflow-y: auto; }
+page {
+  min-height: 100%;
+  background: #f4f8fb;
+}
 
-.calendar-container { padding: 16px; padding-bottom: 40px; }
+.calendar-container {
+  padding: 14px 16px 40px;
+}
 
 .month-header {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 12px 0 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 0 8px;
 }
-.month-arrow { padding: 8px; }
-.month-title { font-size: 18px; font-weight: 600; color: #1e4d7c; }
 
-.week-header { display: flex; margin-bottom: 8px; }
-.week-day { flex: 1; text-align: center; font-size: 13px; color: #999; padding: 6px 0; }
+.month-arrow {
+  display: flex;
+  width: 42px;
+  height: 42px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(157, 191, 214, 0.28);
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 5px 14px rgba(44, 89, 120, 0.07);
+}
 
-.date-grid { display: flex; flex-wrap: wrap; background: #fff; border: 1px solid rgba(157, 191, 214, 0.3); border-radius: 20px; overflow: hidden; box-shadow: 0 8px 22px rgba(44, 89, 120, 0.075); }
-.date-cell {
-  width: calc(100% / 7); aspect-ratio: 1; display: flex;
-  flex-direction: column; align-items: center; justify-content: center;
-  position: relative;
+.month-arrow:active {
+  background: #eaf5fc;
 }
-.date-cell.empty { background: #fafafa; }
-.date-num { font-size: 14px; color: #333; }
-.date-dot {
-  width: 6px; height: 6px; border-radius: 50%; background: #5faee3;
-  position: absolute; bottom: 8px;
-}
-.date-cell.today { background: #e3f0ff; }
-.date-cell.today .date-num { color: #5faee3; font-weight: 700; }
 
-.day-activities { margin-top: 20px; }
-.day-title { font-size: 16px; font-weight: 600; color: #1e4d7c; margin-bottom: 12px; }
-.day-card {
-  position: relative;
-  background: #fff; border-radius: 20px; padding: 14px 74px 14px 16px; margin-bottom: 10px;
-  display: flex; flex-direction: column; gap: 4px;
-  border: 1px solid #e8f0f8;
+.month-title {
+  color: #163f5d;
+  font-size: 19px;
+  font-weight: 700;
 }
-.calendar-official-badge {
-  position: absolute;
-  top: 10px;
-  right: 12px;
-  padding: 2px 7px;
-  border-radius: 10px;
-  color: #fff;
-  background-color: #2f80c5;
+
+.calendar-legend {
+  display: flex;
+  justify-content: center;
+  gap: 18px;
+  margin: 4px 0 10px;
+  color: #7892a5;
   font-size: 10px;
 }
-.day-name { font-size: 15px; color: #134579; font-weight: 500; }
-.day-location { font-size: 13px; color: #7a9ec2; }
-.empty-text { color: #ccc; text-align: center; padding: 30px 0; font-size: 14px; }
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.legend-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+.today-swatch {
+  border: 2px solid #67adde;
+  background: #fff;
+}
+
+.selected-swatch {
+  background: #4d9fd7;
+}
+
+.legend-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #67adde;
+}
+
+.week-header {
+  display: flex;
+  margin-bottom: 8px;
+}
+
+.week-day {
+  flex: 1;
+  padding: 6px 0;
+  color: #8a9ba7;
+  font-size: 12px;
+  text-align: center;
+}
+
+.date-grid {
+  display: flex;
+  overflow: hidden;
+  flex-wrap: wrap;
+  border: 1px solid rgba(157, 191, 214, 0.3);
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 8px 22px rgba(44, 89, 120, 0.075);
+}
+
+.date-cell {
+  position: relative;
+  display: flex;
+  width: calc(100% / 7);
+  aspect-ratio: 1;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  border-radius: 12px;
+  box-sizing: border-box;
+}
+
+.date-cell.empty {
+  background: #fbfcfd;
+}
+
+.date-num {
+  color: #33434e;
+  font-size: 14px;
+}
+
+.date-dot {
+  position: absolute;
+  bottom: 8px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #67adde;
+}
+
+.date-cell.today {
+  box-shadow: inset 0 0 0 2px #67adde;
+}
+
+.date-cell.today .date-num {
+  color: #3c8fc8;
+  font-weight: 700;
+}
+
+.date-cell.selected {
+  background: #4d9fd7;
+  box-shadow: none;
+}
+
+.date-cell.selected .date-num {
+  color: #fff;
+  font-weight: 700;
+}
+
+.date-cell.selected .date-dot {
+  background: #fff;
+}
+
+.day-activities {
+  margin-top: 22px;
+}
+
+.day-title {
+  margin-bottom: 12px;
+  color: #163f5d;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.empty-text {
+  padding: 30px 0;
+  border: 1px solid rgba(157, 191, 214, 0.26);
+  border-radius: 20px;
+  color: #9aabb6;
+  background: #fff;
+  font-size: 13px;
+  text-align: center;
+}
+
+/* 与首页一致的活动卡片 */
+.activity-card {
+  position: relative;
+  display: flex;
+  gap: 13px;
+  overflow: hidden;
+  margin-bottom: 14px;
+  padding: 12px;
+  border: 1px solid rgba(157, 191, 214, 0.3);
+  border-radius: 20px;
+  box-sizing: border-box;
+  background: #fff;
+  box-shadow: 0 8px 22px rgba(44, 89, 120, 0.075);
+}
+
+.activity-card:active {
+  transform: scale(0.99);
+}
+
+.card-left {
+  display: flex;
+  flex: 0 0 98px;
+  width: 98px;
+  height: 104px;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 15px;
+  background: linear-gradient(145deg, #e1f2fb 0%, #c8e4f4 100%);
+}
+
+.cover-image {
+  width: 100%;
+  height: 100%;
+}
+
+.default-cover {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 8px;
+  color: #6993ae;
+  background: linear-gradient(145deg, #eaf6fc 0%, #cae7f6 100%);
+  font-size: 12px;
+}
+
+.default-cover-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.card-right {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.activity-name {
+  display: -webkit-box;
+  overflow: hidden;
+  padding-right: 2px;
+  color: #173f5c;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.activity-name.has-official-corner {
+  padding-right: 64px;
+}
+
+.card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: 8px;
+}
+
+.info-item {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  color: #738d9f;
+  font-size: 11.5px;
+  line-height: 1.35;
+}
+
+.info-item van-icon {
+  flex-shrink: 0;
+  margin-right: 5px;
+  color: #79aace;
+}
+
+.info-item text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 8px;
+}
+
+.card-meta {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 6px;
+}
+
+.meta-pill {
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 9.5px;
+  line-height: 1.35;
+  white-space: nowrap;
+}
+
+.difficulty-pill {
+  color: #a86627;
+  background: #fff2df;
+}
+
+.capacity-pill {
+  color: #4c83a8;
+  background: #eaf5fc;
+}
+
+.capacity-pill.warning {
+  color: #bf5c56;
+  background: #fff0ee;
+}
+
+.status-badge {
+  flex-shrink: 0;
+  padding: 4px 9px;
+  border-radius: 14px;
+  color: #b56625;
+  background: #fff0da;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.35;
+  white-space: nowrap;
+}
+
+.status-badge.ongoing {
+  color: #347ba9;
+  background: #e1f2fd;
+}
+
+.status-badge.registered-badge {
+  color: #35815a;
+  background: #e2f5e9;
+}
+
+.status-badge.closed,
+.status-badge.cancelled {
+  color: #ac5651;
+  background: #fbe8e7;
+}
+
+.status-badge.ended {
+  color: #7b8992;
+  background: #edf0f2;
+}
+
+.official-corner {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+}
+
+.featured-card {
+  display: block;
+  padding: 0;
+  border-radius: 24px;
+}
+
+.featured-card .card-left {
+  width: 100%;
+  height: 190px;
+  border-radius: 0;
+}
+
+.featured-card .card-right {
+  padding: 15px 16px 16px;
+}
+
+.featured-card .activity-name {
+  padding-right: 0;
+  font-size: 18px;
+}
+
+.featured-card .card-info {
+  flex-flow: row wrap;
+  gap: 7px 16px;
+  margin-top: 9px;
+}
+
+.featured-card .card-footer {
+  padding-top: 12px;
+}
+
+.featured-card .official-corner {
+  top: 14px;
+  right: 14px;
+}
+
+.ended-card {
+  opacity: 0.82;
+}
+
+.ended-card .cover-image {
+  filter: grayscale(28%);
+}
