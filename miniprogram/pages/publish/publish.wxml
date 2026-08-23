@@ -1,4 +1,25 @@
 <view class="publish-container">
+  <view class="publish-mode-card" wx:if="{{canChoosePublishMode}}">
+    <view class="publish-mode-title">选择活动类型</view>
+    <view class="publish-mode-options">
+      <view class="publish-mode-option {{!isOfficialMode ? 'active' : ''}}" data-mode="normal" bindtap="onPublishModeChange">
+        <view class="publish-mode-icon">👟</view>
+        <view class="publish-mode-content">
+          <text class="publish-mode-name">普通活动</text>
+          <text class="publish-mode-desc">提交后进入原有审核流程</text>
+        </view>
+        <van-icon name="success" wx:if="{{!isOfficialMode}}" color="#4d9fd7" size="18px" />
+      </view>
+      <view class="publish-mode-option {{isOfficialMode ? 'active' : ''}}" data-mode="official" bindtap="onPublishModeChange">
+        <image class="publish-mode-mascot" src="/images/official-badge.png" mode="aspectFit" />
+        <view class="publish-mode-content">
+          <text class="publish-mode-name">官方活动</text>
+          <text class="publish-mode-desc">无需审核，保存后直接发布</text>
+        </view>
+        <van-icon name="success" wx:if="{{isOfficialMode}}" color="#4d9fd7" size="18px" />
+      </view>
+    </view>
+  </view>
   <view class="official-publish-banner" wx:if="{{isOfficialMode}}">
     <image class="official-banner-v" src="/images/official-badge.png" mode="aspectFit" />
     <view>
@@ -14,7 +35,14 @@
       <!-- 活动名称 -->
       <view class="form-item">
         <view class="item-label">活动名称<text class="required-star">*</text></view>
-        <van-field value="{{name}}" bind:input="onInput" data-field="name" placeholder="请输入活动名称（最多30字）" maxlength="30" border="{{false}}" />
+        <view class="official-name-field" wx:if="{{isOfficialMode}}">
+          <text class="official-name-prefix">{{officialTitlePrefix}}</text>
+          <view class="official-name-input">
+            <van-field value="{{name}}" bind:input="onInput" data-field="name" placeholder="请输入活动名称" maxlength="24" border="{{false}}" />
+          </view>
+        </view>
+        <van-field wx:else value="{{name}}" bind:input="onInput" data-field="name" placeholder="请输入活动名称（最多30字）" maxlength="30" border="{{false}}" />
+        <text class="official-name-hint" wx:if="{{isOfficialMode}}">官方前缀固定展示，发布时不可删除</text>
       </view>
 
       <!-- 活动描述 -->

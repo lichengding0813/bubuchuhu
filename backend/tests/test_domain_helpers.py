@@ -9,10 +9,28 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from domain import (
     activity_times,
     effective_lottery_status,
+    normalize_official_activity_data,
     published_activity_status,
     validate_activity_payload,
     weather_location_candidates,
 )
+
+
+class OfficialActivityTitleTests(unittest.TestCase):
+    def test_prefix_is_added_and_duplicate_prefixes_are_collapsed(self):
+        normalized, error = normalize_official_activity_data({'name': '龙王潭'})
+        self.assertIsNone(error)
+        self.assertEqual(normalized['name'], '【步步出沪】龙王潭')
+
+        normalized, error = normalize_official_activity_data({
+            'name': '【步步出沪】【步步出沪】 龙王潭'
+        })
+        self.assertIsNone(error)
+        self.assertEqual(normalized['name'], '【步步出沪】龙王潭')
+
+    def test_prefix_only_title_is_rejected(self):
+        _, error = normalize_official_activity_data({'name': '【步步出沪】'})
+        self.assertEqual(error, '请填写官方活动名称')
 
 
 class ActivityTimeTests(unittest.TestCase):

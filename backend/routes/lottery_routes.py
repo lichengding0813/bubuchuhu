@@ -231,6 +231,12 @@ def check_lottery():
                 continue
             for field in ('start_time', 'end_time'):
                 lottery[field] = lottery[field].strftime('%Y-%m-%d %H:%M')
+            cursor.execute(
+                "SELECT id, tier_name, tier_level, quantity, remaining, image_url "
+                "FROM lottery_prizes WHERE lottery_id = %s ORDER BY tier_level",
+                (lottery['id'],)
+            )
+            lottery['prizes'] = cursor.fetchall()
             lottery['remaining_attempts'] = 3 - lottery.pop('password_attempts')
             result.append(lottery)
         return jsonify({'code': 200, 'data': result})

@@ -130,11 +130,30 @@
 
     <view class="route-meta">
       <text>报名截止：{{activityDetail.deadline}}</text>
-      <view class="lottery-entry" wx:if="{{hasLottery}}" catchtap="onLotteryClick">
-        <text class="lottery-wheel-icon">🎡</text>
-        <text class="lottery-entry-text">{{lotteryDrawn ? '查看抽奖结果' : '参与抽奖'}}</text>
-      </view>
     </view>
+  </view>
+
+  <!-- 详情页右下角悬浮抽奖卡 -->
+  <view class="lottery-float" wx:if="{{hasLottery}}" catchtap="onLotteryClick">
+    <view class="lottery-float-header">
+      <view class="lottery-float-title"><text class="lottery-wheel-icon">🎡</text><text>活动抽奖</text></view>
+      <text class="lottery-live-tag">进行中</text>
+    </view>
+    <view class="lottery-countdown-row">
+      <text class="lottery-countdown-label">距结束</text>
+      <text class="lottery-countdown-value">{{lotteryCountdown}}</text>
+    </view>
+    <scroll-view class="lottery-prize-scroll" scroll-x enhanced show-scrollbar="{{false}}" wx:if="{{lotteryInfo.prizes && lotteryInfo.prizes.length}}">
+      <view class="lottery-prize-list">
+        <view class="lottery-prize-item" wx:for="{{lotteryInfo.prizes}}" wx:key="id">
+          <image class="lottery-prize-image" wx:if="{{item.image_url}}" src="{{item.image_url}}" mode="aspectFill" />
+          <view class="lottery-prize-placeholder" wx:else>🎁</view>
+          <text class="lottery-prize-name">{{item.tier_name}}</text>
+          <text class="lottery-prize-quantity">{{item.quantity}}份</text>
+        </view>
+      </view>
+    </scroll-view>
+    <view class="lottery-float-action">点击参与抽奖 <van-icon name="arrow" size="12px" /></view>
   </view>
 
   <!-- 抽奖弹窗 -->

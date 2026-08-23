@@ -3,7 +3,12 @@ from datetime import datetime, timedelta
 import secrets
 import logging
 from db_utils import get_db
-from domain import activity_times, published_activity_status, validate_activity_payload
+from domain import (
+    activity_times,
+    normalize_official_activity_data,
+    published_activity_status,
+    validate_activity_payload,
+)
 
 from middleware import check_verified_and_blacklist
 
@@ -286,7 +291,9 @@ def get_official_activities():
 def create_official_activity():
     """官方账号从独立入口直接发布官方活动，无需人工审核。"""
     openid = g.openid
-    data = request.get_json(silent=True) or {}
+    data, title_error = normalize_official_activity_data(request.get_json(silent=True) or {})
+    if title_error:
+        return jsonify({'code': 400, 'msg': title_error})
     payload_error = validate_activity_payload(data)
     if payload_error:
         return jsonify({'code': 400, 'msg': payload_error})
@@ -366,7 +373,9 @@ def create_official_activity():
 def update_official_activity():
     """任一官方账号均可修改官方活动，保存后保持直接发布状态。"""
     openid = g.openid
-    data = request.get_json(silent=True) or {}
+    data, title_error = normalize_official_activity_data(request.get_json(silent=True) or {})
+    if title_error:
+        return jsonify({'code': 400, 'msg': title_error})
     activity_id = data.get('activity_id')
     if not activity_id:
         return jsonify({'code': 400, 'msg': '缺少活动ID'})

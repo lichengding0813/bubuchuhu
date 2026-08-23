@@ -263,24 +263,132 @@ page {
   color: #4f88bd;
 }
 
-.lottery-entry {
+.lottery-wheel-icon {
+  font-size: 15px;
+}
+
+.lottery-float {
+  position: fixed;
+  right: 14px;
+  bottom: calc(92px + constant(safe-area-inset-bottom));
+  bottom: calc(92px + env(safe-area-inset-bottom));
+  z-index: 90;
+  width: 196px;
+  padding: 11px;
+  border: 1px solid rgba(98, 170, 220, 0.32);
+  border-radius: 17px;
+  box-sizing: border-box;
+  background: rgba(255, 255, 255, 0.97);
+  box-shadow: 0 9px 26px rgba(40, 94, 132, 0.22);
+}
+
+.lottery-float-header,
+.lottery-float-title,
+.lottery-countdown-row,
+.lottery-float-action {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 4px 12px;
-  background: #fff3e0;
-  border-radius: 20px;
-  border: 1px solid #ffcc80;
 }
 
-.lottery-wheel-icon {
-  font-size: 20px;
+.lottery-float-header,
+.lottery-countdown-row {
+  justify-content: space-between;
 }
 
-.lottery-entry-text {
+.lottery-float-title {
+  gap: 5px;
+  color: #174d78;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.lottery-live-tag {
+  padding: 2px 7px;
+  border-radius: 9px;
+  color: #fff;
+  background: #58a9df;
+  font-size: 9px;
+  font-weight: 600;
+}
+
+.lottery-countdown-row {
+  padding: 8px 0 7px;
+}
+
+.lottery-countdown-label {
+  color: #8198ad;
+  font-size: 10px;
+}
+
+.lottery-countdown-value {
+  color: #e9814c;
   font-size: 13px;
-  color: #e65100;
-  font-weight: 500;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.lottery-prize-scroll {
+  width: 100%;
+  white-space: nowrap;
+}
+
+.lottery-prize-list {
+  display: inline-flex;
+  gap: 7px;
+  padding: 1px 0 6px;
+}
+
+.lottery-prize-item {
+  display: inline-flex;
+  width: 54px;
+  flex-direction: column;
+  align-items: center;
+}
+
+.lottery-prize-image,
+.lottery-prize-placeholder {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  background: #eef7fd;
+}
+
+.lottery-prize-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 21px;
+}
+
+.lottery-prize-name,
+.lottery-prize-quantity {
+  overflow: hidden;
+  width: 100%;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lottery-prize-name {
+  margin-top: 4px;
+  color: #315f83;
+  font-size: 10px;
+}
+
+.lottery-prize-quantity {
+  color: #91a7b9;
+  font-size: 9px;
+}
+
+.lottery-float-action {
+  height: 28px;
+  justify-content: center;
+  gap: 3px;
+  border-radius: 14px;
+  color: #fff;
+  background: linear-gradient(135deg, #69b9e8, #4298d2);
+  font-size: 11px;
+  font-weight: 600;
 }
 
 /* 天气卡片 */

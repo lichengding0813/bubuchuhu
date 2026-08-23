@@ -6,6 +6,7 @@ Page({
     weather: {},
     hasLottery: false,
     lotteryInfo: {},
+    lotteryCountdown: '',
     showLotteryPopup: false,
     lotteryDrawn: false,
     creatorInfo: null,
@@ -79,6 +80,13 @@ Page({
     if (userInfo) {
       this.setData({ userInfo });
     }
+    if (this.data.hasLottery && !this.data.lotteryDrawn) {
+      this.startLotteryCountdown();
+    }
+  },
+
+  onHide() {
+    this.stopLotteryCountdown();
   },
 
   // 分享进入时确保用户已登录，否则报名时 nickname 为空
@@ -209,7 +217,11 @@ Page({
       if (checkRes.code === 200) {
         const match = checkRes.data.find(l => l.activity_id == activityId);
         if (match) {
-          this.setData({ hasLottery: true, lotteryInfo: match, lotteryDrawn: false });
+          this.setData({
+            hasLottery: true,
+            lotteryInfo: match,
+            lotteryDrawn: false
+          }, () => this.startLotteryCountdown());
           return;
         }
       }
@@ -217,9 +229,18 @@ Page({
       if (myRes.code === 200) {
         const drawn = myRes.data.find(r => r.activity_name === this.data.activityDetail.name);
         if (drawn) {
-          this.setData({ hasLottery: true, lotteryInfo: { id: drawn.lottery_id, activity_name: drawn.activity_name }, lotteryDrawn: true });
+          this.stopLotteryCountdown();
+          this.setData({
+            hasLottery: false,
+            lotteryInfo: {},
+            lotteryCountdown: '',
+            lotteryDrawn: true
+          });
+          return;
         }
       }
+      this.stopLotteryCountdown();
+      this.setData({ hasLottery: false, lotteryInfo: {}, lotteryCountdown: '' });
     } catch (err) {
       console.log('抽奖检查失败（可忽略）:', err);
     }
@@ -243,7 +264,57 @@ Page({
   },
 
   onLotteryDrawn(e) {
-    this.setData({ lotteryDrawn: true });
+    this.stopLotteryCountdown();
+    this.setData({ lotteryDrawn: true, hasLottery: false, lotteryCountdown: '' });
+  },
+
+  getLotteryEndTimestamp(value) {
+    const time = this.parseTimeStr(value);
+    if (!time) return 0;
+    return new Date(
+      time.year,
+      time.month - 1,
+      time.day,
+      time.hour,
+      time.minute,
+      time.second || 0
+    ).getTime();
+  },
+
+  startLotteryCountdown() {
+    this.stopLotteryCountdown();
+    if (!this.data.hasLottery || !this.data.lotteryInfo.end_time) return;
+    this.updateLotteryCountdown();
+    if (this.data.hasLottery) {
+      this.lotteryCountdownTimer = setInterval(() => this.updateLotteryCountdown(), 1000);
+    }
+  },
+
+  stopLotteryCountdown() {
+    if (this.lotteryCountdownTimer) {
+      clearInterval(this.lotteryCountdownTimer);
+      this.lotteryCountdownTimer = null;
+    }
+  },
+
+  updateLotteryCountdown() {
+    const endTimestamp = this.getLotteryEndTimestamp(this.data.lotteryInfo.end_time);
+    const remaining = endTimestamp - Date.now();
+    if (!endTimestamp || remaining <= 0) {
+      this.stopLotteryCountdown();
+      this.setData({ hasLottery: false, lotteryCountdown: '' });
+      return;
+    }
+    const totalSeconds = Math.floor(remaining / 1000);
+    const days = Math.floor(totalSeconds / 86400);
+    const hours = Math.floor((totalSeconds % 86400) / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    const pad = value => String(value).padStart(2, '0');
+    const countdown = days > 0
+      ? `${days}天 ${pad(hours)}:${pad(minutes)}:${pad(seconds)}`
+      : `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+    this.setData({ lotteryCountdown: countdown });
   },
 
   async loadWeather(city, latitude, longitude) {
@@ -598,6 +669,7 @@ Page({
 
   onUnload() {
     if (this.countdownTimer) clearInterval(this.countdownTimer);
+    this.stopLotteryCountdown();
   },
 
   onShareAppMessage() {

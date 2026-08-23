@@ -27,7 +27,9 @@
             <text class="user-openid">{{item.displayOpenId}}</text>
           </view>
         </view>
-        <van-button size="small" type="info" loading="{{addingOpenId === item.openId}}" data-openid="{{item.openId}}" data-nickname="{{item.nickName}}" catchtap="onAdd">加入</van-button>
+        <view class="add-account-btn {{addingOpenId === item.openId ? 'loading' : ''}}" data-openid="{{item.openId}}" data-nickname="{{item.nickName}}" catchtap="onAdd">
+          {{addingOpenId === item.openId ? '处理中' : '加入'}}
+        </view>
       </view>
     </view>
   </view>

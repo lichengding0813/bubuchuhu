@@ -195,6 +195,27 @@ page {
   box-sizing: border-box;
 }
 
+.add-account-btn {
+  display: flex;
+  flex: 0 0 54px;
+  width: 54px;
+  height: 30px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 15px;
+  color: #fff;
+  background: #4d9fd7;
+  box-shadow: 0 3px 8px rgba(77, 159, 215, 0.18);
+  box-sizing: border-box;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.add-account-btn.loading {
+  opacity: 0.58;
+  pointer-events: none;
+}
+
 .remove-btn.loading {
   opacity: 0.58;
   pointer-events: none;

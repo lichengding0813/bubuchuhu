@@ -4,7 +4,7 @@
  */
 const CLOUD_ENV_ID = 'prod-3gktwx67d1dd1e76';
 const CONTAINER_SERVICE = 'flask-mysql-login';
-const APP_VERSION = '1.4.3';
+const APP_VERSION = '1.4.4';
 const CLOUD_ASSET_PREFIX =
   'cloud://prod-3gktwx67d1dd1e76.7072-prod-3gktwx67d1dd1e76-1392222183';
 

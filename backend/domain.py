@@ -2,6 +2,20 @@
 from datetime import datetime, timedelta
 import re
 
+OFFICIAL_TITLE_PREFIX = '【步步出沪】'
+
+
+def normalize_official_activity_data(data):
+    """补齐并去重官方活动标题前缀，拒绝只有前缀的空标题。"""
+    normalized = dict(data or {})
+    title = str(normalized.get('name') or '').strip()
+    while title.startswith(OFFICIAL_TITLE_PREFIX):
+        title = title[len(OFFICIAL_TITLE_PREFIX):].lstrip()
+    if not title:
+        return normalized, '请填写官方活动名称'
+    normalized['name'] = f'{OFFICIAL_TITLE_PREFIX}{title}'
+    return normalized, None
+
 
 def parse_datetime(value):
     if not value:

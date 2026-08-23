@@ -13,12 +13,22 @@
       <view class="time-info">
         <text>{{lotteryInfo.start_time}} ~ {{lotteryInfo.end_time}}</text>
       </view>
+      <scroll-view class="popup-prize-scroll" scroll-x wx:if="{{lotteryInfo.prizes && lotteryInfo.prizes.length}}">
+        <view class="popup-prize-list">
+          <view class="popup-prize-item" wx:for="{{lotteryInfo.prizes}}" wx:key="id">
+            <image class="popup-prize-image" wx:if="{{item.image_url}}" src="{{item.image_url}}" mode="aspectFill" />
+            <view class="popup-prize-placeholder" wx:else>🎁</view>
+            <text class="popup-prize-name">{{item.tier_name}}</text>
+            <text class="popup-prize-count">共{{item.quantity}}份</text>
+          </view>
+        </view>
+      </scroll-view>
       <input class="password-input" placeholder="请输入口令" value="{{password}}" bindinput="onPasswordInput" confirm-type="done" bindconfirm="onDraw" />
       <text class="error-tip" wx:if="{{errorText}}">{{errorText}}</text>
       <view class="attempts-tip" wx:if="{{attemptsLeft < 3}}">剩余 {{attemptsLeft}} 次机会</view>
     </view>
     <view class="popup-footer">
-      <button class="draw-btn" bindtap="onDraw">立即抽奖</button>
+      <button class="draw-btn" bindtap="onDraw"><text>立即抽奖</text></button>
     </view>
   </block>
 
@@ -35,7 +45,7 @@
       <text class="result-activity">{{result.activity_name}}</text>
     </view>
     <view class="popup-footer">
-      <button class="close-btn" bindtap="onClose">知道了</button>
+      <button class="close-btn" bindtap="onClose"><text>知道了</text></button>
     </view>
   </block>
 </view>

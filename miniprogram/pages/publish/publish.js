@@ -1,8 +1,12 @@
+const OFFICIAL_TITLE_PREFIX = '【步步出沪】';
+
 Page({
   data: {
     editActivityId: null,   // 编辑模式下的活动ID
     draftId: null,          // 草稿编辑模式下的草稿ID
     isOfficialMode: false,  // 官方活动独立发布/共享编辑模式
+    canChoosePublishMode: false,
+    officialTitlePrefix: OFFICIAL_TITLE_PREFIX,
     agree: false,
     canSubmit: false,
     showNotice: false,
@@ -230,6 +234,7 @@ Page({
   onLoad(options) {
     const isOfficialMode = Boolean(options && options.official === '1');
     const hasRouteToLoad = Boolean(options && options.id);
+    const isDraft = Boolean(options && options.draft === '1');
     this.routeLoaded = !hasRouteToLoad;
     this.routeDirty = false;
     this.lastHydratedRoute = this.routeLoaded ? '' : null;
@@ -252,6 +257,9 @@ Page({
       wx.setNavigationBarTitle({
         title: options.id ? '编辑官方活动' : '发布官方活动'
       });
+    }
+    if (Number(userInfo?.isOfficial) === 1 && !hasRouteToLoad && !isDraft) {
+      this.setData({ canChoosePublishMode: true });
     }
     if (userInfo && userInfo.openId) {
       this.setData({ userInfo: { openId: userInfo.openId } });
@@ -290,6 +298,25 @@ Page({
       this.setData({ editActivityId: parseInt(id) });
       this.fetchActivityForEdit(id);
     }
+  },
+
+  stripOfficialTitlePrefix(title) {
+    let value = String(title || '').trim();
+    while (value.startsWith(OFFICIAL_TITLE_PREFIX)) {
+      value = value.slice(OFFICIAL_TITLE_PREFIX.length).replace(/^\s+/, '');
+    }
+    return value;
+  },
+
+  onPublishModeChange(e) {
+    const mode = e.currentTarget.dataset.mode;
+    const isOfficialMode = mode === 'official';
+    if (isOfficialMode === this.data.isOfficialMode) return;
+    this.setData({
+      isOfficialMode,
+      name: this.stripOfficialTitlePrefix(this.data.name)
+    }, () => this.checkCanSubmit());
+    wx.setNavigationBarTitle({ title: isOfficialMode ? '发布官方活动' : '发起活动' });
   },
 
   onShow() {
@@ -333,6 +360,7 @@ Page({
 
   fillFormWithData(activity) {
     const difficulty = activity.difficulty || 1;
+    const loadedOfficial = Number(activity.is_official) === 1;
 
     const travelTypeMap = { 1: 'bus', 2: 'train', 3: 'self' };
     const travelOptionsFromBackend = (activity.travel_options || []).map(t => travelTypeMap[t.travel_type]).filter(v => v);
@@ -353,7 +381,7 @@ Page({
 
     const loadedRoute = activity.route || activity.routes || '';
     const formUpdates = {
-      name: activity.name || '',
+      name: loadedOfficial ? this.stripOfficialTitlePrefix(activity.name) : (activity.name || ''),
       description: activity.description || '',
       activityTime: this.formatTimeForInput(activity.activity_time),
       endTime: this.formatTimeForInput(activity.end_time),
@@ -376,6 +404,11 @@ Page({
       travel: travelOptionsFromBackend,
       meetingPoints: meetingPoints
     };
+    if (loadedOfficial) {
+      formUpdates.isOfficialMode = true;
+      formUpdates.canChoosePublishMode = false;
+      wx.setNavigationBarTitle({ title: '编辑官方活动' });
+    }
 
     // 接口较慢时，用户可能已经开始输入；这种情况下不覆盖用户内容。
     if (!this.routeDirty) {
@@ -424,7 +457,9 @@ Page({
     const travelTypeMap = { 'bus': 1, 'train': 2, 'self': 3 };
     const travelOptionsNumbers = (this.data.travel || []).map(item => travelTypeMap[item]).filter(v => v);
     return {
-      name: this.data.name,
+      name: this.data.isOfficialMode
+        ? `${OFFICIAL_TITLE_PREFIX}${this.stripOfficialTitlePrefix(this.data.name)}`
+        : this.data.name,
       description: this.data.description,
       activityTime: this.data.activityTime,
       endTime: this.data.endTime,
