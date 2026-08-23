@@ -215,7 +215,11 @@ def get_blacklist():
 
         cursor.execute("""
             SELECT openId, nickName, avatarUrl, phoneNumber, wechatId,
-                   verifyAttempts, lastLoginTime, createTime
+                   verifyAttempts, lastLoginTime, createTime,
+                   COALESCE(NULLIF(blacklistSource, ''),
+                       CASE WHEN verifyAttempts >= 3 THEN 'verification' ELSE 'manual' END
+                   ) AS blacklistSource,
+                   blacklistedAt, blacklistedBy
             FROM users 
             WHERE isBlacklist = 1
             ORDER BY lastLoginTime DESC
@@ -261,7 +265,8 @@ def remove_from_blacklist():
 
         cursor.execute("""
             UPDATE users 
-            SET isBlacklist = 0, verifyAttempts = 0, needVerify = 1, verified = 0
+            SET isBlacklist = 0, verifyAttempts = 0, needVerify = 1, verified = 0,
+                blacklistSource = '', blacklistedAt = NULL, blacklistedBy = NULL
             WHERE openId = %s
         """, (openid,))
 
@@ -277,6 +282,118 @@ def remove_from_blacklist():
         if conn:
             conn.rollback()
         logging.exception("数据库操作失败")
+        return jsonify({'code': 500, 'msg': '服务器内部错误，请稍后重试'})
+    finally:
+        if cursor:
+            cursor.close()
+
+
+@admin_bp.route('/blacklist-candidates', methods=['GET'])
+@check_verified_and_blacklist
+@check_admin
+def search_blacklist_candidates():
+    """按昵称、微信号或精确 openId 搜索可手动拉黑的普通用户。"""
+    keyword = str(request.args.get('keyword') or '').strip()
+    if not keyword:
+        return jsonify({'code': 200, 'data': {'list': []}})
+    if len(keyword) > 100:
+        return jsonify({'code': 400, 'msg': '搜索内容过长'})
+
+    cursor = None
+    try:
+        cursor = get_db().cursor()
+        pattern = f'%{keyword}%'
+        cursor.execute("""
+            SELECT openId, nickName, avatarUrl, wechatId, verified, verifyAttempts
+            FROM users
+            WHERE isBlacklist = 0
+              AND (isAdmin = 0 OR isAdmin IS NULL)
+              AND (nickName LIKE %s OR wechatId LIKE %s OR openId = %s)
+            ORDER BY lastLoginTime DESC
+            LIMIT 20
+        """, (pattern, pattern, keyword))
+        return jsonify({'code': 200, 'data': {'list': cursor.fetchall()}})
+    except Exception:
+        logging.exception("搜索黑名单候选用户失败")
+        return jsonify({'code': 500, 'msg': '服务器内部错误，请稍后重试'})
+    finally:
+        if cursor:
+            cursor.close()
+
+
+@admin_bp.route('/blacklist', methods=['POST'])
+@check_verified_and_blacklist
+@check_admin
+def add_to_blacklist():
+    """管理员手动将普通用户加入黑名单。"""
+    data = request.get_json(silent=True) or {}
+    openid = str(data.get('openid') or data.get('openId') or '').strip()
+    if not openid or len(openid) > 100:
+        return jsonify({'code': 400, 'msg': '用户标识无效'})
+    if openid == g.openid:
+        return jsonify({'code': 400, 'msg': '不能拉黑当前管理员账号'})
+
+    conn = get_db()
+    cursor = None
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT openId, isAdmin, isBlacklist FROM users WHERE openId = %s FOR UPDATE",
+            (openid,)
+        )
+        user = cursor.fetchone()
+        if not user:
+            return jsonify({'code': 404, 'msg': '用户不存在'})
+        if user.get('isAdmin') == 1:
+            return jsonify({'code': 400, 'msg': '不能手动拉黑管理员账号'})
+        if user.get('isBlacklist') == 1:
+            return jsonify({'code': 409, 'msg': '该用户已在黑名单中'})
+
+        cursor.execute("""
+            UPDATE users
+            SET isBlacklist = 1, blacklistSource = 'manual',
+                blacklistedAt = NOW(), blacklistedBy = %s
+            WHERE openId = %s
+        """, (g.openid, openid))
+        conn.commit()
+        _invalidate_user_cache(openid)
+        return jsonify({'code': 200, 'msg': '已手动加入黑名单'})
+    except Exception:
+        conn.rollback()
+        logging.exception("手动加入黑名单失败")
+        return jsonify({'code': 500, 'msg': '服务器内部错误，请稍后重试'})
+    finally:
+        if cursor:
+            cursor.close()
+
+
+@admin_bp.route('/verification-attempts', methods=['GET'])
+@check_verified_and_blacklist
+@check_admin
+def get_verification_attempts():
+    """查看指定用户最近的验证答题记录。"""
+    openid = str(request.args.get('openid') or request.args.get('openId') or '').strip()
+    if not openid or len(openid) > 100:
+        return jsonify({'code': 400, 'msg': '用户标识无效'})
+
+    cursor = None
+    try:
+        cursor = get_db().cursor()
+        cursor.execute("SELECT openId, nickName, wechatId FROM users WHERE openId = %s", (openid,))
+        user = cursor.fetchone()
+        if not user:
+            return jsonify({'code': 404, 'msg': '用户不存在'})
+        cursor.execute("""
+            SELECT id, question_text, submitted_answer, is_correct, created_at
+            FROM verification_attempt_logs
+            WHERE user_openid = %s
+            ORDER BY created_at DESC, id DESC
+            LIMIT 50
+        """, (openid,))
+        records = cursor.fetchall()
+        return jsonify({'code': 200, 'data': {'user': user, 'list': records}})
+    except Exception:
+        logging.exception("获取验证答题记录失败")
         return jsonify({'code': 500, 'msg': '服务器内部错误，请稍后重试'})
     finally:
         if cursor:

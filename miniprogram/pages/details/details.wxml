@@ -50,13 +50,15 @@
   <view class="info-card">
     <view class="card-title">发起人信息</view>
     <view class="organizer-info">
-      <view class="organizer-avatar">
-        <image src="{{activityDetail.creatorAvatar}}" mode="aspectFill"></image>
+      <view class="organizer-avatar-wrap">
+        <view class="organizer-avatar">
+          <image src="{{activityDetail.creatorAvatar}}" mode="aspectFill"></image>
+        </view>
+        <image class="organizer-avatar-v" wx:if="{{activityDetail.isOfficial}}" src="/images/official-badge.png" mode="aspectFit" />
       </view>
       <view class="organizer-detail">
         <view class="organizer-name-row">
           <text class="organizer-name">{{activityDetail.organizer}}</text>
-          <image class="official-mascot" wx:if="{{activityDetail.isOfficial}}" src="/images/official-badge.png" mode="aspectFit" />
         </view>
         <text class="organizer-wechat">微信号：{{activityDetail.wechat}}</text>
       </view>

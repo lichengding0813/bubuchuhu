@@ -41,6 +41,12 @@ CALL add_column_if_missing('activities', 'is_official',
     '`is_official` tinyint(1) NOT NULL DEFAULT 0 COMMENT ''是否官方活动：0-否，1-是'' AFTER `is_force_insurance`');
 CALL add_column_if_missing('users', 'isOfficial',
     '`isOfficial` tinyint(1) NOT NULL DEFAULT 0 COMMENT ''是否官方账号白名单：0-否，1-是'' AFTER `isAdmin`');
+CALL add_column_if_missing('users', 'blacklistSource',
+    '`blacklistSource` varchar(20) NOT NULL DEFAULT '''' COMMENT ''黑名单来源：manual-管理员手动，verification-答题超限'' AFTER `isBlacklist`');
+CALL add_column_if_missing('users', 'blacklistedAt',
+    '`blacklistedAt` datetime DEFAULT NULL COMMENT ''加入黑名单时间'' AFTER `blacklistSource`');
+CALL add_column_if_missing('users', 'blacklistedBy',
+    '`blacklistedBy` varchar(100) DEFAULT NULL COMMENT ''手动拉黑的管理员openid'' AFTER `blacklistedAt`');
 CALL add_column_if_missing('activity_meeting_points', 'latitude',
     '`latitude` decimal(10,7) DEFAULT NULL COMMENT ''集合点纬度'' AFTER `location`');
 CALL add_column_if_missing('activity_meeting_points', 'longitude',
@@ -112,6 +118,15 @@ UPDATE `activities`
 SET `status` = 1, `reject_reason` = NULL, `reject_time` = NULL
 WHERE `is_official` = 1 AND `status` = 0;
 
+UPDATE `users`
+SET `blacklistSource` = CASE
+    WHEN COALESCE(`verifyAttempts`, 0) >= 3 THEN 'verification'
+    ELSE 'manual'
+END,
+`blacklistedAt` = COALESCE(`blacklistedAt`, `lastLoginTime`, `createTime`)
+WHERE `isBlacklist` = 1
+  AND (`blacklistSource` IS NULL OR `blacklistSource` = '');
+
 -- 仅为仍在报名或进行中的旧活动补兼容结束时间；历史已结束数据保持不变。
 UPDATE `activities`
 SET `end_time` = DATE_ADD(`activity_time`, INTERVAL 12 HOUR)
@@ -163,6 +178,19 @@ CREATE TABLE IF NOT EXISTS `lottery_records` (
   KEY `idx_prize_id` (`prize_id`),
   CONSTRAINT `lottery_records_ibfk_1` FOREIGN KEY (`lottery_id`) REFERENCES `activity_lotteries` (`id`) ON DELETE CASCADE,
   CONSTRAINT `lottery_records_ibfk_2` FOREIGN KEY (`prize_id`) REFERENCES `lottery_prizes` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `verification_attempt_logs` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `user_openid` varchar(100) NOT NULL,
+  `question_id` int(11) DEFAULT NULL,
+  `question_text` varchar(500) NOT NULL DEFAULT '',
+  `submitted_answer` varchar(100) NOT NULL DEFAULT '',
+  `is_correct` tinyint(1) NOT NULL DEFAULT '0',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_verify_log_user_time` (`user_openid`,`created_at`),
+  KEY `idx_verify_log_result` (`is_correct`,`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 兼容曾经手工创建过的早期抽奖表：补齐 1.4 正式结构。
@@ -246,7 +274,7 @@ FROM information_schema.COLUMNS
 WHERE TABLE_SCHEMA = DATABASE()
   AND (
     (TABLE_NAME = 'activities' AND COLUMN_NAME IN ('end_time', 'latitude', 'longitude', 'is_official'))
-    OR (TABLE_NAME = 'users' AND COLUMN_NAME = 'isOfficial')
+    OR (TABLE_NAME = 'users' AND COLUMN_NAME IN ('isOfficial', 'blacklistSource', 'blacklistedAt', 'blacklistedBy'))
     OR (TABLE_NAME = 'activity_meeting_points' AND COLUMN_NAME IN ('latitude', 'longitude'))
     OR (TABLE_NAME = 'activity_reviews' AND COLUMN_NAME = 'activity_id')
   )
@@ -255,5 +283,5 @@ ORDER BY TABLE_NAME, ORDINAL_POSITION;
 SELECT TABLE_NAME
 FROM information_schema.TABLES
 WHERE TABLE_SCHEMA = DATABASE()
-  AND TABLE_NAME IN ('activity_lotteries', 'lottery_prizes', 'lottery_records')
+  AND TABLE_NAME IN ('activity_lotteries', 'lottery_prizes', 'lottery_records', 'verification_attempt_logs')
 ORDER BY TABLE_NAME;

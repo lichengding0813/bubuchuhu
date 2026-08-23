@@ -197,7 +197,7 @@ Page({
     }, () => {
       this.checkSignUpStatus();
     });
-    this.loadWeather(activity.location);
+    this.loadWeather(activity.location, activity.latitude, activity.longitude);
     this.checkActivityLottery(activity.id || this.data.activityId);
   },
 
@@ -246,9 +246,9 @@ Page({
     this.setData({ lotteryDrawn: true });
   },
 
-  async loadWeather(city) {
+  async loadWeather(city, latitude, longitude) {
     try {
-      const result = await get('/api/weather', { city }, { silent: true });
+      const result = await get('/api/weather', { city, latitude, longitude }, { silent: true });
       if (result.code === 200) {
         this.setData({ weather: result.data });
       }

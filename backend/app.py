@@ -76,6 +76,7 @@ from routes.admin_routes import admin_bp
 from routes.review_bp import review_bp
 from routes.lottery_routes import lottery_bp
 from db_utils import init_db_config, close_db, get_db
+from domain import weather_location_candidates
 from middleware import check_verified_and_blacklist, _invalidate_user_cache
 
 # ==================== 自定义 JSON 序列化 ====================
@@ -524,6 +525,18 @@ def verify_answer():
         if user['isBlacklist'] == 1:
             return jsonify({'code': 403, 'msg': '账户已被锁定', 'data': user})
 
+        cursor.execute("""
+            INSERT INTO verification_attempt_logs
+                (user_openid, question_id, question_text, submitted_answer, is_correct, created_at)
+            VALUES (%s, %s, %s, %s, %s, NOW())
+        """, (
+            openid,
+            current_question.get('id') if current_question else None,
+            current_question.get('question') if current_question else '历史兼容验证问题',
+            answer_trimmed,
+            1 if is_correct else 0,
+        ))
+
         if is_correct:
             cursor.execute(
                 "UPDATE users SET needVerify = 0, verified = 1, verifyAttempts = 0 WHERE openId = %s",
@@ -535,7 +548,12 @@ def verify_answer():
             new_attempt = user['verifyAttempts'] + 1
             if new_attempt >= 3:
                 cursor.execute(
-                    "UPDATE users SET verifyAttempts = %s, isBlacklist = 1 WHERE openId = %s",
+                    """
+                    UPDATE users
+                    SET verifyAttempts = %s, isBlacklist = 1,
+                        blacklistSource = 'verification', blacklistedAt = NOW(), blacklistedBy = NULL
+                    WHERE openId = %s
+                    """,
                     (new_attempt, openid)
                 )
                 msg = '验证失败次数过多，账户已锁定'
@@ -631,25 +649,32 @@ WEATHER_ICONS = {
 @check_verified_and_blacklist
 def get_weather():
     city = request.args.get('city', '上海').strip()
+    latitude = request.args.get('latitude')
+    longitude = request.args.get('longitude')
     if not city or len(city) > 40:
         return jsonify({'code': 400, 'msg': '城市参数无效'})
     if not WEATHER_API_KEY:
         return jsonify({'code': 500, 'msg': '未配置天气API'})
 
-    cache_key = city.lower()
+    locations = weather_location_candidates(city, latitude, longitude)
+    cache_key = '|'.join(locations).lower()
     cached = _weather_cache.get(cache_key)
     if cached and time.time() - cached['ts'] < _WEATHER_CACHE_TTL:
         return jsonify(cached['response'])
 
     try:
         url = 'https://api.seniverse.com/v3/weather/daily.json'
-        resp = requests.get(url, params={
-            'key': WEATHER_API_KEY,
-            'location': city,
-            'start': 0, 'days': 7
-        }, timeout=5)
-        data = resp.json()
-        results = data.get('results', [])
+        results = []
+        for location in locations:
+            resp = requests.get(url, params={
+                'key': WEATHER_API_KEY,
+                'location': location,
+                'start': 0, 'days': 7
+            }, timeout=5)
+            data = resp.json()
+            results = data.get('results', [])
+            if results:
+                break
         if not results:
             return jsonify({'code': 404, 'msg': '未找到该城市天气'})
 

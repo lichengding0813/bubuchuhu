@@ -11,6 +11,7 @@ from domain import (
     effective_lottery_status,
     published_activity_status,
     validate_activity_payload,
+    weather_location_candidates,
 )
 
 
@@ -84,6 +85,22 @@ class PublishedActivityStatusTests(unittest.TestCase):
             ),
             4,
         )
+
+
+class WeatherLocationTests(unittest.TestCase):
+    def test_coordinates_are_preferred_to_scenic_spot_name(self):
+        candidates = weather_location_candidates('安吉龙王潭', 30.63, 119.68)
+        self.assertEqual(candidates[0], '30.630000:119.680000')
+        self.assertIn('安吉龙王潭', candidates)
+
+    def test_legacy_scenic_spot_name_falls_back_to_leading_county(self):
+        candidates = weather_location_candidates('安吉龙王潭')
+        self.assertIn('安吉', candidates)
+
+    def test_city_name_is_extracted_from_address(self):
+        candidates = weather_location_candidates('浙江省绍兴市上虞区')
+        self.assertIn('绍兴市', candidates)
+        self.assertIn('绍兴', candidates)
 
 
 if __name__ == '__main__':

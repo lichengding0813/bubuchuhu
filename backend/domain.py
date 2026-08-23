@@ -1,5 +1,6 @@
 """不依赖 Flask/数据库的业务规则，便于独立测试。"""
 from datetime import datetime, timedelta
+import re
 
 
 def parse_datetime(value):
@@ -103,3 +104,47 @@ def effective_lottery_status(lottery, now=None):
     if now < lottery['start_time']:
         return 0
     return 1
+
+
+def weather_location_candidates(city='', latitude=None, longitude=None):
+    """生成天气服务位置候选：优先坐标，再尝试地点与行政区名称。"""
+    candidates = []
+
+    try:
+        lat = float(latitude)
+        lon = float(longitude)
+        if -90 <= lat <= 90 and -180 <= lon <= 180:
+            candidates.append(f'{lat:.6f}:{lon:.6f}')
+    except (TypeError, ValueError):
+        pass
+
+    text = re.sub(r'\s+', '', str(city or '').strip())
+    if text:
+        candidates.append(text)
+        first_part = re.split(r'[,，、/|·（(]', text, maxsplit=1)[0]
+        if first_part:
+            candidates.append(first_part)
+
+        municipality = re.search(r'(北京|上海|天津|重庆|香港|澳门)', text)
+        if municipality:
+            candidates.append(municipality.group(1))
+
+        if not re.search(r'(?:自治州|自治区|地区|盟|省|市|县|区)', text):
+            # 兼容“安吉龙王潭”“绍兴上虞”这类把行政区和景点连写的旧地点。
+            for length in (2, 3, 4):
+                if len(text) >= length:
+                    candidates.append(text[:length])
+
+        without_province = re.sub(r'^.*?(?:省|自治区)', '', text)
+        scan_texts = [without_province, text] if without_province and without_province != text else [text]
+        for scan_text in scan_texts:
+            for match in re.finditer(r'([\u4e00-\u9fff]{2,10}?(?:自治州|地区|盟|市|县|区))', scan_text):
+                name = match.group(1)
+                candidates.append(re.sub(r'(?:自治州|地区|盟|市|县|区)$', '', name))
+                candidates.append(name)
+
+    unique = []
+    for candidate in candidates:
+        if candidate and candidate not in unique:
+            unique.append(candidate)
+    return unique[:6]

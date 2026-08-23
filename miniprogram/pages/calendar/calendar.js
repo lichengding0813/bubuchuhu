@@ -141,7 +141,11 @@ Page({
 
     this.setData({ weatherLoading: true, selectedWeather: null, weatherMessage: '' });
     try {
-      const result = await get('/api/weather', { city: firstActivity.location }, { silent: true });
+      const result = await get('/api/weather', {
+        city: firstActivity.location,
+        latitude: firstActivity.latitude,
+        longitude: firstActivity.longitude
+      }, { silent: true });
       const daily = result.data?.daily || [];
       const forecast = daily.find(item => item.date === dateStr);
       if (forecast) {

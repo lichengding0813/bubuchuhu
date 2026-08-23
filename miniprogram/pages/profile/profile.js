@@ -32,6 +32,7 @@ Page({
     verifyQuestionIdx: 0,
     showLockedDialog: false,
     isBlacklisted: false,
+    lockedMessage: '由于多次验证失败，您的账户已被锁定。',
     remainingAttempts: 2,
     openId: '',
     isLoading: false,
@@ -87,7 +88,11 @@ Page({
         this.loadPendingCount();
         // 检查黑名单状态
         if (storageUserInfo.isBlacklist === 1) {
-          this.setData({ isBlacklisted: true, showLockedDialog: true });
+          this.setData({
+            isBlacklisted: true,
+            showLockedDialog: true,
+            lockedMessage: this.getLockedMessage(storageUserInfo)
+          });
         }
       } else {
         // 未登录状态：只显示公开菜单（关于我们、更新日志）
@@ -124,6 +129,12 @@ Page({
     } catch (error) {
       console.error('获取storage用户信息失败', error);
     }
+  },
+
+  getLockedMessage(user) {
+    return user?.blacklistSource === 'manual'
+      ? '该账户已被管理员加入黑名单，如有疑问请联系管理员。'
+      : '由于多次验证失败，您的账户已被锁定。';
   },
 
   // 动态构建菜单列表（登录后使用）
@@ -420,7 +431,11 @@ Page({
           }
           this.setData(updateData);
         } else if (userData.isBlacklist === 1) {
-          this.setData({ showLockedDialog: true, isBlacklisted: true });
+          this.setData({
+            showLockedDialog: true,
+            isBlacklisted: true,
+            lockedMessage: this.getLockedMessage(userData)
+          });
         } else {
           wx.showToast({ title: '登录成功', icon: 'success' });
         }
@@ -494,7 +509,8 @@ Page({
           this.setData({
             showVerifyDialog: false,
             showLockedDialog: true,
-            isBlacklisted: true
+            isBlacklisted: true,
+            lockedMessage: this.getLockedMessage(userData)
           });
         } else if (userData.needVerify === 0) {
           this.setData({ showVerifyDialog: false });

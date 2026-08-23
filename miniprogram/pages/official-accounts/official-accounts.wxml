@@ -65,7 +65,9 @@
           <text class="user-openid">{{item.displayOpenId}}</text>
         </view>
       </view>
-      <van-button size="small" type="danger" plain loading="{{removingOpenId === item.openId}}" data-openid="{{item.openId}}" data-nickname="{{item.nickName}}" catchtap="onRemove">移出</van-button>
+      <view class="remove-btn {{removingOpenId === item.openId ? 'loading' : ''}}" data-openid="{{item.openId}}" data-nickname="{{item.nickName}}" catchtap="onRemove">
+        {{removingOpenId === item.openId ? '处理中' : '移出'}}
+      </view>
     </view>
   </view>
 </view>

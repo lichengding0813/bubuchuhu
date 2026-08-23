@@ -1,59 +1,88 @@
 <view class="container">
-  <!-- 说明 -->
   <view class="tip-card">
-    <van-icon name="warning-o" size="14px" color="#ff9800" />
-    <text>被拉黑的用户无法使用小程序。解封后将重置答错次数，用户可重新答题验证，通过后恢复正常使用。</text>
+    <van-icon name="warning-o" size="14px" color="#d48806" />
+    <text>黑名单分为“管理员手动”和“答题错误超限”两类。解封后用户需要重新完成答题验证。</text>
   </view>
 
-  <!-- 黑名单列表 -->
-  <view class="list-section">
-    <view class="section-header">
-      <text class="section-title">黑名单用户（{{total}}人）</text>
+  <view class="search-card">
+    <view class="search-title">手动添加黑名单</view>
+    <view class="search-bar">
+      <van-icon name="search" size="17px" color="#8aa8c5" />
+      <input class="search-input" value="{{keyword}}" placeholder="昵称、微信号或用户标识" bindinput="onKeywordInput" bindconfirm="onSearch" confirm-type="search" />
+      <van-icon wx:if="{{keyword}}" name="clear" size="17px" color="#a5b7c8" bindtap="onClearSearch" />
+      <view class="search-submit-btn {{isSearching ? 'loading' : ''}}" bindtap="onSearch">{{isSearching ? '搜索中' : '搜索'}}</view>
     </view>
 
-    <view wx:if="{{isLoading}}" class="loading-container">
-      <van-loading size="40px" vertical>加载中...</van-loading>
-    </view>
-
-    <view wx:elif="{{userList.length === 0}}" class="empty-container">
-      <van-icon name="passed" size="80" color="#ccc" />
-      <text class="empty-text">暂无黑名单用户</text>
-    </view>
-
-    <view wx:else>
-      <view wx:for="{{userList}}" wx:key="openId" class="user-card">
-        <view class="card-main">
-          <image class="user-avatar" src="{{item.avatarUrl || '/images/default-avatar.png'}}" mode="aspectFill" lazy-load />
-          <view class="user-info">
-            <text class="user-name">{{item.nickName || '匿名用户'}}</text>
-            <view class="user-meta">
-              <text class="meta-item" wx:if="{{item.wechatId}}">微信号：{{item.wechatId}}</text>
-              <text class="meta-item">答错次数：{{item.verifyAttempts || 0}}次</text>
-            </view>
-            <view wx:if="{{item.lastLoginTime && item.lastLoginTime !== '-'}}" class="user-time">
-              <text class="time-label">最近登录：</text>
-              <text class="time-value">{{item.lastLoginTime}}</text>
-            </view>
-            <view wx:if="{{item.createTime && item.createTime !== '-'}}" class="user-time">
-              <text class="time-label">注册时间：</text>
-              <text class="time-value">{{item.createTime}}</text>
-            </view>
-          </view>
+    <view class="candidate-section" wx:if="{{hasSearched}}">
+      <view class="empty-inline" wx:if="{{!isSearching && candidateList.length === 0}}">没有可添加的用户</view>
+      <view class="candidate-card" wx:for="{{candidateList}}" wx:key="openId">
+        <image class="user-avatar" src="{{item.avatarUrl}}" mode="aspectFill" wx:if="{{item.avatarUrl}}" />
+        <view class="user-avatar avatar-placeholder" wx:else><van-icon name="user-o" /></view>
+        <view class="user-info">
+          <text class="user-name">{{item.nickName || '匿名用户'}}</text>
+          <text class="meta-item" wx:if="{{item.wechatId}}">微信号：{{item.wechatId}}</text>
+          <text class="user-openid">{{item.displayOpenId}}</text>
         </view>
-
-        <view class="card-bottom">
-          <van-button 
-            class="unblock-btn" 
-            type="warning" 
-            size="small" 
-            loading="{{item.isUnblocking}}" 
-            bindtap="onUnblock" 
-            data-openid="{{item.openId}}"
-          >
-            解封
-          </van-button>
+        <view class="add-blacklist-btn {{addingOpenId === item.openId ? 'loading' : ''}}" data-openid="{{item.openId}}" data-nickname="{{item.nickName}}" bindtap="onAddBlacklist">
+          {{addingOpenId === item.openId ? '处理中' : '拉黑'}}
         </view>
       </view>
     </view>
   </view>
+
+  <view class="list-section">
+    <view class="section-header"><text class="section-title">黑名单用户（{{total}}人）</text></view>
+    <view wx:if="{{isLoading}}" class="loading-container"><van-loading size="40px" vertical>加载中...</van-loading></view>
+    <view wx:elif="{{userList.length === 0}}" class="empty-container">
+      <van-icon name="passed" size="72" color="#c4d3e0" />
+      <text class="empty-text">暂无黑名单用户</text>
+    </view>
+    <view wx:else>
+      <view wx:for="{{userList}}" wx:key="openId" class="user-card">
+        <view class="card-main">
+          <image class="user-avatar" src="{{item.avatarUrl}}" mode="aspectFill" wx:if="{{item.avatarUrl}}" />
+          <view class="user-avatar avatar-placeholder" wx:else><van-icon name="user-o" /></view>
+          <view class="user-info">
+            <view class="name-row">
+              <text class="user-name">{{item.nickName || '匿名用户'}}</text>
+              <text class="source-chip source-{{item.source}}">{{item.sourceLabel}}</text>
+            </view>
+            <text class="meta-item" wx:if="{{item.wechatId}}">微信号：{{item.wechatId}}</text>
+            <text class="meta-item" wx:if="{{item.source === 'verification'}}">答错次数：{{item.verifyAttempts || 0}}次</text>
+            <text class="meta-item" wx:if="{{item.blacklistedAt !== '-'}}">拉黑时间：{{item.blacklistedAt}}</text>
+            <text class="user-openid">{{item.displayOpenId}}</text>
+          </view>
+        </view>
+        <view class="card-bottom">
+          <view class="record-btn" data-openid="{{item.openId}}" data-nickname="{{item.nickName}}" bindtap="onViewAttempts">查看答题记录</view>
+          <view class="unblock-btn {{item.isUnblocking ? 'loading' : ''}}" bindtap="onUnblock" data-openid="{{item.openId}}">{{item.isUnblocking ? '处理中' : '解封'}}</view>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>
+
+<view class="record-mask" wx:if="{{recordPopupVisible}}" bindtap="closeRecordPopup"></view>
+<view class="record-popup" wx:if="{{recordPopupVisible}}" catchtap="stopPropagation">
+  <view class="record-header">
+    <view>
+      <text class="record-title">答题记录</text>
+      <text class="record-user">{{recordUser.nickName || '匿名用户'}}</text>
+    </view>
+    <van-icon name="cross" size="20px" color="#8095a8" bindtap="closeRecordPopup" />
+  </view>
+  <view class="record-loading" wx:if="{{recordsLoading}}"><van-loading size="30px">加载中...</van-loading></view>
+  <view class="record-empty" wx:elif="{{attemptRecords.length === 0}}">暂无历史记录；日志功能上线后的答题会显示在这里</view>
+  <scroll-view class="record-list" scroll-y wx:else>
+    <view class="attempt-card" wx:for="{{attemptRecords}}" wx:key="id">
+      <view class="attempt-head">
+        <text class="attempt-result {{item.isCorrect ? 'correct' : 'wrong'}}">{{item.isCorrect ? '回答正确' : '回答错误'}}</text>
+        <text class="attempt-time">{{item.createdAt}}</text>
+      </view>
+      <text class="attempt-label">问题</text>
+      <text class="attempt-value">{{item.question_text}}</text>
+      <text class="attempt-label">用户回答</text>
+      <text class="attempt-answer">{{item.submitted_answer}}</text>
+    </view>
+  </scroll-view>
 </view>

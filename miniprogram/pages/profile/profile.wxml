@@ -1,14 +1,16 @@
 <view class="profile-container">
   <!-- 用户信息卡片 -->
   <view class="user-card" bindtap="onLoginClick">
-    <view class="user-avatar">
-      <open-data type="userAvatarUrl" wx:if="{{!userInfo.avatarUrl}}"></open-data>
-      <image src="{{userInfo.avatarUrl}}" wx:else mode="aspectFill"></image>
+    <view class="user-avatar-wrap">
+      <view class="user-avatar">
+        <open-data type="userAvatarUrl" wx:if="{{!userInfo.avatarUrl}}"></open-data>
+        <image src="{{userInfo.avatarUrl}}" wx:else mode="aspectFill"></image>
+      </view>
+      <image class="profile-official-v" wx:if="{{userInfo.isOfficial === 1}}" src="/images/official-badge.png" mode="aspectFit" />
     </view>
     <view class="user-info">
       <view class="user-name-row">
         <text class="user-name">{{userInfo.nickName || '点击登录'}}</text>
-        <image class="profile-official-v" wx:if="{{userInfo.isOfficial === 1}}" src="/images/official-badge.png" mode="aspectFit" />
       </view>
       <!-- 在用户信息卡片中的 user-badge 部分 -->
       <view class="user-badge" wx:if="{{userInfo.isLogin}}">
@@ -79,7 +81,7 @@
   <!-- 底部版本号 -->
   <view class="version-section">
     <view class="version-toggle" bindtap="goToUpdateLog">
-      <text class="version-text">当前版本 v1.4.2</text>
+      <text class="version-text">当前版本 v1.4.3</text>
       <van-icon name="arrow" size="14" color="#999" />
     </view>
   </view>
@@ -109,7 +111,7 @@
   <view class="dialog-container">
     <view class="dialog-title">账户已锁定</view>
     <view class="dialog-content">
-      <view class="plain-text">由于多次验证失败，您的账户已被锁定。</view>
+      <view class="plain-text">{{lockedMessage}}</view>
     </view>
     <view class="dialog-buttons">
       <view class="dialog-btn dialog-btn-confirm" bindtap="onLockedConfirm">知道了</view>

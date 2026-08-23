@@ -1689,7 +1689,8 @@ def get_activity_calendar():
         if date:
             # 查询指定日期的活动列表
             cursor.execute("""
-                SELECT a.id, a.name, a.location, a.activity_time, a.difficulty,
+                SELECT a.id, a.name, a.location, a.latitude, a.longitude,
+                       a.activity_time, a.difficulty,
                        a.max_participants, a.status, a.cover_url, a.is_official,
                        COALESCE(pc.participant_count, 0) AS participant_count,
                        CASE WHEN mine.activity_id IS NULL THEN FALSE ELSE TRUE END AS has_registered

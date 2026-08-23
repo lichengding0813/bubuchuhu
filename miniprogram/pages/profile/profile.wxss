@@ -24,15 +24,23 @@ page {
   box-shadow: 0 8rpx 20rpx rgba(0, 110, 200, 0.2);
 }
 
+.user-avatar-wrap {
+  position: relative;
+  width: 120rpx;
+  height: 120rpx;
+  margin-right: 30rpx;
+  flex-shrink: 0;
+}
+
 .user-avatar {
   width: 120rpx;
   height: 120rpx;
   border-radius: 60rpx;
   overflow: hidden;
-  margin-right: 30rpx;
   border: 4rpx solid #ffffff;
   box-shadow: 0 4rpx 10rpx rgba(0, 50, 100, 0.3);
   background-color: #b7daf9;
+  box-sizing: border-box;
 }
 
 .user-avatar image, .user-avatar open-data {
@@ -65,9 +73,12 @@ page {
 }
 
 .profile-official-v {
-  flex-shrink: 0;
-  width: 48rpx;
-  height: 48rpx;
+  position: absolute;
+  right: -10rpx;
+  bottom: -8rpx;
+  width: 52rpx;
+  height: 52rpx;
+  z-index: 1;
 }
 
 .user-meta {

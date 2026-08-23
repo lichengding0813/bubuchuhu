@@ -179,6 +179,27 @@ page {
   font-size: 10px;
 }
 
+.remove-btn {
+  display: flex;
+  flex: 0 0 54px;
+  width: 54px;
+  height: 30px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #ef8b8b;
+  border-radius: 15px;
+  color: #df5555;
+  background: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  box-sizing: border-box;
+}
+
+.remove-btn.loading {
+  opacity: 0.58;
+  pointer-events: none;
+}
+
 .user-meta {
   color: #6f92b2;
   font-size: 12px;
