@@ -77,7 +77,6 @@ from routes.review_bp import review_bp
 from routes.lottery_routes import lottery_bp
 from db_utils import init_db_config, close_db, get_db
 from middleware import check_verified_and_blacklist, _invalidate_user_cache
-from http_utils import WeChatHTTPClient, WeChatTransportError
 
 # ==================== 自定义 JSON 序列化 ====================
 class BeijingTimeJSONProvider(DefaultJSONProvider):
@@ -99,10 +98,6 @@ app.config['WX_API_BASE'] = WX_API_BASE
 app.config['DEFAULT_AVATAR'] = DEFAULT_AVATAR
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LENGTH
-
-# 微信接口使用系统 CA 且默认不继承 HTTPS_PROXY，避免云环境的自签名代理
-# 导致 jscode2session 证书校验失败。所有异常均会脱敏后再记录。
-wechat_http = WeChatHTTPClient()
 
 # ==================== 速率限制 ====================
 # 注意：云托管环境下所有请求经过同一代理，get_remote_address() 对所有人相同。
@@ -159,7 +154,7 @@ def get_access_token():
             'appid': app.config['WX_APPID'],
             'secret': app.config['WX_SECRET']
         }
-        res = wechat_http.request('GET', url, params=params, timeout=10)
+        res = requests.get(url, params=params, timeout=10)
         data = res.json()
 
         if 'access_token' not in data:
@@ -169,8 +164,8 @@ def get_access_token():
         _access_token_cache['token'] = data['access_token']
         _access_token_cache['expires_at'] = now + data.get('expires_in', 7200)
         return data['access_token']
-    except WeChatTransportError as e:
-        logging.error("获取access_token网络异常: %s", e.kind)
+    except requests.RequestException as e:
+        logging.error("获取access_token网络异常: %s", type(e).__name__)
         return None
     except Exception:
         logging.exception("获取access_token异常")
@@ -199,7 +194,7 @@ def check_text_security(content, openid, scene=1, title=''):
         if title:
             body['title'] = title
 
-        res = wechat_http.request('POST', url, json=body, timeout=10)
+        res = requests.post(url, json=body, timeout=10)
         data = res.json()
 
         if data.get('errcode') == 0:
@@ -214,8 +209,8 @@ def check_text_security(content, openid, scene=1, title=''):
         else:
             logging.warning(f"内容安全检测接口返回: {data}")
             return True, ''
-    except WeChatTransportError as e:
-        logging.error("内容安全检测网络异常: %s", e.kind)
+    except requests.RequestException as e:
+        logging.error("内容安全检测网络异常: %s", type(e).__name__)
         return True, ''
     except Exception:
         logging.exception("内容安全检测异常")
@@ -242,7 +237,7 @@ def check_image_security(image_data, openid):
         base_url = app.config.get('WX_API_BASE', 'https://api.weixin.qq.com')
         url = f'{base_url}/wxa/img_sec_check?access_token={access_token}'
         with open(temp_path, 'rb') as f:
-            res = wechat_http.request('POST', url, files={'media': f}, timeout=30)
+            res = requests.post(url, files={'media': f}, timeout=30)
 
         data = res.json()
         if data.get('errcode') == 0:
@@ -252,8 +247,8 @@ def check_image_security(image_data, openid):
         else:
             logging.warning(f"图片安全检测接口返回: {data}")
             return True, ''
-    except WeChatTransportError as e:
-        logging.error("图片安全检测网络异常: %s", e.kind)
+    except requests.RequestException as e:
+        logging.error("图片安全检测网络异常: %s", type(e).__name__)
         return True, ''
     except Exception:
         logging.exception("图片安全检测异常")
@@ -405,7 +400,7 @@ def login():
             'js_code': code,
             'grant_type': 'authorization_code'
         }
-        res = wechat_http.request('GET', url, params=params, timeout=10)
+        res = requests.get(url, params=params, timeout=10)
         wx_data = res.json()
 
         if 'openid' not in wx_data:
@@ -413,13 +408,14 @@ def login():
             return jsonify({'code': 401, 'msg': '微信登录失败，请重试'})
 
         openid = wx_data['openid']
-    except WeChatTransportError as e:
-        if e.kind == 'ssl':
-            logging.error("微信API SSL证书验证失败，请检查容器 CA 或 HTTPS 代理配置")
-        elif e.kind == 'timeout':
-            logging.error("微信API请求超时")
-        else:
-            logging.error("微信API连接失败，请检查容器网络或 DNS")
+    except requests.exceptions.SSLError:
+        logging.error("微信API SSL证书验证失败，请检查容器 CA 配置")
+        return jsonify({'code': 500, 'msg': '服务暂时不可用，请稍后重试'})
+    except requests.exceptions.Timeout:
+        logging.error("微信API请求超时")
+        return jsonify({'code': 500, 'msg': '服务暂时不可用，请稍后重试'})
+    except requests.exceptions.ConnectionError:
+        logging.error("微信API连接失败，请检查容器网络或 DNS")
         return jsonify({'code': 500, 'msg': '服务暂时不可用，请稍后重试'})
     except Exception:
         logging.exception("调用微信接口失败")

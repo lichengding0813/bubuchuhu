@@ -101,11 +101,11 @@ DELIMITER ;
 CALL add_review_activity_fk_if_missing();
 DROP PROCEDURE `add_review_activity_fk_if_missing`;
 
--- 历史品牌活动回填：活动名称以【步步出沪】开头的记录统一标记为官方活动。
+-- 历史品牌活动回填：活动名称中包含“步步出沪”的记录统一标记为官方活动。
 UPDATE `activities`
 SET `is_official` = 1
 WHERE `is_official` = 0
-  AND LEFT(`name`, CHAR_LENGTH('【步步出沪】')) = '【步步出沪】';
+  AND `name` LIKE '%步步出沪%';
 
 -- 官方活动只由独立发布入口创建；兼容旧版待审核官方活动。
 UPDATE `activities`
