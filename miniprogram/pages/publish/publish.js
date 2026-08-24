@@ -243,8 +243,9 @@ Page({
 
     this.initPickerData();
     const userInfo = wx.getStorageSync('userInfo');
+    const canPublishOfficial = Number(userInfo?.isOfficial) === 1 || Number(userInfo?.isAdmin) === 1;
     if (isOfficialMode) {
-      if (Number(userInfo?.isOfficial) !== 1) {
+      if (!canPublishOfficial) {
         wx.showModal({
           title: '权限不足',
           content: '仅官方账号可以发布或修改官方活动',
@@ -258,7 +259,7 @@ Page({
         title: options.id ? '编辑官方活动' : '发布官方活动'
       });
     }
-    if (Number(userInfo?.isOfficial) === 1 && !hasRouteToLoad && !isDraft) {
+    if (canPublishOfficial && !hasRouteToLoad && !isDraft) {
       this.setData({ canChoosePublishMode: true });
     }
     if (userInfo && userInfo.openId) {

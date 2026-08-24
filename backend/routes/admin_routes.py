@@ -5,16 +5,18 @@ from db_utils import get_db
 from middleware import (
     check_verified_and_blacklist,
     check_admin,
+    check_staff,
     _invalidate_user_cache,
     _clear_user_cache,
 )
+from notification_service import queue_blacklist_notice
 
 admin_bp = Blueprint('admin', __name__)
 
 
 @admin_bp.route('/dashboard', methods=['GET'])
 @check_verified_and_blacklist
-@check_admin
+@check_staff
 def get_dashboard():
     conn = None
     cursor = None
@@ -51,7 +53,7 @@ def get_dashboard():
 
 @admin_bp.route('/pending-activities', methods=['GET'])
 @check_verified_and_blacklist
-@check_admin
+@check_staff
 def get_pending_activities():
     """获取待审核的活动列表（status=0）"""
     page = max(request.args.get('page', 1, type=int) or 1, 1)
@@ -108,7 +110,7 @@ def get_pending_activities():
 
 @admin_bp.route('/review-activity', methods=['POST'])
 @check_verified_and_blacklist
-@check_admin
+@check_staff
 def review_activity():
     """审核活动（通过/驳回）"""
     data = request.get_json(silent=True) or {}
@@ -196,7 +198,7 @@ def review_activity():
 
 @admin_bp.route('/blacklist', methods=['GET'])
 @check_verified_and_blacklist
-@check_admin
+@check_staff
 def get_blacklist():
     """获取黑名单用户列表"""
     page = max(request.args.get('page', 1, type=int) or 1, 1)
@@ -247,7 +249,7 @@ def get_blacklist():
 
 @admin_bp.route('/remove-blacklist', methods=['POST'])
 @check_verified_and_blacklist
-@check_admin
+@check_staff
 def remove_from_blacklist():
     """将用户移出黑名单"""
     data = request.get_json(silent=True) or {}
@@ -290,7 +292,7 @@ def remove_from_blacklist():
 
 @admin_bp.route('/blacklist-candidates', methods=['GET'])
 @check_verified_and_blacklist
-@check_admin
+@check_staff
 def search_blacklist_candidates():
     """按昵称、微信号或精确 openId 搜索可手动拉黑的普通用户。"""
     keyword = str(request.args.get('keyword') or '').strip()
@@ -308,6 +310,7 @@ def search_blacklist_candidates():
             FROM users
             WHERE isBlacklist = 0
               AND (isAdmin = 0 OR isAdmin IS NULL)
+              AND (isOfficial = 0 OR isOfficial IS NULL)
               AND (nickName LIKE %s OR wechatId LIKE %s OR openId = %s)
             ORDER BY lastLoginTime DESC
             LIMIT 20
@@ -323,7 +326,7 @@ def search_blacklist_candidates():
 
 @admin_bp.route('/blacklist', methods=['POST'])
 @check_verified_and_blacklist
-@check_admin
+@check_staff
 def add_to_blacklist():
     """管理员手动将普通用户加入黑名单。"""
     data = request.get_json(silent=True) or {}
@@ -338,14 +341,15 @@ def add_to_blacklist():
     try:
         cursor = conn.cursor()
         cursor.execute(
-            "SELECT openId, isAdmin, isBlacklist FROM users WHERE openId = %s FOR UPDATE",
+            """SELECT openId, nickName, wechatId, isAdmin, isOfficial, isBlacklist
+               FROM users WHERE openId = %s FOR UPDATE""",
             (openid,)
         )
         user = cursor.fetchone()
         if not user:
             return jsonify({'code': 404, 'msg': '用户不存在'})
-        if user.get('isAdmin') == 1:
-            return jsonify({'code': 400, 'msg': '不能手动拉黑管理员账号'})
+        if user.get('isAdmin') == 1 or user.get('isOfficial') == 1:
+            return jsonify({'code': 400, 'msg': '不能手动拉黑后台业务账号'})
         if user.get('isBlacklist') == 1:
             return jsonify({'code': 409, 'msg': '该用户已在黑名单中'})
 
@@ -357,6 +361,7 @@ def add_to_blacklist():
         """, (g.openid, openid))
         conn.commit()
         _invalidate_user_cache(openid)
+        queue_blacklist_notice(user, 'manual')
         return jsonify({'code': 200, 'msg': '已手动加入黑名单'})
     except Exception:
         conn.rollback()
@@ -369,7 +374,7 @@ def add_to_blacklist():
 
 @admin_bp.route('/verification-attempts', methods=['GET'])
 @check_verified_and_blacklist
-@check_admin
+@check_staff
 def get_verification_attempts():
     """查看指定用户最近的验证答题记录。"""
     openid = str(request.args.get('openid') or request.args.get('openId') or '').strip()
@@ -402,7 +407,7 @@ def get_verification_attempts():
 
 @admin_bp.route('/reset-all-verification', methods=['POST'])
 @check_verified_and_blacklist
-@check_admin
+@check_staff
 def reset_all_verification():
     """管理员触发全员重新验证：将所有非管理员用户重置为未验证状态"""
     conn = None
@@ -412,11 +417,12 @@ def reset_all_verification():
         conn = get_db()
         cursor = conn.cursor()
 
-        # 重置所有非管理员用户的验证状态（保持管理员不受影响）
+        # 超级管理员和官方账号均承担后台业务，不重置其验证状态。
         cursor.execute("""
             UPDATE users 
             SET needVerify = 1, verified = 0, verifyAttempts = 0
-            WHERE isAdmin = 0 OR isAdmin IS NULL
+            WHERE (isAdmin = 0 OR isAdmin IS NULL)
+              AND (isOfficial = 0 OR isOfficial IS NULL)
         """)
 
         affected = cursor.rowcount
@@ -443,7 +449,7 @@ def reset_all_verification():
 
 @admin_bp.route('/verify-questions', methods=['GET'])
 @check_verified_and_blacklist
-@check_admin
+@check_staff
 def get_verify_questions():
     """获取所有验证问题"""
     conn = None
@@ -476,7 +482,7 @@ def get_verify_questions():
 
 @admin_bp.route('/verify-questions', methods=['POST'])
 @check_verified_and_blacklist
-@check_admin
+@check_staff
 def add_verify_question():
     """添加验证问题"""
     data = request.get_json(silent=True) or {}
@@ -513,7 +519,7 @@ def add_verify_question():
 
 @admin_bp.route('/verify-questions/<int:qid>', methods=['PUT'])
 @check_verified_and_blacklist
-@check_admin
+@check_staff
 def update_verify_question(qid):
     """更新验证问题"""
     data = request.get_json(silent=True) or {}
@@ -558,7 +564,7 @@ def update_verify_question(qid):
 
 @admin_bp.route('/verify-questions/<int:qid>', methods=['DELETE'])
 @check_verified_and_blacklist
-@check_admin
+@check_staff
 def delete_verify_question(qid):
     """删除验证问题"""
     conn = None
@@ -601,7 +607,7 @@ def get_official_accounts():
         conn = get_db()
         cursor = conn.cursor()
         cursor.execute("""
-            SELECT openId, nickName, avatarUrl, wechatId, isOfficial, createTime, lastLoginTime
+            SELECT openId, nickName, avatarUrl, wechatId, isAdmin, isOfficial, createTime, lastLoginTime
             FROM users
             WHERE isOfficial = 1
             ORDER BY nickName ASC, openId ASC
@@ -642,7 +648,11 @@ def bootstrap_official_account():
         if not account:
             return jsonify({'code': 403, 'msg': '当前账号不是管理员'})
 
-        cursor.execute("UPDATE users SET isOfficial = 1 WHERE openId = %s", (g.openid,))
+        cursor.execute("""
+            UPDATE users SET isOfficial = 1, verified = 1,
+                needVerify = 0, verifyAttempts = 0
+            WHERE openId = %s
+        """, (g.openid,))
         conn.commit()
         _invalidate_user_cache(g.openid)
         account['isOfficial'] = 1
@@ -724,7 +734,11 @@ def add_official_account():
             return jsonify({'code': 404, 'msg': '用户不存在'})
 
         if account.get('isOfficial') != 1:
-            cursor.execute("UPDATE users SET isOfficial = 1 WHERE openId = %s", (openid,))
+            cursor.execute("""
+                UPDATE users SET isOfficial = 1, verified = 1,
+                    needVerify = 0, verifyAttempts = 0
+                WHERE openId = %s
+            """, (openid,))
             conn.commit()
             _invalidate_user_cache(openid)
 
@@ -757,12 +771,17 @@ def remove_official_account():
     try:
         conn = get_db()
         cursor = conn.cursor()
-        cursor.execute("SELECT openId, isOfficial FROM users WHERE openId = %s FOR UPDATE", (openid,))
+        cursor.execute(
+            "SELECT openId, isAdmin, isOfficial FROM users WHERE openId = %s FOR UPDATE",
+            (openid,),
+        )
         account = cursor.fetchone()
         if not account:
             return jsonify({'code': 404, 'msg': '用户不存在'})
         if account.get('isOfficial') != 1:
             return jsonify({'code': 404, 'msg': '该用户不在官方账号白名单中'})
+        if account.get('isAdmin') == 1:
+            return jsonify({'code': 400, 'msg': '超级管理员必须保留官方业务权限'})
 
         cursor.execute("UPDATE users SET isOfficial = 0 WHERE openId = %s", (openid,))
         conn.commit()

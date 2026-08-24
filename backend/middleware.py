@@ -29,7 +29,7 @@ def _get_user_cached(openid):
         conn = get_db()
         cursor = conn.cursor()
         cursor.execute(
-            "SELECT verified, isBlacklist, needVerify, isAdmin FROM users WHERE openId = %s",
+            "SELECT verified, isBlacklist, needVerify, isAdmin, isOfficial FROM users WHERE openId = %s",
             (openid,)
         )
         user = cursor.fetchone()
@@ -78,8 +78,8 @@ def check_verified_and_blacklist(f):
         if user['isBlacklist'] == 1:
             return jsonify({'code': 403, 'msg': '账户已被锁定，请联系管理员'})
 
-        # 管理员跳过验证检查
-        if user.get('isAdmin') == 1:
+        # 超级管理员和官方账号承担后台业务，均跳过普通用户验证。
+        if user.get('isAdmin') == 1 or user.get('isOfficial') == 1:
             g.openid = openid
             return f(*args, **kwargs)
 
@@ -94,7 +94,7 @@ def check_verified_and_blacklist(f):
 
 
 def check_admin(f):
-    """管理员权限检查中间件 - 使用缓存避免重复查询"""
+    """超级管理员权限检查：仅允许 isAdmin=1 的账号。"""
     @wraps(f)
     def decorated_function(*args, **kwargs):
         openid = request.headers.get('X-Wx-OpenId')
@@ -108,6 +108,26 @@ def check_admin(f):
 
         if user.get('isAdmin') != 1:
             return jsonify({'code': 403, 'msg': '无管理员权限'})
+
+        return f(*args, **kwargs)
+
+    return decorated_function
+
+
+def check_staff(f):
+    """业务管理权限：超级管理员或官方账号均可使用。"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        openid = request.headers.get('X-Wx-OpenId')
+        if not openid:
+            return jsonify({'code': 401, 'msg': '未获取到用户身份'})
+
+        user = _get_user_cached(openid)
+        if not user:
+            return jsonify({'code': 404, 'msg': '用户不存在'})
+
+        if user.get('isAdmin') != 1 and user.get('isOfficial') != 1:
+            return jsonify({'code': 403, 'msg': '无业务管理权限'})
 
         return f(*args, **kwargs)
 

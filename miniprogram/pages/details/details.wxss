@@ -845,6 +845,13 @@ page {
 }
 
 /* 报名成功弹窗 */
+.success-reminder-tip {
+  margin: 18rpx 0 12rpx;
+  color: #7890a5;
+  font-size: 24rpx;
+  line-height: 1.5;
+  text-align: center;
+}
 .success-popup {
   padding: 30px 20px 20px;
   text-align: center;

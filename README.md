@@ -14,6 +14,8 @@
 - 🥕 新增官方活动和官方账号认证，支持只看官方
 - 📅 新增活动日历、天气预报和地图选点
 - 🎡 官方活动可以创建幸运转盘，配置中奖概率，并完成奖品核销
+- 🔔 新增活动、抽奖、待审核和黑名单订阅消息提醒
+- 🔐 超级管理员与官方账号权限分离，官方账号保留业务管理能力
 - 📖 活动回顾可以直接关联已有官方活动
 - ✍️ 路线详情支持加粗、字号和文字颜色
 - 📝 活动支持暂存、撤回和重新编辑
@@ -103,6 +105,7 @@
 │   ├── migration_v1_4_2.sql     # v1.4.2 抽奖奖品图迁移
 │   ├── migration_v1_4_3.sql     # v1.4.3 黑名单来源与答题日志迁移
 │   ├── migration_v1_4_4.sql     # v1.4.4 抽奖 v2 全量重建迁移
+│   ├── migration_v1_4_5.sql     # 超级管理员权限收敛与订阅消息任务表
 │   └── migration_official_accounts.sql # 官方账号功能独立增量迁移
 ├── database/           # 数据库建表语句
 │   ├── users.sql
@@ -147,7 +150,9 @@
 - **新建回顾**：管理员从尚未创建回顾的官方活动中选择来源，系统自动带入名称、时间、地点、难度、里程、爬升、有效报名人数和活动封面；基础信息可微调，活动总结支持富文本编辑
 - **来源约束**：新回顾必须关联官方活动，后端校验官方标记并阻止重复创建；历史未关联回顾仍可继续查看和编辑
 
-### 管理员功能
+### 后台账号与权限
+- **超级管理员**：仅指定的三个账号，可使用全部业务管理功能并增删官方账号
+- **官方账号**：可管理官方活动、活动抽奖、待审核活动、验证问题和黑名单，不能管理官方账号名单
 - **活动审核**：查看待审核活动，通过或拒绝（待审核菜单显示数量徽标）
 - **黑名单管理**：查看黑名单用户列表，一键解封（重置答错次数，用户可重新答题）
 - **验证问题管理**：增删改查验证问题，支持启用/禁用（左右滑动开关）、多答案
@@ -171,8 +176,10 @@
 | `activity_lotteries` / `lottery_prizes` | 抽奖配置、固定中奖概率、奖品库存和领奖说明 | password_hash, probability_bps, remaining, valid_until |
 | `lottery_user_states` / `lottery_records` | 用户抽奖机会、每日口令次数和每次抽奖结果 | chances_total, chances_used, chance_no |
 | `lottery_redemptions` / `lottery_chance_grants` | 奖品核销与管理员追加机会记录 | redeem_code, status, quantity |
+| `notification_subscriptions` / `notification_jobs` | 订阅授权额度与去重发送任务 | template_id, available_count, dedupe_key, status |
+| `notification_send_logs` | 微信订阅消息发送结果 | job_id, errcode, errmsg |
 
-> 建表语句详见 `database/`。抽奖 v2 尚未上线，不保留测试数据：部署本版后需执行 `database/migration_v1_4_4.sql`，脚本只会清空并重建抽奖相关表，不影响活动、用户和报名数据。官方白名单为空时，由管理员在页面上二次确认后初始化自己的账号，不自动扩大权限。
+> 建表语句详见 `database/`。部署订阅消息与角色拆分前需执行 `database/migration_v1_4_5.sql`。脚本会将 `isAdmin` 收敛为指定三个微信号，并保留原有官方白名单。
 
 ## 部署信息
 
@@ -186,7 +193,8 @@
 1. 后端代码通过微信云托管控制台手动上传代码包部署
 2. Dockerfile 基于 `python:3.9-slim`，设置 `TZ=Asia/Shanghai` 修正时区，使用 Gunicorn 启动
 3. 仓库版 Dockerfile 不保存凭证。DB、微信和天气凭证通过云托管 Secret/环境变量注入，变量名详见 `.env.example`
-4. 微信 API 仅通过 `https://api.weixin.qq.com` 调用
+4. 微信 API 统一通过 `WX_API_BASE` 调用；本地部署包保留当前已验证可用的配置
+5. 订阅消息由容器后台任务每分钟处理一次，云托管需至少保留 1 个运行实例
 
 > 凭证策略：Git 仓库只保存安全版；本地部署版可保留私有 Dockerfile 和 `.env`，不得提交。两版同步时必须排除这些私有文件。
 
@@ -276,6 +284,8 @@ python app.py
 | POST | `/api/lottery/draw` | 校验口令并抽奖 |
 | GET | `/api/lottery/my-result` | 获取用户抽奖结果 |
 | GET | `/api/lottery/my-prizes` | 获取我的中奖奖品与核销状态 |
+| POST | `/api/notifications/consent` | 保存用户主动订阅结果 |
+| POST | `/api/admin/notifications/process` | 超级管理员手动补跑消息任务 |
 | GET | `/api/reviews` | 活动回顾列表 |
 | GET | `/api/reviews/<id>` | 活动回顾详情 |
 | POST | `/api/reviews` | 新建活动回顾 |

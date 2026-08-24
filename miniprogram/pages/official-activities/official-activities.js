@@ -9,7 +9,7 @@ Page({
 
   onShow() {
     const userInfo = wx.getStorageSync('userInfo');
-    if (Number(userInfo?.isOfficial) !== 1) {
+    if (Number(userInfo?.isOfficial) !== 1 && Number(userInfo?.isAdmin) !== 1) {
       wx.showModal({
         title: '权限不足',
         content: '仅官方账号可以进入官方活动管理',

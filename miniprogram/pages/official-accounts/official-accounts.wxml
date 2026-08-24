@@ -1,7 +1,7 @@
 <view class="container">
   <view class="tip-card">
     <van-icon name="certificate" size="16px" color="#2f80c5" />
-    <text>白名单账号可从“官方活动管理”直接发布官方活动，并共同查看、修改全部官方活动，无需人工审核。</text>
+    <text>官方账号可管理官方活动、活动抽奖、待审核、验证问题和黑名单；只有超级管理员可以增删官方账号。</text>
   </view>
 
   <view class="search-card">
@@ -60,14 +60,14 @@
             <text class="user-name">{{item.nickName || '匿名用户'}}</text>
             <view class="official-label official-chip">
               <image class="official-mascot official-mascot--tiny" src="/images/official-badge.png" mode="aspectFit" />
-              <text>官方账号</text>
+              <text>{{item.isAdmin === 1 ? '超级管理员' : '官方账号'}}</text>
             </view>
           </view>
           <text class="user-meta" wx:if="{{item.wechatId}}">微信号：{{item.wechatId}}</text>
           <text class="user-openid">{{item.displayOpenId}}</text>
         </view>
       </view>
-      <view class="remove-btn {{removingOpenId === item.openId ? 'loading' : ''}}" data-openid="{{item.openId}}" data-nickname="{{item.nickName}}" catchtap="onRemove">
+      <view wx:if="{{item.isAdmin !== 1}}" class="remove-btn {{removingOpenId === item.openId ? 'loading' : ''}}" data-openid="{{item.openId}}" data-nickname="{{item.nickName}}" catchtap="onRemove">
         {{removingOpenId === item.openId ? '处理中' : '移出'}}
       </view>
     </view>

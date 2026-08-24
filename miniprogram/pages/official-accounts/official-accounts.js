@@ -87,7 +87,7 @@ Page({
     const { openid, nickname } = e.currentTarget.dataset;
     wx.showModal({
       title: '加入官方账号',
-      content: `确定将“${nickname || '该用户'}”加入官方账号白名单吗？加入后可直接发布并共同管理官方活动。`,
+      content: `确定将“${nickname || '该用户'}”加入官方账号吗？加入后可使用五项后台业务管理功能，但不能管理官方账号名单。`,
       confirmText: '确认加入',
       confirmColor: '#2f80c5',
       success: async (modalResult) => {

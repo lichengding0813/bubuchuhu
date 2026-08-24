@@ -270,6 +270,8 @@
         </view>
       </view>
 
+      <view class="success-reminder-tip">活动开始前2天、抽奖开始时可收到微信提醒</view>
+      <van-button type="info" block bindtap="onSubscribeActivityReminders" custom-class="success-close-btn">开启活动提醒</van-button>
       <van-button type="info" block bindtap="onSuccessPopupClose" custom-class="success-close-btn">我知道了</van-button>
     </view>
   </van-popup>

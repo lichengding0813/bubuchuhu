@@ -1,4 +1,5 @@
 const { get, post } = require('../../utils/api');
+const { subscribeUserReminders } = require('../../utils/notifications');
 
 Page({
   data: {
@@ -665,6 +666,19 @@ Page({
   onSuccessPopupClose() {
     this.setData({ showSuccessPopup: false });
     this.getActivityDetail(this.data.activityId);
+  },
+
+  async onSubscribeActivityReminders() {
+    try {
+      const result = await subscribeUserReminders();
+      wx.showToast({
+        title: result.accepted > 0 ? '活动提醒已开启' : '暂未开启提醒',
+        icon: result.accepted > 0 ? 'success' : 'none'
+      });
+    } catch (error) {
+      console.error('订阅活动提醒失败:', error);
+      wx.showToast({ title: '提醒设置未完成', icon: 'none' });
+    }
   },
 
   onPreviewGroupQR() {

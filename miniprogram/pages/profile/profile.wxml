@@ -6,7 +6,7 @@
         <open-data type="userAvatarUrl" wx:if="{{!userInfo.avatarUrl}}"></open-data>
         <image src="{{userInfo.avatarUrl}}" wx:else mode="aspectFill"></image>
       </view>
-      <image class="profile-official-v" wx:if="{{userInfo.isOfficial === 1}}" src="/images/official-badge.png" mode="aspectFit" />
+      <image class="profile-official-v" wx:if="{{userInfo.isAdmin === 1 || userInfo.isOfficial === 1}}" src="/images/official-badge.png" mode="aspectFit" />
     </view>
     <view class="user-info">
       <view class="user-name-row">
@@ -25,8 +25,8 @@
           <van-icon name="phone-o" class="phone-icon" />
           <text>已绑定</text>
         </view>
-        <view class="badge-item official" wx:if="{{userInfo.isOfficial === 1}}">
-          <text>官方账号</text>
+        <view class="badge-item official" wx:if="{{userInfo.isAdmin === 1 || userInfo.isOfficial === 1}}">
+          <text>{{userInfo.isAdmin === 1 ? '超级管理员' : '官方账号'}}</text>
         </view>
       </view>
     </view>

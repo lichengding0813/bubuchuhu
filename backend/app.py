@@ -75,9 +75,11 @@ from routes.activity_routes import activity_bp
 from routes.admin_routes import admin_bp
 from routes.review_bp import review_bp
 from routes.lottery_routes import lottery_bp
+from routes.notification_routes import notification_bp
 from db_utils import init_db_config, close_db, get_db
 from domain import weather_location_candidates
 from middleware import check_verified_and_blacklist, _invalidate_user_cache
+from notification_service import queue_blacklist_notice, start_notification_worker
 
 # ==================== 自定义 JSON 序列化 ====================
 class BeijingTimeJSONProvider(DefaultJSONProvider):
@@ -374,6 +376,10 @@ app.register_blueprint(activity_bp, url_prefix='/api/activity')
 app.register_blueprint(admin_bp, url_prefix='/api/admin')
 app.register_blueprint(review_bp)
 app.register_blueprint(lottery_bp, url_prefix='/api')
+app.register_blueprint(notification_bp, url_prefix='/api')
+
+# 容器保持运行时每分钟检查一次到期提醒；数据库全局锁避免多 worker 重复发送。
+start_notification_worker(app)
 
 
 # ==================== 数据库连接钩子 ====================
@@ -564,6 +570,9 @@ def verify_answer():
                 )
                 msg = f'答案错误，还剩 {3 - new_attempt} 次机会'
             conn.commit()
+
+            if new_attempt >= 3:
+                queue_blacklist_notice(user, 'verification')
 
         _invalidate_user_cache(openid)
 

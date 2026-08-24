@@ -17,6 +17,7 @@ from domain import (
 )
 
 from middleware import check_verified_and_blacklist
+from notification_service import queue_pending_approval
 
 activity_bp = Blueprint('activity', __name__)
 
@@ -83,9 +84,9 @@ def generate_activity_no():
 
 def _get_official_flag(cursor, openid):
     """读取账号当前白名单状态，统一返回 0/1。"""
-    cursor.execute("SELECT isOfficial FROM users WHERE openId = %s", (openid,))
+    cursor.execute("SELECT isAdmin, isOfficial FROM users WHERE openId = %s", (openid,))
     user = cursor.fetchone()
-    return 1 if user and user.get('isOfficial') == 1 else 0
+    return 1 if user and (user.get('isOfficial') == 1 or user.get('isAdmin') == 1) else 0
 
 
 def _check_activity_content(data, openid):
@@ -267,6 +268,7 @@ def create_activity():
         )
 
         conn.commit()
+        queue_pending_approval(activity_id, data.get('name'))
 
         return jsonify({
             'code': 200,
@@ -669,7 +671,9 @@ def get_activity_detail():
         if openid:
             cursor.execute("SELECT isAdmin, isOfficial FROM users WHERE openId = %s", (openid,))
             viewer = cursor.fetchone()
-            viewer_is_admin = bool(viewer and viewer.get('isAdmin') == 1)
+            viewer_is_admin = bool(
+                viewer and (viewer.get('isAdmin') == 1 or viewer.get('isOfficial') == 1)
+            )
             viewer_is_official = bool(viewer and viewer.get('isOfficial') == 1)
 
         is_owner = bool(openid and activity.get('created_by') == openid)
@@ -1121,6 +1125,7 @@ def update_rejected_activity():
         """, (activity_id, 4, '用户修改后重新提交'))
 
         conn.commit()
+        queue_pending_approval(activity_id, data.get('name'))
 
         return jsonify({
             'code': 200,
@@ -1326,7 +1331,9 @@ def get_activity_participants():
         )
         if (
             activity['created_by'] != openid
-            and not (viewer and viewer.get('isAdmin') == 1)
+            and not (
+                viewer and (viewer.get('isAdmin') == 1 or viewer.get('isOfficial') == 1)
+            )
             and not can_manage_official
         ):
             return jsonify({'code': 403, 'msg': '无权查看报名人员'})
@@ -1671,6 +1678,7 @@ def publish_draft():
         )
 
         conn.commit()
+        queue_pending_approval(draft_id, activity.get('name'))
         return jsonify({'code': 200, 'msg': '活动已提交审核', 'data': {'activity_id': draft_id}})
 
     except Exception:

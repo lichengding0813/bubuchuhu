@@ -1,3 +1,5 @@
+const { subscribeAdminReminders } = require('../../utils/notifications');
+
 Page({
   data: {
     userInfo: {
@@ -141,6 +143,7 @@ Page({
   buildMenuList() {
     const { isAdmin, needVerify, isOfficial } = this.data.userInfo;
     const menuList = [];
+    const isStaff = Number(isAdmin) === 1 || Number(isOfficial) === 1;
 
     menuList.push({
       icon: 'setting',
@@ -154,43 +157,51 @@ Page({
       url: '/pages/my-prizes/my-prizes'
     });
 
-    if (Number(isOfficial) === 1) {
+    if (isStaff) {
+      menuList.push({ isDivider: true });
       menuList.push({
         icon: 'certificate',
         text: '官方活动管理',
-        url: '/pages/official-activities/official-activities'
+        url: '/pages/official-activities/official-activities',
+        requestAdminSubscription: true
       });
-    }
-
-    if (isAdmin === 1) {
-      menuList.push({ isDivider: true });
+      menuList.push({
+        icon: 'gift-o',
+        text: '活动抽奖管理',
+        url: '/pages/lottery-admin/lottery-admin',
+        requestAdminSubscription: true
+      });
       menuList.push({
         icon: 'records',
         text: '待审核',
         url: '/pages/admin-review/admin-review',
         showRedDot: this.data.pendingCount > 0,
-        badgeCount: this.data.pendingCount
+        badgeCount: this.data.pendingCount,
+        requestAdminSubscription: true
       });
       menuList.push({
         icon: 'checked',
         text: '验证问题管理',
-        url: '/pages/verify-management/verify-management'
+        url: '/pages/verify-management/verify-management',
+        requestAdminSubscription: true
       });
       menuList.push({
         icon: 'lock',
         text: '黑名单管理',
-        url: '/pages/blacklist/blacklist'
+        url: '/pages/blacklist/blacklist',
+        requestAdminSubscription: true
       });
+    }
+
+    if (Number(isAdmin) === 1) {
       menuList.push({
         icon: 'friends-o',
         text: '官方账号管理',
         url: '/pages/official-accounts/official-accounts'
       });
-      menuList.push({
-        icon: 'gift-o',
-        text: '抽奖管理',
-        url: '/pages/lottery-admin/lottery-admin'
-      });
+    }
+
+    if (isStaff) {
       menuList.push({ isDivider: true });
     }
 
@@ -200,8 +211,9 @@ Page({
 
   // 加载待审核活动数量（管理员）
   async loadPendingCount() {
-    const { isAdmin, isLogin, openId } = this.data.userInfo;
-    if (!isLogin || !openId || isAdmin !== 1) return;
+    const { isAdmin, isOfficial, isLogin, openId } = this.data.userInfo;
+    const isStaff = Number(isAdmin) === 1 || Number(isOfficial) === 1;
+    if (!isLogin || !openId || !isStaff) return;
     try {
       const result = await wx.cloud.callContainer({
         config: { env: "prod-3gktwx67d1dd1e76" },
@@ -340,7 +352,7 @@ Page({
   },
 
   // 处理菜单点击
-  onMenuClick(e) {
+  async onMenuClick(e) {
     const { index } = e.currentTarget.dataset;
     const menu = this.data.menuList[index];
     if (!menu || menu.isDivider) return;
@@ -353,6 +365,10 @@ Page({
     if (!this.data.userInfo.isLogin) {
       wx.showToast({ title: '请先登录', icon: 'none' });
       return;
+    }
+
+    if (menu.requestAdminSubscription) {
+      await this.maybeSubscribeAdminNotifications();
     }
 
     switch(menu.text) {
@@ -381,6 +397,19 @@ Page({
             icon: 'none'
           });
         }
+    }
+  },
+
+  async maybeSubscribeAdminNotifications() {
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    if (wx.getStorageSync('adminNotificationPromptDate') === today) return;
+    try {
+      await subscribeAdminReminders();
+    } catch (error) {
+      console.log('管理消息订阅未完成（不影响进入页面）:', error.message || error);
+    } finally {
+      wx.setStorageSync('adminNotificationPromptDate', today);
     }
   },
 

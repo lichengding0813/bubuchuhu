@@ -14,7 +14,7 @@ from domain import (
     probability_percent_to_bps,
     validate_lottery_probabilities,
 )
-from middleware import check_admin, check_verified_and_blacklist
+from middleware import check_staff, check_verified_and_blacklist
 
 
 lottery_bp = Blueprint('lottery', __name__)
@@ -90,7 +90,7 @@ def _load_prizes(cursor, lottery_id, include_empty=True):
 # ==================== 管理员接口 ====================
 @lottery_bp.route('/admin/lottery/official-activities', methods=['GET'])
 @check_verified_and_blacklist
-@check_admin
+@check_staff
 def list_lottery_official_activities():
     """创建抽奖只能引用官方活动；同一活动同一时间只保留一场未结束抽奖。"""
     cursor = None
@@ -118,7 +118,7 @@ def list_lottery_official_activities():
 
 @lottery_bp.route('/admin/lottery/create', methods=['POST'])
 @check_verified_and_blacklist
-@check_admin
+@check_staff
 def create_lottery():
     data = request.get_json(silent=True) or {}
     activity_id = data.get('activity_id')
@@ -236,7 +236,7 @@ def create_lottery():
 
 @lottery_bp.route('/admin/lottery/list', methods=['GET'])
 @check_verified_and_blacklist
-@check_admin
+@check_staff
 def list_lotteries():
     conn = get_db()
     cursor = None
@@ -272,7 +272,7 @@ def list_lotteries():
 
 @lottery_bp.route('/admin/lottery/records', methods=['GET'])
 @check_verified_and_blacklist
-@check_admin
+@check_staff
 def list_lottery_records():
     lottery_id = request.args.get('lottery_id', type=int)
     result_filter = str(request.args.get('result') or 'all')
@@ -355,7 +355,7 @@ def list_lottery_records():
 
 @lottery_bp.route('/admin/lottery/participants', methods=['GET'])
 @check_verified_and_blacklist
-@check_admin
+@check_staff
 def list_lottery_participants():
     lottery_id = request.args.get('lottery_id', type=int)
     keyword = str(request.args.get('keyword') or '').strip()
@@ -400,7 +400,7 @@ def list_lottery_participants():
 
 @lottery_bp.route('/admin/lottery/grant-chance', methods=['POST'])
 @check_verified_and_blacklist
-@check_admin
+@check_staff
 def grant_lottery_chance():
     data = request.get_json(silent=True) or {}
     lottery_id = data.get('lottery_id')
@@ -454,7 +454,7 @@ def grant_lottery_chance():
 
 @lottery_bp.route('/admin/lottery/redeem', methods=['POST'])
 @check_verified_and_blacklist
-@check_admin
+@check_staff
 def redeem_lottery_prize():
     data = request.get_json(silent=True) or {}
     redeem_code = str(data.get('redeem_code') or '').strip().upper()
@@ -510,7 +510,7 @@ def redeem_lottery_prize():
 
 @lottery_bp.route('/admin/lottery/end', methods=['POST'])
 @check_verified_and_blacklist
-@check_admin
+@check_staff
 def end_lottery():
     lottery_id = (request.get_json(silent=True) or {}).get('lottery_id')
     if not lottery_id:
