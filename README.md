@@ -13,7 +13,7 @@
 - 🏠 首页和活动列表全新升级，浏览活动更清晰
 - 🥕 新增官方活动和官方账号认证，支持只看官方
 - 📅 新增活动日历、天气预报和地图选点
-- 🎡 官方活动可以创建抽奖，并查看奖品和抽奖记录
+- 🎡 官方活动可以创建幸运转盘，配置中奖概率，并完成奖品核销
 - 📖 活动回顾可以直接关联已有官方活动
 - ✍️ 路线详情支持加粗、字号和文字颜色
 - 📝 活动支持暂存、撤回和重新编辑
@@ -102,6 +102,7 @@
 │   ├── migration_v1_4.sql       # v1.4 时间、坐标、抽奖、官方账号与回顾关联迁移
 │   ├── migration_v1_4_2.sql     # v1.4.2 抽奖奖品图迁移
 │   ├── migration_v1_4_3.sql     # v1.4.3 黑名单来源与答题日志迁移
+│   ├── migration_v1_4_4.sql     # v1.4.4 抽奖 v2 全量重建迁移
 │   └── migration_official_accounts.sql # 官方账号功能独立增量迁移
 ├── database/           # 数据库建表语句
 │   ├── users.sql
@@ -167,9 +168,11 @@
 | `activity_participants` | 报名记录表 | id, activity_id, user_openid, nickname, phone, wechat_id, status, remark, companion_count |
 | `activity_reviews` | 活动回顾表 | id, activity_id, name, time, location, participants, summary, cover |
 | `verify_questions` | 验证问题表 | id, question, answers, sort_order, is_active |
-| `activity_lotteries` / `lottery_prizes` / `lottery_records` | 抽奖配置、奖品库存与用户抽奖结果 | password_hash, start_time, end_time, remaining, draw_status |
+| `activity_lotteries` / `lottery_prizes` | 抽奖配置、固定中奖概率、奖品库存和领奖说明 | password_hash, probability_bps, remaining, valid_until |
+| `lottery_user_states` / `lottery_records` | 用户抽奖机会、每日口令次数和每次抽奖结果 | chances_total, chances_used, chance_no |
+| `lottery_redemptions` / `lottery_chance_grants` | 奖品核销与管理员追加机会记录 | redeem_code, status, quantity |
 
-> 建表语句详见 `database/`。已经完成 v1.4 升级的环境，本次只需备份后执行 `database/migration_v1_4_2.sql`，补齐 `lottery_prizes.image_url`。官方白名单为空时，由管理员在页面上二次确认后初始化自己的账号，不自动扩大权限。全新数据库直接执行最新的 `database/migration_v1_4.sql`。
+> 建表语句详见 `database/`。抽奖 v2 尚未上线，不保留测试数据：部署本版后需执行 `database/migration_v1_4_4.sql`，脚本只会清空并重建抽奖相关表，不影响活动、用户和报名数据。官方白名单为空时，由管理员在页面上二次确认后初始化自己的账号，不自动扩大权限。
 
 ## 部署信息
 
@@ -263,10 +266,16 @@ python app.py
 | POST | `/api/admin/official-accounts/remove` | 移除官方账号 |
 | POST | `/api/admin/lottery/create` | 创建活动抽奖 |
 | GET | `/api/admin/lottery/list` | 获取抽奖管理列表 |
+| GET | `/api/admin/lottery/records` | 筛选查看抽奖及核销记录 |
+| GET | `/api/admin/lottery/participants` | 查询可追加机会的报名用户 |
+| POST | `/api/admin/lottery/grant-chance` | 为报名用户追加抽奖机会 |
+| POST | `/api/admin/lottery/redeem` | 按核销码核销奖品 |
 | POST | `/api/admin/lottery/end` | 提前结束抽奖 |
 | POST | `/api/lottery/check` | 检查用户可参与的抽奖 |
+| GET | `/api/lottery/activity-status` | 获取活动详情页抽奖状态 |
 | POST | `/api/lottery/draw` | 校验口令并抽奖 |
 | GET | `/api/lottery/my-result` | 获取用户抽奖结果 |
+| GET | `/api/lottery/my-prizes` | 获取我的中奖奖品与核销状态 |
 | GET | `/api/reviews` | 活动回顾列表 |
 | GET | `/api/reviews/<id>` | 活动回顾详情 |
 | POST | `/api/reviews` | 新建活动回顾 |

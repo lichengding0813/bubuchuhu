@@ -311,6 +311,11 @@ page {
   font-weight: 600;
 }
 
+.lottery-live-tag.waiting {
+  color: #4d82a6;
+  background: #dceef9;
+}
+
 .lottery-countdown-row {
   padding: 8px 0 7px;
 }

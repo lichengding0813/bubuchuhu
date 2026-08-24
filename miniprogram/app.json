@@ -3,6 +3,7 @@
     "pages/home/home",
     "pages/calendar/calendar",
     "pages/lottery-admin/lottery-admin",
+    "pages/my-prizes/my-prizes",
     "pages/review/review",
     "pages/profile/profile",
     "pages/publish/publish",

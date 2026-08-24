@@ -148,6 +148,12 @@ Page({
       url: '/pages/settings/settings'
     });
 
+    menuList.push({
+      icon: 'gift-o',
+      text: '我的奖品',
+      url: '/pages/my-prizes/my-prizes'
+    });
+
     if (Number(isOfficial) === 1) {
       menuList.push({
         icon: 'certificate',

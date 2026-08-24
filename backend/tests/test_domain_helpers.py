@@ -11,7 +11,10 @@ from domain import (
     effective_lottery_status,
     lottery_activity_error,
     normalize_official_activity_data,
+    pick_lottery_prize,
+    probability_percent_to_bps,
     published_activity_status,
+    validate_lottery_probabilities,
     validate_activity_payload,
     validate_weather_date,
     weather_code_summary,
@@ -85,6 +88,33 @@ class LotteryRuleTests(unittest.TestCase):
             '该官方活动当前不能创建抽奖',
         )
         self.assertIsNone(lottery_activity_error({'is_official': 1, 'status': 4}))
+
+    def test_probability_is_stored_as_integer_basis_points(self):
+        self.assertEqual(probability_percent_to_bps('12.34'), 1234)
+        with self.assertRaises(ValueError):
+            probability_percent_to_bps(0)
+
+    def test_total_probability_cannot_exceed_one_hundred_percent(self):
+        total, error = validate_lottery_probabilities([
+            {'probability_bps': 2500},
+            {'probability_bps': 5000},
+        ])
+        self.assertEqual(total, 7500)
+        self.assertIsNone(error)
+        _, error = validate_lottery_probabilities([
+            {'probability_bps': 6000},
+            {'probability_bps': 5000},
+        ])
+        self.assertIn('100%', error)
+
+    def test_stocked_prize_is_selected_and_sold_out_prize_becomes_no_win(self):
+        prizes = [
+            {'id': 1, 'probability_bps': 1000, 'remaining': 1},
+            {'id': 2, 'probability_bps': 2000, 'remaining': 0},
+        ]
+        self.assertEqual(pick_lottery_prize(prizes, 500)['id'], 1)
+        self.assertIsNone(pick_lottery_prize(prizes, 1500))
+        self.assertIsNone(pick_lottery_prize(prizes, 9000))
 
 
 class PublishedActivityStatusTests(unittest.TestCase):

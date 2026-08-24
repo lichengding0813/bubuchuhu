@@ -1,51 +1,50 @@
 <view class="lottery-mask" wx:if="{{show}}" catchtap="onMaskTap"></view>
 <view class="lottery-popup" wx:if="{{show}}">
   <view class="popup-header">
-    <text class="popup-title">{{result ? '抽奖结果' : '活动抽奖'}}</text>
-    <van-icon name="cross" size="18" color="#999" bindtap="onClose" />
+    <view>
+      <text class="popup-title">{{lotteryInfo.lottery_name || '活动幸运转盘'}}</text>
+      <text class="popup-activity">{{lotteryInfo.activity_name}}</text>
+    </view>
+    <van-icon name="cross" size="18" color="#8299aa" bindtap="onClose" />
   </view>
 
-  <block wx:if="{{!result && !drawing}}">
-    <view class="popup-body">
-      <view class="lottery-icon">🎡</view>
-      <text class="lottery-tip">你有一场活动抽奖机会</text>
-      <text class="lottery-name">{{lotteryInfo.activity_name}}</text>
-      <view class="time-info">
-        <text>{{lotteryInfo.start_time}} ~ {{lotteryInfo.end_time}}</text>
-      </view>
-      <scroll-view class="popup-prize-scroll" scroll-x wx:if="{{lotteryInfo.prizes && lotteryInfo.prizes.length}}">
-        <view class="popup-prize-list">
-          <view class="popup-prize-item" wx:for="{{lotteryInfo.prizes}}" wx:key="id">
-            <image class="popup-prize-image" wx:if="{{item.image_url}}" src="{{item.image_url}}" mode="aspectFill" />
-            <view class="popup-prize-placeholder" wx:else>🎁</view>
-            <text class="popup-prize-name">{{item.tier_name}}</text>
-            <text class="popup-prize-count">共{{item.quantity}}份</text>
+  <block wx:if="{{!result}}">
+    <view class="wheel-stage">
+      <view class="wheel-pointer"><view></view></view>
+      <view class="wheel-ring">
+        <view class="wheel" style="background:{{wheelBackground}};{{wheelStyle}}">
+          <view class="wheel-segment-label" wx:for="{{wheelSegments}}" wx:key="id" style="{{item.segment_style}}">
+            <image wx:if="{{item.image_url}}" src="{{item.image_url}}" mode="aspectFill" />
+            <text>{{item.label}}</text>
           </view>
+          <view class="wheel-center"><text>{{drawing ? '好运' : 'GO'}}</text></view>
         </view>
-      </scroll-view>
-      <input class="password-input" placeholder="请输入口令" value="{{password}}" bindinput="onPasswordInput" confirm-type="done" bindconfirm="onDraw" />
+      </view>
+    </view>
+    <view class="draw-info">
+      <view class="chance-row"><text>剩余抽奖机会</text><text>{{lotteryInfo.chances_remaining || 0}} 次</text></view>
+      <view class="chance-row"><text>距结束</text><text>{{lotteryInfo.end_time}}</text></view>
+      <input class="password-input" password placeholder="输入现场口令" value="{{password}}" disabled="{{drawing}}" bindinput="onPasswordInput" confirm-type="done" bindconfirm="onDraw" />
       <text class="error-tip" wx:if="{{errorText}}">{{errorText}}</text>
-      <view class="attempts-tip" wx:if="{{attemptsLeft < 3}}">剩余 {{attemptsLeft}} 次机会</view>
-    </view>
-    <view class="popup-footer">
-      <button class="draw-btn" bindtap="onDraw"><text>立即抽奖</text></button>
+      <text class="attempts-tip" wx:if="{{attemptsLeft < 3}}">今天还可尝试口令 {{attemptsLeft}} 次</text>
+      <button class="draw-btn" disabled="{{drawing}}" bindtap="onDraw">{{drawing ? '转盘转动中…' : '开始抽奖'}}</button>
     </view>
   </block>
 
-  <view class="drawing" wx:if="{{drawing}}">
-    <view class="spinner"></view>
-    <text class="drawing-text">抽奖中...</text>
+  <view class="result-body" wx:else>
+    <image class="result-prize-image" wx:if="{{result.prize_image_url}}" src="{{result.prize_image_url}}" mode="aspectFill" />
+    <view class="result-icon {{result.prize_id ? 'win' : 'lose'}}">{{result.prize_id ? '🎉' : '🌿'}}</view>
+    <text class="result-kicker">{{result.prize_id ? '恭喜中奖' : '这次差一点'}}</text>
+    <text class="result-text">{{result.prize_name}}</text>
+    <view class="claim-card" wx:if="{{result.prize_id}}">
+      <view><text>核销码</text><text class="claim-code">{{result.redeem_code}}</text></view>
+      <text wx:if="{{result.claim_instructions}}">{{result.claim_instructions}}</text>
+      <text wx:if="{{result.pickup_location}}">地点：{{result.pickup_location}}</text>
+      <text>有效期至：{{result.valid_until}}</text>
+    </view>
+    <text class="remaining-copy" wx:if="{{result.chances_remaining > 0}}">你还有 {{result.chances_remaining}} 次机会</text>
+    <button class="draw-btn" wx:if="{{result.chances_remaining > 0}}" bindtap="onDrawAgain">再抽一次</button>
+    <button class="prize-btn" wx:if="{{result.prize_id}}" bindtap="goToMyPrizes">查看我的奖品</button>
+    <button class="prize-btn" wx:else bindtap="onClose">知道了</button>
   </view>
-
-  <block wx:if="{{result}}">
-    <view class="popup-body result-body">
-      <image class="result-prize-image" wx:if="{{result.prize_image_url}}" src="{{result.prize_image_url}}" mode="aspectFill" />
-      <view class="result-icon {{result.prize_id ? 'win' : 'lose'}}">{{result.prize_id ? '🎉' : '😊'}}</view>
-      <text class="result-text {{result.prize_id ? 'win-text' : 'lose-text'}}">{{result.prize_name}}</text>
-      <text class="result-activity">{{result.activity_name}}</text>
-    </view>
-    <view class="popup-footer">
-      <button class="close-btn" bindtap="onClose"><text>知道了</text></button>
-    </view>
-  </block>
 </view>

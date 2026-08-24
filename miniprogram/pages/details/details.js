@@ -9,6 +9,8 @@ Page({
     hasLottery: false,
     lotteryInfo: {},
     lotteryCountdown: '',
+    lotteryCountdownLabel: '距结束',
+    lotteryActionText: '点击参与抽奖',
     showLotteryPopup: false,
     lotteryDrawn: false,
     creatorInfo: null,
@@ -153,6 +155,10 @@ Page({
 
     const selfTravel = (activity.travel_options || []).find(item => item.travel_type === 3);
     const selfQR = selfTravel ? selfTravel.bus_qr_url : '';
+    const meetingPoints = (activity.meeting_points || []).map((point, index) => ({
+      ...point,
+      _key: point.id || `${point.meeting_time || point.time || ''}_${point.location || ''}_${index}`
+    }));
 
     const statusMap = {
       0: '待审核', 1: '报名中', 2: '审核拒绝',
@@ -187,7 +193,7 @@ Page({
       'activityDetail.selfQR': selfQR,
       'activityDetail.description': activity.description || '',
       'activityDetail.route': activity.routes || activity.route || '',
-      'activityDetail.meetingPoints': activity.meeting_points || [],
+      'activityDetail.meetingPoints': meetingPoints,
       'activityDetail.deadline': this.formatDate(activity.deadline),
       'activityDetail.status': statusMap[activity.status] || '',
       'activityDetail.travel': travelOptions,
@@ -215,47 +221,42 @@ Page({
     try {
       const userInfo = wx.getStorageSync('userInfo');
       if (!userInfo?.openId) return;
-      const checkRes = await post('/api/lottery/check', {}, { silent: true });
-      if (checkRes.code === 200) {
-        const match = checkRes.data.find(l => l.activity_id == activityId);
-        if (match) {
-          this.setData({
-            hasLottery: true,
-            lotteryInfo: match,
-            lotteryDrawn: false
-          }, () => this.startLotteryCountdown());
-          return;
-        }
-      }
-      const myRes = await get('/api/lottery/my-result', {}, { silent: true });
-      if (myRes.code === 200) {
-        const drawn = myRes.data.find(r => r.activity_name === this.data.activityDetail.name);
-        if (drawn) {
-          this.stopLotteryCountdown();
-          this.setData({
-            hasLottery: false,
-            lotteryInfo: {},
-            lotteryCountdown: '',
-            lotteryDrawn: true
-          });
-          return;
-        }
+      const result = await get('/api/lottery/activity-status', { activity_id: activityId }, { silent: true });
+      const lottery = result.data;
+      if (lottery && lottery.eligible && lottery.phase !== 'ended') {
+        const notStarted = lottery.phase === 'not_started';
+        this.setData({
+          hasLottery: true,
+          lotteryInfo: lottery,
+          lotteryDrawn: !lottery.can_draw,
+          lotteryCountdownLabel: notStarted ? '距开始' : '距结束',
+          lotteryActionText: notStarted
+            ? '抽奖尚未开始'
+            : lottery.can_draw
+              ? `参与抽奖 · 剩${lottery.chances_remaining}次`
+              : lottery.my_prize_count > 0 ? '查看我的奖品' : '抽奖机会已用完'
+        }, () => this.startLotteryCountdown());
+        return;
       }
       this.stopLotteryCountdown();
-      this.setData({ hasLottery: false, lotteryInfo: {}, lotteryCountdown: '' });
+      this.setData({ hasLottery: false, lotteryInfo: {}, lotteryCountdown: '', lotteryDrawn: false });
     } catch (err) {
       console.log('抽奖检查失败（可忽略）:', err);
     }
   },
 
   onLotteryClick() {
-    if (this.data.lotteryDrawn) {
-      wx.showModal({
-        title: '抽奖结果',
-        content: '您已参与过此活动的抽奖',
-        showCancel: false,
-        confirmText: '知道了'
-      });
+    const lottery = this.data.lotteryInfo;
+    if (lottery.phase === 'not_started') {
+      wx.showToast({ title: '抽奖还未开始', icon: 'none' });
+      return;
+    }
+    if (!lottery.can_draw && lottery.my_prize_count > 0) {
+      wx.navigateTo({ url: '/pages/my-prizes/my-prizes' });
+      return;
+    }
+    if (!lottery.can_draw) {
+      wx.showToast({ title: '抽奖机会已用完', icon: 'none' });
       return;
     }
     this.setData({ showLotteryPopup: true });
@@ -266,8 +267,21 @@ Page({
   },
 
   onLotteryDrawn(e) {
-    this.stopLotteryCountdown();
-    this.setData({ lotteryDrawn: true, hasLottery: false, lotteryCountdown: '' });
+    const result = e.detail || {};
+    const lotteryInfo = {
+      ...this.data.lotteryInfo,
+      chances_remaining: Number(result.chances_remaining || 0),
+      chances_used: Number(this.data.lotteryInfo.chances_used || 0) + 1,
+      my_prize_count: Number(this.data.lotteryInfo.my_prize_count || 0) + (result.prize_id ? 1 : 0),
+      can_draw: Number(result.chances_remaining || 0) > 0
+    };
+    this.setData({
+      lotteryInfo,
+      lotteryDrawn: !lotteryInfo.can_draw,
+      lotteryActionText: lotteryInfo.can_draw
+        ? `参与抽奖 · 剩${lotteryInfo.chances_remaining}次`
+        : lotteryInfo.my_prize_count > 0 ? '查看我的奖品' : '抽奖机会已用完'
+    });
   },
 
   getLotteryEndTimestamp(value) {
@@ -285,7 +299,7 @@ Page({
 
   startLotteryCountdown() {
     this.stopLotteryCountdown();
-    if (!this.data.hasLottery || !this.data.lotteryInfo.end_time) return;
+    if (!this.data.hasLottery) return;
     this.updateLotteryCountdown();
     if (this.data.hasLottery) {
       this.lotteryCountdownTimer = setInterval(() => this.updateLotteryCountdown(), 1000);
@@ -300,11 +314,13 @@ Page({
   },
 
   updateLotteryCountdown() {
-    const endTimestamp = this.getLotteryEndTimestamp(this.data.lotteryInfo.end_time);
-    const remaining = endTimestamp - Date.now();
-    if (!endTimestamp || remaining <= 0) {
+    const lottery = this.data.lotteryInfo;
+    const targetValue = lottery.phase === 'not_started' ? lottery.start_time : lottery.end_time;
+    const targetTimestamp = this.getLotteryEndTimestamp(targetValue);
+    const remaining = targetTimestamp - Date.now();
+    if (!targetTimestamp || remaining <= 0) {
       this.stopLotteryCountdown();
-      this.setData({ hasLottery: false, lotteryCountdown: '' });
+      this.checkActivityLottery(this.data.activityId);
       return;
     }
     const totalSeconds = Math.floor(remaining / 1000);

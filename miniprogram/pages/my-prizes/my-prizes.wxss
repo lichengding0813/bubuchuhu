@@ -1,0 +1,30 @@
+page { background: #f4f8fb; color: #173f5c; }
+.page-container { padding: 18px 16px 40px; }
+.hero-card { display: flex; align-items: center; gap: 13px; padding: 18px; border-radius: 21px; color: #fff; background: linear-gradient(135deg,#69b9e8,#3f91c9); box-shadow: 0 10px 24px rgba(63,145,201,.22); }
+.hero-icon { display: flex; width: 52px; height: 52px; align-items: center; justify-content: center; border-radius: 17px; background: rgba(255,255,255,.18); }
+.hero-title, .hero-subtitle, .prize-name, .lottery-name, .claim-info text, .code-label, .code-value { display: block; }
+.hero-title { font-size: 20px; font-weight: 800; }
+.hero-subtitle { margin-top: 4px; color: rgba(255,255,255,.78); font-size: 10px; }
+.filter-scroll { width: 100%; margin: 15px 0; white-space: nowrap; }
+.filter-list { display: inline-flex; gap: 8px; }
+.filter-item { padding: 7px 13px; border-radius: 15px; color: #7890a2; background: #e8f0f5; font-size: 10px; }
+.filter-item.active { color: #fff; background: #4d9fd7; font-weight: 700; }
+.loading, .empty { display: flex; min-height: 260px; align-items: center; justify-content: center; flex-direction: column; color: #91a5b3; font-size: 12px; }
+.empty text { margin-top: 10px; }
+.prize-card { padding: 15px; margin-bottom: 13px; border: 1px solid rgba(157,191,214,.32); border-radius: 20px; background: #fff; box-shadow: 0 7px 20px rgba(44,89,120,.065); }
+.prize-header, .activity-link, .code-card { display: flex; align-items: center; }
+.prize-header { gap: 10px; }
+.prize-image { display: flex; width: 58px; height: 58px; flex-shrink: 0; align-items: center; justify-content: center; border-radius: 15px; }
+.placeholder { background: #eaf5fc; font-size: 25px; }
+.prize-main { min-width: 0; flex: 1; }
+.prize-name { overflow: hidden; font-size: 16px; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
+.lottery-name { overflow: hidden; margin-top: 4px; color: #8399a9; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.status-tag { flex-shrink: 0; padding: 4px 8px; border-radius: 11px; color: #398f61; background: #e6f5eb; font-size: 9px; font-weight: 700; }
+.status-1 .status-tag { color: #758593; background: #edf1f4; }
+.status-2 .status-tag { color: #b66e55; background: #f9ebe6; }
+.activity-link { justify-content: space-between; padding: 10px 0; margin-top: 10px; border-top: 1px solid #edf3f7; border-bottom: 1px solid #edf3f7; color: #3c83b1; font-size: 11px; }
+.claim-info { padding: 9px 1px 2px; color: #748c9e; font-size: 10px; line-height: 1.65; }
+.code-card { justify-content: space-between; padding: 11px 13px; margin-top: 9px; border: 1px dashed #8fc5e6; border-radius: 14px; background: #f2faff; }
+.code-label { color: #8298a9; font-size: 9px; }
+.code-value { margin-top: 2px; color: #2878ac; font-size: 15px; font-weight: 900; letter-spacing: .8px; }
+.copy { padding: 5px 10px; border-radius: 12px; color: #fff; background: #4d9fd7; font-size: 9px; }

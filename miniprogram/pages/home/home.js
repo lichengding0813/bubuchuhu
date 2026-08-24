@@ -506,10 +506,12 @@ Page({
     this.setData({ showLotteryPopup: false, lotteryInfo: {} });
   },
 
-  onLotteryDrawn() {
-    setTimeout(() => {
-      this.setData({ showLotteryPopup: false, lotteryInfo: {} });
-    }, 3000);
+  onLotteryDrawn(e) {
+    const result = e.detail || {};
+    this.setData({
+      'lotteryInfo.chances_remaining': Number(result.chances_remaining || 0),
+      'lotteryInfo.can_draw': Number(result.chances_remaining || 0) > 0
+    });
   },
 
   onShareAppMessage() {

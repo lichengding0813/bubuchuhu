@@ -131,6 +131,45 @@ def lottery_activity_error(activity):
     return None
 
 
+def probability_percent_to_bps(value):
+    """把前端百分比转换成整数万分比，避免浮点概率参与抽奖。"""
+    try:
+        percent = float(value)
+    except (TypeError, ValueError):
+        raise ValueError('中奖概率格式无效')
+    bps = round(percent * 100)
+    if percent <= 0 or bps <= 0 or bps > 10000:
+        raise ValueError('单个奖项中奖概率需大于0且不超过100%')
+    return bps
+
+
+def validate_lottery_probabilities(prizes):
+    """返回奖品总概率；不足 100% 的部分自动作为未中奖概率。"""
+    total = sum(int(prize.get('probability_bps') or 0) for prize in prizes)
+    if total <= 0:
+        return None, '请至少配置一个有效中奖概率'
+    if total > 10000:
+        return None, '所有奖项中奖概率之和不能超过100%'
+    return total, None
+
+
+def pick_lottery_prize(prizes, ticket):
+    """按固定万分比票号选择奖品；售罄奖品的概率区间转为未中奖。"""
+    try:
+        ticket = int(ticket)
+    except (TypeError, ValueError):
+        return None
+    if ticket < 1 or ticket > 10000:
+        return None
+
+    upper_bound = 0
+    for prize in prizes:
+        upper_bound += int(prize.get('probability_bps') or 0)
+        if ticket <= upper_bound:
+            return prize if int(prize.get('remaining') or 0) > 0 else None
+    return None
+
+
 def weather_location_candidates(city='', latitude=None, longitude=None):
     """生成天气服务位置候选：优先坐标，再尝试地点与行政区名称。"""
     candidates = []

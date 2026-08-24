@@ -1,143 +1,199 @@
 <view class="lottery-container">
   <view class="header">
-    <text class="title">活动抽奖管理</text>
-    <van-button size="small" type="info" custom-class="create-btn" bindtap="showCreateForm">创建抽奖</van-button>
+    <view>
+      <text class="title">活动抽奖</text>
+      <text class="subtitle">发布后配置锁定，开奖和核销全程留痕</text>
+    </view>
+    <view class="header-actions">
+      <view class="secondary-pill" bindtap="showRedeemPanel">核销</view>
+      <view class="primary-pill" bindtap="showCreateForm">创建</view>
+    </view>
   </view>
 
   <view wx:if="{{lotteryList.length === 0}}" class="empty">
-    <van-icon name="gift-o" size="60" color="#ccc" />
-    <text class="empty-text">暂无抽奖活动</text>
+    <van-icon name="gift-o" size="56" color="#bed2e1" />
+    <text class="empty-title">还没有抽奖</text>
+    <text class="empty-text">从一场官方活动创建第一个幸运转盘</text>
   </view>
 
   <view wx:for="{{lotteryList}}" wx:key="id" class="lottery-card">
     <view class="card-header">
-      <view class="card-title activity-title-with-brand">
-        <text class="activity-title-text">{{item.activity_name}}</text>
+      <view class="card-title-wrap">
+        <text class="card-title">{{item.lottery_name}}</text>
+        <text class="activity-name">{{item.activity_name}}</text>
       </view>
       <view class="status-badge status-{{item.status}}">{{item.status === 0 ? '未开始' : item.status === 1 ? '进行中' : '已结束'}}</view>
     </view>
-    <view class="card-body">
-      <view class="info-row"><text>时间：{{item.start_time}} ~ {{item.end_time}}</text></view>
-      <view class="info-row"><text>参与人数：{{item.draw_count}}</text></view>
+    <view class="time-row"><van-icon name="clock-o" size="13px" /><text>{{item.start_time}} — {{item.end_time}}</text></view>
+    <view class="metrics-row">
+      <view><text class="metric-number">{{item.draw_count}}</text><text class="metric-label">抽奖次数</text></view>
+      <view><text class="metric-number">{{item.winning_count}}</text><text class="metric-label">中奖</text></view>
+      <view><text class="metric-number accent">{{item.pending_redeem_count}}</text><text class="metric-label">待核销</text></view>
+    </view>
+    <scroll-view class="prize-scroll" scroll-x enhanced show-scrollbar="{{false}}">
       <view class="prize-list">
         <view wx:for="{{item.prizes}}" wx:for-item="prize" wx:key="id" class="prize-item">
           <image class="prize-thumb" wx:if="{{prize.image_url}}" src="{{prize.image_url}}" mode="aspectFill" />
-          <text>{{prize.tier_name}}</text>
-          <text class="prize-remain">{{prize.remaining}}/{{prize.quantity}}</text>
+          <view class="prize-thumb prize-placeholder" wx:else>🎁</view>
+          <view class="prize-copy">
+            <text class="prize-name">{{prize.tier_name}}</text>
+            <text class="prize-meta">{{prize.probability}}% · 剩{{prize.remaining}}/{{prize.quantity}}</text>
+          </view>
         </view>
       </view>
-    </view>
+    </scroll-view>
     <view class="card-footer">
-      <view class="record-btn" bindtap="onViewRecords" data-id="{{item.id}}" data-name="{{item.activity_name}}">查看记录</view>
-      <van-button wx:if="{{item.status !== 2}}" size="small" type="danger" bindtap="onEndLottery" data-id="{{item.id}}">结束抽奖</van-button>
+      <view class="card-action" bindtap="onViewRecords" data-id="{{item.id}}" data-name="{{item.activity_name}}">记录</view>
+      <view class="card-action" bindtap="onManageChances" data-id="{{item.id}}">追加机会</view>
+      <view class="card-action danger" wx:if="{{item.status !== 2}}" bindtap="onEndLottery" data-id="{{item.id}}">结束</view>
     </view>
   </view>
 </view>
 
-<!-- 创建抽奖弹窗 -->
-<van-popup show="{{showForm}}" position="bottom" custom-style="border-radius:16px 16px 0 0;height:80vh;" bind:close="hideCreateForm">
-  <view class="form-container">
-    <view class="form-title">创建抽奖</view>
-    
-    <view class="form-item">
-      <text class="form-label">选择官方活动</text>
-      <picker mode="selector" range="{{activityOptions}}" range-key="name" bindchange="onActivityChange" value="{{activityIndex}}">
-        <view class="picker-value">{{activityOptions[activityIndex] ? activityOptions[activityIndex].name : '请选择官方活动'}}</view>
-      </picker>
-      <text class="form-hint">仅显示尚无进行中抽奖的官方活动</text>
-    </view>
-
-    <view class="form-item">
-      <text class="form-label">口令</text>
-      <input class="form-input" placeholder="用户抽奖口令" value="{{formPassword}}" bindinput="onPasswordInput" />
-    </view>
-
-    <view class="form-item">
-      <text class="form-label">开始时间（精确到分钟）</text>
-      <view class="datetime-picker-row">
-        <picker mode="date" bindchange="onStartDateChange" value="{{formStartDate}}">
-          <view class="picker-value">{{formStartDate || '选择日期'}}</view>
-        </picker>
-        <picker mode="time" bindchange="onStartTimeChange" value="{{formStartTime}}">
-          <view class="picker-value">{{formStartTime || '选择时间'}}</view>
-        </picker>
+<!-- 创建抽奖 -->
+<van-popup show="{{showForm}}" position="bottom" custom-style="border-radius:22px 22px 0 0;height:92vh;" bind:close="hideCreateForm">
+  <scroll-view class="form-scroll" scroll-y enhanced show-scrollbar="{{false}}">
+    <view class="form-container">
+      <view class="sheet-header">
+        <view><text class="form-title">创建幸运转盘</text><text class="sheet-subtitle">仅可关联官方活动</text></view>
+        <van-icon name="cross" size="20px" color="#8299aa" bindtap="hideCreateForm" />
       </view>
-    </view>
 
-    <view class="form-item">
-      <text class="form-label">结束时间（精确到分钟）</text>
-      <view class="datetime-picker-row">
-        <picker mode="date" bindchange="onEndDateChange" value="{{formEndDate}}">
-          <view class="picker-value">{{formEndDate || '选择日期'}}</view>
-        </picker>
-        <picker mode="time" bindchange="onEndTimeChange" value="{{formEndTime}}">
-          <view class="picker-value">{{formEndTime || '选择时间'}}</view>
-        </picker>
-      </view>
-    </view>
-
-    <view class="form-item">
-      <text class="form-label">奖品配置</text>
-      <view wx:for="{{prizeList}}" wx:key="index" class="prize-config">
-        <view class="prize-config-main">
-          <input class="prize-name-input" placeholder="档位名称" value="{{item.tier_name}}" data-index="{{index}}" bindinput="onPrizeNameInput" />
-          <input class="prize-qty-input" type="number" placeholder="份数" value="{{item.quantity}}" data-index="{{index}}" bindinput="onPrizeQtyInput" />
-          <van-icon name="delete-o" size="20" color="#ff6b6b" bindtap="removePrize" data-index="{{index}}" />
+      <view class="form-card">
+        <view class="form-item">
+          <text class="form-label">官方活动</text>
+          <picker mode="selector" range="{{activityOptions}}" range-key="name" bindchange="onActivityChange" value="{{activityIndex}}">
+            <view class="picker-value">{{activityOptions[activityIndex] ? activityOptions[activityIndex].name : '请选择官方活动'}}</view>
+          </picker>
         </view>
-        <view class="prize-image-row">
+        <view class="form-item">
+          <text class="form-label">抽奖名称</text>
+          <input class="form-input" maxlength="100" value="{{formLotteryName}}" bindinput="onLotteryNameInput" placeholder="例如：龙王潭幸运转盘" />
+        </view>
+        <view class="form-item">
+          <text class="form-label">现场口令</text>
+          <input class="form-input" maxlength="32" password value="{{formPassword}}" bindinput="onPasswordInput" placeholder="4-32位，现场告知参与者" />
+        </view>
+        <view class="form-item">
+          <text class="form-label">抽奖时间</text>
+          <view class="datetime-line">
+            <text class="datetime-label">开始</text>
+            <picker mode="date" bindchange="onStartDateChange" value="{{formStartDate}}"><view class="mini-picker">{{formStartDate}}</view></picker>
+            <picker mode="time" bindchange="onStartTimeChange" value="{{formStartTime}}"><view class="mini-picker">{{formStartTime}}</view></picker>
+          </view>
+          <view class="datetime-line">
+            <text class="datetime-label">结束</text>
+            <picker mode="date" bindchange="onEndDateChange" value="{{formEndDate}}"><view class="mini-picker">{{formEndDate}}</view></picker>
+            <picker mode="time" bindchange="onEndTimeChange" value="{{formEndTime}}"><view class="mini-picker">{{formEndTime}}</view></picker>
+          </view>
+        </view>
+      </view>
+
+      <view class="section-heading">
+        <view><text class="section-title">奖品与概率</text><text class="section-tip">剩余 {{100 - probabilityTotal}}% 为谢谢参与</text></view>
+        <text class="probability-total {{probabilityTotal > 100 ? 'invalid' : ''}}">{{probabilityTotal}}%</text>
+      </view>
+
+      <view wx:for="{{prizeList}}" wx:key="_key" class="prize-config">
+        <view class="prize-config-header">
+          <text>奖项 {{index + 1}}</text>
+          <van-icon name="delete-o" size="19" color="#d36f6f" bindtap="removePrize" data-index="{{index}}" />
+        </view>
+        <view class="prize-config-top">
           <view class="prize-image-upload" bindtap="onPrizeImageTap" data-index="{{index}}">
             <image wx:if="{{item.image_url}}" src="{{item.image_url}}" mode="aspectFill" />
             <view wx:else class="prize-image-placeholder">
               <van-loading wx:if="{{uploadingPrizeIndex === index}}" size="20px" />
-              <block wx:else>
-                <van-icon name="photograph" size="20px" />
-                <text>上传奖品图</text>
-              </block>
+              <block wx:else><van-icon name="photograph" size="22px" /><text>奖品图</text></block>
             </view>
           </view>
-          <view class="remove-prize-image" wx:if="{{item.image_url}}" bindtap="onRemovePrizeImage" data-index="{{index}}">移除图片</view>
-          <text class="prize-image-tip" wx:else>选填，中奖后会展示给用户</text>
+          <view class="prize-basic">
+            <input class="form-input" placeholder="奖项名称" value="{{item.tier_name}}" data-index="{{index}}" bindinput="onPrizeNameInput" />
+            <view class="two-fields">
+              <view class="inline-field"><input type="number" value="{{item.quantity}}" data-index="{{index}}" bindinput="onPrizeQtyInput" /><text>份</text></view>
+              <view class="inline-field"><input type="digit" value="{{item.probability}}" data-index="{{index}}" bindinput="onPrizeProbabilityInput" /><text>%</text></view>
+            </view>
+          </view>
+        </view>
+        <view class="remove-image" wx:if="{{item.image_url}}" bindtap="onRemovePrizeImage" data-index="{{index}}">移除图片</view>
+        <textarea class="form-textarea" maxlength="500" auto-height placeholder="领奖说明（必填），例如：向现场工作人员出示核销码" value="{{item.claim_instructions}}" data-index="{{index}}" bindinput="onClaimInput"></textarea>
+        <input class="form-input" maxlength="255" placeholder="领奖地点（选填）" value="{{item.pickup_location}}" data-index="{{index}}" bindinput="onPickupInput" />
+        <view class="valid-row">
+          <text>有效期至</text>
+          <picker mode="date" value="{{item.valid_date}}" data-index="{{index}}" bindchange="onValidDateChange"><view class="mini-picker">{{item.valid_date}}</view></picker>
+          <picker mode="time" value="{{item.valid_time}}" data-index="{{index}}" bindchange="onValidTimeChange"><view class="mini-picker">{{item.valid_time}}</view></picker>
         </view>
       </view>
-      <view class="add-prize-btn" bindtap="addPrize">+ 添加奖品档位</view>
+      <view class="add-prize-btn" bindtap="addPrize"><van-icon name="plus" size="14" /><text>添加奖项</text></view>
+      <view class="immutable-tip"><van-icon name="shield-o" size="15" /><text>发布前请仔细核对；发布后抽奖信息不可修改</text></view>
+      <button class="submit-button" loading="{{submitting}}" disabled="{{submitting}}" bindtap="onCreateLottery">确认发布</button>
     </view>
-
-    <view class="immutable-tip"><van-icon name="info-o" size="14px" /><text>发布后不可修改活动、时间、口令和奖品</text></view>
-    <van-button type="info" block loading="{{submitting}}" disabled="{{submitting}}" bindtap="onCreateLottery" custom-class="submit-btn">发布官方活动抽奖</van-button>
-  </view>
+  </scroll-view>
 </van-popup>
 
 <!-- 抽奖记录 -->
-<van-popup show="{{showRecords}}" position="bottom" custom-style="border-radius:16px 16px 0 0;height:72vh;" bind:close="hideRecords">
+<van-popup show="{{showRecords}}" position="bottom" custom-style="border-radius:22px 22px 0 0;height:86vh;" bind:close="hideRecords">
   <view class="records-container">
-    <view class="records-header">
-      <view>
-        <view class="records-title">抽奖记录</view>
-        <view class="records-activity">{{recordInfo.activity_name}}</view>
-      </view>
-      <van-icon name="cross" size="20px" color="#8ca2b2" bindtap="hideRecords" />
+    <view class="sheet-header">
+      <view><text class="form-title">抽奖记录</text><text class="sheet-subtitle">{{recordInfo.activity_name}}</text></view>
+      <van-icon name="cross" size="20px" color="#8299aa" bindtap="hideRecords" />
     </view>
-    <view class="records-summary">
-      <text>参与 {{recordInfo.total}} 人</text>
-      <text>中奖 {{recordInfo.winning_count}} 人</text>
+    <view class="records-summary"><text>抽奖 {{recordInfo.total}}</text><text>中奖 {{recordInfo.winning_count}}</text></view>
+    <view class="search-row"><input placeholder="昵称、微信号或核销码" value="{{recordKeyword}}" bindinput="onRecordKeywordInput" confirm-type="search" bindconfirm="onRecordSearch" /><view bindtap="onRecordSearch">搜索</view></view>
+    <view class="filter-row">
+      <view class="filter-chip {{recordResultFilter === 'all' ? 'active' : ''}}" data-value="all" bindtap="onRecordResultFilter">全部</view>
+      <view class="filter-chip {{recordResultFilter === 'winner' ? 'active' : ''}}" data-value="winner" bindtap="onRecordResultFilter">中奖</view>
+      <view class="filter-chip {{recordResultFilter === 'loser' ? 'active' : ''}}" data-value="loser" bindtap="onRecordResultFilter">未中奖</view>
+      <view class="filter-chip {{recordRedeemFilter === '0' ? 'active' : ''}}" data-value="0" bindtap="onRecordRedeemFilter">待核销</view>
+      <view class="filter-chip {{recordRedeemFilter === '1' ? 'active' : ''}}" data-value="1" bindtap="onRecordRedeemFilter">已核销</view>
     </view>
     <view class="records-loading" wx:if="{{recordsLoading}}"><van-loading size="24px">加载中...</van-loading></view>
-    <view class="records-empty" wx:elif="{{recordInfo.list.length === 0}}">暂无抽奖记录</view>
+    <view class="records-empty" wx:elif="{{recordInfo.list.length === 0}}">暂无符合条件的记录</view>
     <scroll-view class="records-list" scroll-y wx:else>
       <view class="record-item" wx:for="{{recordInfo.list}}" wx:key="id">
         <image class="record-avatar" wx:if="{{item.avatar_url}}" src="{{item.avatar_url}}" mode="aspectFill" />
         <view class="record-avatar record-avatar-empty" wx:else><van-icon name="user-o" /></view>
         <view class="record-user">
           <text class="record-name">{{item.nickname}}</text>
-          <text class="record-wechat" wx:if="{{item.wechat_id}}">微信号：{{item.wechat_id}}</text>
-          <text class="record-id" wx:else>{{item.display_id}}</text>
+          <text class="record-id">{{item.wechat_id || item.display_id}} · 第{{item.chance_no}}次</text>
           <text class="record-time">{{item.drawn_at}}</text>
+          <text class="redeem-code" wx:if="{{item.redeem_code}}">{{item.redeem_code}} · {{item.redemption_label}}</text>
         </view>
         <view class="record-result {{item.is_winner ? 'winner' : ''}}">
           <image wx:if="{{item.prize_image_url}}" src="{{item.prize_image_url}}" mode="aspectFill" />
           <text>{{item.prize_name}}</text>
+          <view wx:if="{{item.redemption_status === 0}}" class="record-redeem" data-code="{{item.redeem_code}}" catchtap="onRedeemRecord">核销</view>
         </view>
       </view>
     </scroll-view>
+  </view>
+</van-popup>
+
+<!-- 追加机会 -->
+<van-popup show="{{showParticipants}}" position="bottom" custom-style="border-radius:22px 22px 0 0;height:78vh;" bind:close="hideParticipants">
+  <view class="records-container">
+    <view class="sheet-header"><view><text class="form-title">追加抽奖机会</text><text class="sheet-subtitle">默认每位报名用户 1 次</text></view><van-icon name="cross" size="20px" color="#8299aa" bindtap="hideParticipants" /></view>
+    <view class="search-row"><input placeholder="昵称、微信号或用户标识" value="{{participantKeyword}}" bindinput="onParticipantKeywordInput" confirm-type="search" bindconfirm="onParticipantSearch" /><view bindtap="onParticipantSearch">搜索</view></view>
+    <view class="records-loading" wx:if="{{participantsLoading}}"><van-loading size="24px">加载中...</van-loading></view>
+    <view class="records-empty" wx:elif="{{participantList.length === 0}}">没有找到报名用户</view>
+    <scroll-view class="records-list" scroll-y wx:else>
+      <view class="participant-item" wx:for="{{participantList}}" wx:key="openid">
+        <image class="record-avatar" wx:if="{{item.avatar_url}}" src="{{item.avatar_url}}" mode="aspectFill" />
+        <view class="record-avatar record-avatar-empty" wx:else><van-icon name="user-o" /></view>
+        <view class="record-user"><text class="record-name">{{item.nickname}}</text><text class="record-id">{{item.wechat_id || item.display_id}}</text><text class="record-time">已用 {{item.chances_used}} / 共 {{item.chances_total}} 次</text></view>
+        <view class="grant-btn" data-openid="{{item.openid}}" data-name="{{item.nickname}}" bindtap="onGrantChance">追加</view>
+      </view>
+    </scroll-view>
+  </view>
+</van-popup>
+
+<!-- 核销 -->
+<van-popup show="{{showRedeem}}" round position="center" custom-style="width:86%;" bind:close="hideRedeemPanel">
+  <view class="redeem-panel">
+    <view class="redeem-icon"><van-icon name="passed" size="30px" color="#4d9fd7" /></view>
+    <text class="form-title">奖品核销</text>
+    <text class="redeem-hint">核对用户手机上的核销码后提交</text>
+    <input class="redeem-input" maxlength="32" value="{{redeemCode}}" bindinput="onRedeemCodeInput" placeholder="BBCH-XXXX-XXXX" />
+    <button class="submit-button" loading="{{redeeming}}" disabled="{{redeeming || !redeemCode}}" bindtap="submitRedeem">确认核销</button>
   </view>
 </van-popup>

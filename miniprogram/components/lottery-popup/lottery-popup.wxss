@@ -1,36 +1,38 @@
-.lottery-mask { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 100; }
-.lottery-popup { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 320px; background: #fff; border: 1px solid rgba(157, 191, 214, 0.3); border-radius: 20px; box-shadow: 0 14px 34px rgba(38, 78, 106, 0.2); z-index: 101; overflow: hidden; }
-.popup-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid #f0f0f0; }
-.popup-title { font-size: 16px; font-weight: 600; color: #1e4d7c; }
-.popup-body { padding: 24px 20px; text-align: center; }
-.lottery-icon { font-size: 48px; margin-bottom: 12px; }
-.lottery-tip { font-size: 16px; color: #333; font-weight: 500; display: block; margin-bottom: 4px; }
-.lottery-name { font-size: 14px; color: #5faee3; display: block; margin-bottom: 8px; }
-.time-info { font-size: 12px; color: #999; margin-bottom: 16px; }
-.popup-prize-scroll { width: 100%; margin: -4px 0 14px; white-space: nowrap; }
-.popup-prize-list { display: inline-flex; gap: 10px; }
-.popup-prize-item { display: inline-flex; width: 70px; flex-direction: column; align-items: center; }
-.popup-prize-image, .popup-prize-placeholder { width: 60px; height: 60px; border-radius: 12px; background: #eef7fd; }
-.popup-prize-placeholder { display: flex; align-items: center; justify-content: center; font-size: 26px; }
-.popup-prize-name, .popup-prize-count { overflow: hidden; width: 100%; text-align: center; text-overflow: ellipsis; white-space: nowrap; }
-.popup-prize-name { margin-top: 5px; color: #315f83; font-size: 11px; font-weight: 600; }
-.popup-prize-count { color: #9aabba; font-size: 10px; }
-.password-input { border: 1px solid #d8e8f5; border-radius: 10px; padding: 10px 16px; font-size: 15px; text-align: center; margin-bottom: 8px; }
-.error-tip { color: #ff6b6b; font-size: 12px; display: block; min-height: 16px; }
-.attempts-tip { color: #ff8800; font-size: 12px; }
-.popup-footer { padding: 0 20px 20px; }
-.draw-btn, .close-btn { display: flex; height: 44px; padding: 0; align-items: center; justify-content: center; border: none; border-radius: 24px; box-sizing: border-box; font-size: 15px; line-height: 1; }
-.draw-btn::after, .close-btn::after { display: none; }
-.draw-btn { background: #5faee3; color: #fff; }
-.close-btn { background: #f0f7ff; color: #5faee3; }
-.drawing { padding: 40px 0; text-align: center; }
-.spinner { width: 36px; height: 36px; border: 3px solid #e0e8f0; border-top: 3px solid #5faee3; border-radius: 50%; margin: 0 auto 12px; animation: spin 0.8s linear infinite; }
-@keyframes spin { to { transform: rotate(360deg); } }
-.drawing-text { font-size: 14px; color: #999; }
-.result-body { padding: 32px 20px; }
-.result-prize-image { display: block; width: 128px; height: 128px; margin: 0 auto 14px; border-radius: 18px; box-shadow: 0 8px 20px rgba(46, 91, 122, 0.15); }
-.result-icon { font-size: 56px; margin-bottom: 12px; }
-.result-text { font-size: 22px; font-weight: 700; display: block; margin-bottom: 8px; }
-.win-text { color: #ff6b6b; }
-.lose-text { color: #999; }
-.result-activity { font-size: 13px; color: #999; }
+.lottery-mask { position: fixed; inset: 0; z-index: 100; background: rgba(19,42,59,.58); }
+.lottery-popup { position: fixed; top: 50%; left: 50%; z-index: 101; width: 340px; max-height: 88vh; overflow-y: auto; transform: translate(-50%,-50%); border: 1px solid rgba(157,191,214,.36); border-radius: 24px; background: #f8fbfd; box-shadow: 0 18px 42px rgba(25,66,94,.28); }
+.popup-header { display: flex; align-items: flex-start; justify-content: space-between; padding: 17px 19px 14px; border-bottom: 1px solid #e8f0f5; background: #fff; }
+.popup-title, .popup-activity, .result-kicker, .result-text, .remaining-copy { display: block; }
+.popup-title { max-width: 270px; overflow: hidden; color: #173f5c; font-size: 16px; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
+.popup-activity { max-width: 270px; overflow: hidden; margin-top: 3px; color: #8ba1b1; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.wheel-stage { position: relative; padding: 22px 0 12px; }
+.wheel-ring { width: 226px; height: 226px; padding: 7px; margin: 0 auto; border-radius: 50%; box-sizing: border-box; background: linear-gradient(145deg,#6ab8e5,#3c8fc8); box-shadow: 0 10px 24px rgba(63,142,196,.24); }
+.wheel { position: relative; width: 212px; height: 212px; overflow: hidden; border: 4px solid #fff; border-radius: 50%; box-sizing: border-box; }
+.wheel::after { position: absolute; inset: 0; content: ''; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(45,96,130,.08); pointer-events: none; }
+.wheel-pointer { position: absolute; top: 13px; left: 50%; z-index: 4; width: 28px; height: 36px; transform: translateX(-50%); }
+.wheel-pointer view { width: 0; height: 0; border-top: 32px solid #e86f4c; border-right: 14px solid transparent; border-left: 14px solid transparent; filter: drop-shadow(0 3px 2px rgba(95,52,39,.18)); }
+.wheel-center { position: absolute; top: 50%; left: 50%; z-index: 3; display: flex; width: 58px; height: 58px; align-items: center; justify-content: center; transform: translate(-50%,-50%); border: 5px solid rgba(255,255,255,.85); border-radius: 50%; color: #fff; background: linear-gradient(145deg,#69b9e8,#3f91c9); box-shadow: 0 5px 12px rgba(45,105,147,.25); font-size: 15px; font-weight: 900; }
+.wheel-segment-label { position: absolute; top: 50%; left: 50%; z-index: 2; display: flex; width: 54px; height: 38px; align-items: center; justify-content: center; flex-direction: column; margin: -19px 0 0 -27px; transform-origin: center center; }
+.wheel-segment-label image { width: 25px; height: 25px; border: 2px solid rgba(255,255,255,.8); border-radius: 7px; box-sizing: border-box; }
+.wheel-segment-label text { display: block; overflow: hidden; width: 54px; margin-top: 2px; color: #315a76; font-size: 8px; font-weight: 700; text-align: center; text-overflow: ellipsis; white-space: nowrap; }
+.draw-info { padding: 4px 20px 20px; }
+.chance-row { display: flex; justify-content: space-between; padding: 3px 2px; color: #8097a8; font-size: 10px; }
+.chance-row text:last-child { color: #315f80; font-weight: 700; }
+.password-input { height: 43px; padding: 0 14px; margin-top: 10px; border: 1px solid #d6e6f1; border-radius: 15px; box-sizing: border-box; color: #214b69; background: #fff; font-size: 13px; text-align: center; }
+.error-tip, .attempts-tip { display: block; min-height: 15px; margin-top: 5px; font-size: 10px; text-align: center; }
+.error-tip { color: #d66b6b; }
+.attempts-tip { color: #d48648; }
+.draw-btn, .prize-btn { display: flex; width: 100%; height: 44px; align-items: center; justify-content: center; padding: 0; border: none; border-radius: 23px; box-sizing: border-box; font-size: 13px; font-weight: 800; line-height: 44px; }
+.draw-btn::after, .prize-btn::after { display: none; }
+.draw-btn { margin-top: 8px; color: #fff; background: linear-gradient(135deg,#69b9e8,#4298d2); box-shadow: 0 6px 15px rgba(66,152,210,.22); }
+.draw-btn[disabled] { color: rgba(255,255,255,.75); background: #9fc8e2; }
+.prize-btn { margin-top: 9px; color: #438fbe; background: #e9f5fc; }
+.result-body { padding: 28px 22px 22px; text-align: center; }
+.result-prize-image { display: block; width: 116px; height: 116px; margin: 0 auto 11px; border: 5px solid #fff; border-radius: 24px; box-shadow: 0 9px 24px rgba(42,88,119,.17); }
+.result-icon { font-size: 49px; }
+.result-kicker { margin-top: 7px; color: #879cab; font-size: 11px; }
+.result-text { margin-top: 4px; color: #e2774f; font-size: 23px; font-weight: 900; }
+.claim-card { padding: 12px; margin: 15px 0 10px; border: 1px solid #dceaf3; border-radius: 15px; color: #6f899b; background: #fff; font-size: 10px; line-height: 1.6; text-align: left; }
+.claim-card view { display: flex; align-items: center; justify-content: space-between; padding-bottom: 7px; margin-bottom: 7px; border-bottom: 1px solid #edf2f6; }
+.claim-code { color: #327fb2; font-size: 14px; font-weight: 900; letter-spacing: .7px; }
+.claim-card > text { display: block; }
+.remaining-copy { margin: 8px 0 2px; color: #6d879a; font-size: 10px; }
