@@ -1,9 +1,4 @@
 <view class="container">
-  <view class="tip-card">
-    <van-icon name="certificate" size="16px" color="#2f80c5" />
-    <text>官方账号可管理官方活动、活动抽奖、待审核、验证问题和黑名单；只有超级管理员可以增删官方账号。</text>
-  </view>
-
   <view class="search-card">
     <view class="search-bar">
       <van-icon name="search" size="17px" color="#8aa8c5" />

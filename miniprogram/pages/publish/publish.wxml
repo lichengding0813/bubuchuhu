@@ -135,7 +135,7 @@
           <view wx:for="{{colorList}}" wx:key="*this" class="color-swatch-btn {{currentTextColor === item ? 'selected' : ''}}" style="background:{{item}}" catchtouchstart="onSetColor" data-color="{{item}}"></view>
         </view>
         <view class="editor-format-tip">选中文字后直接点样式；也可以先选样式再输入</view>
-        <editor id="editor-route" class="ql-editor" placeholder="起点 → 途径点 → 终点，行程安排等" show-img-toolbar show-img-resize bind:ready="onEditorReady" bind:input="onEditorInput" bind:statuschange="onEditorStatusChange"></editor>
+        <editor id="editor-route" class="ql-editor" placeholder="起点 → 途径点 → 终点，行程安排等" show-img-toolbar show-img-resize bindtouchstart="onEditorTouchStart" bind:focus="onEditorFocus" bind:blur="onEditorBlur" bind:ready="onEditorReady" bind:input="onEditorInput" bind:statuschange="onEditorStatusChange"></editor>
       </view>
 
       <view class="form-row">

@@ -1,9 +1,4 @@
 <view class="container">
-  <view class="tip-card">
-    <van-icon name="warning-o" size="14px" color="#d48806" />
-    <text>黑名单分为“管理员手动”和“答题错误超限”两类。解封后用户需要重新完成答题验证。</text>
-  </view>
-
   <view class="search-card">
     <view class="search-title">手动添加黑名单</view>
     <view class="search-bar">

@@ -85,6 +85,10 @@ Component({
     async onDraw() {
       const { password, lotteryInfo, attemptsLeft, drawing } = this.data;
       if (drawing) return;
+      if (Number(lotteryInfo.chances_remaining || 0) <= 0) {
+        this.setData({ errorText: '' });
+        return;
+      }
       if (!password) {
         this.setData({ errorText: '请输入现场口令' });
         return;

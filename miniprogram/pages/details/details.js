@@ -40,7 +40,10 @@ Page({
       status: '',
       travel: [],
       is_force_insurance: 0,
-      isOfficial: false
+      isOfficial: false,
+      registrationClosed: false,
+      activityStarted: false,
+      activityEnded: false
     },
     agreeNotice: false,
     agreeBus: false,
@@ -172,6 +175,24 @@ Page({
 
     // 获取是否强制保险（后端返回字段名为 is_force_insurance）
     const isForceInsurance = Number(activity.is_force_insurance) === 1 ? 1 : 0;
+    const now = Date.now();
+    const toTimestamp = value => {
+      const parsed = this.parseTimeStr(value);
+      return parsed
+        ? new Date(parsed.year, parsed.month - 1, parsed.day, parsed.hour, parsed.minute, parsed.second || 0).getTime()
+        : 0;
+    };
+    const deadlineTimestamp = toTimestamp(activity.deadline);
+    const startTimestamp = toTimestamp(activity.activity_time);
+    const endTimestamp = toTimestamp(activity.end_time);
+    const activityEnded = Number(activity.status) === 4 || (endTimestamp > 0 && now >= endTimestamp);
+    const activityStarted = activityEnded || Number(activity.status) === 3 || (startTimestamp > 0 && now >= startTimestamp);
+    const registrationClosed = activityEnded || Boolean(activity.registration_closed) || (deadlineTimestamp > 0 && now >= deadlineTimestamp);
+    const displayStatus = activityEnded
+      ? '已结束'
+      : registrationClosed && Number(activity.status) === 1
+        ? '报名已截止'
+        : statusMap[activity.status] || '';
 
     this.setData({
       'activityDetail.name': activity.name || '',
@@ -196,12 +217,15 @@ Page({
       'activityDetail.route': activity.routes || activity.route || '',
       'activityDetail.meetingPoints': meetingPoints,
       'activityDetail.deadline': this.formatDate(activity.deadline),
-      'activityDetail.status': statusMap[activity.status] || '',
+      'activityDetail.status': displayStatus,
       'activityDetail.travel': travelOptions,
       'activityDetail.rawStatus': activity.status,
       'activityDetail.creatorAvatar': activity.creator_avatar || '',
       'activityDetail.is_force_insurance': isForceInsurance,   // 新增
       'activityDetail.isOfficial': Number(activity.is_official) === 1,
+      'activityDetail.registrationClosed': registrationClosed,
+      'activityDetail.activityStarted': activityStarted,
+      'activityDetail.activityEnded': activityEnded,
     });
 
     // 获取当前用户是否已报名
@@ -235,7 +259,7 @@ Page({
             ? '抽奖尚未开始'
             : lottery.can_draw
               ? `参与抽奖 · 剩${lottery.chances_remaining}次`
-              : lottery.my_prize_count > 0 ? '查看我的奖品' : '抽奖机会已用完'
+              : '机会已用完'
         }, () => this.startLotteryCountdown());
         return;
       }
@@ -252,12 +276,8 @@ Page({
       wx.showToast({ title: '抽奖还未开始', icon: 'none' });
       return;
     }
-    if (!lottery.can_draw && lottery.my_prize_count > 0) {
-      wx.navigateTo({ url: '/pages/my-prizes/my-prizes' });
-      return;
-    }
     if (!lottery.can_draw) {
-      wx.showToast({ title: '抽奖机会已用完', icon: 'none' });
+      this.setData({ showLotteryPopup: true });
       return;
     }
     this.setData({ showLotteryPopup: true });
@@ -281,7 +301,7 @@ Page({
       lotteryDrawn: !lotteryInfo.can_draw,
       lotteryActionText: lotteryInfo.can_draw
         ? `参与抽奖 · 剩${lotteryInfo.chances_remaining}次`
-        : lotteryInfo.my_prize_count > 0 ? '查看我的奖品' : '抽奖机会已用完'
+        : '机会已用完'
     });
   },
 
@@ -468,8 +488,12 @@ Page({
     if (activityDetail.travel.includes('train') || activityDetail.travel.includes('self')) {
       agreed = agreed && agreeSelf;
     }
-    const canSignUp = isActive && hasRemain && notExpired && agreed;
-    this.setData({ canSignUp });
+    const registrationClosed = !notExpired || activityDetail.activityStarted;
+    const canSignUp = isActive && hasRemain && !registrationClosed && agreed;
+    this.setData({
+      canSignUp,
+      'activityDetail.registrationClosed': registrationClosed
+    });
   },
 
   onAgreeNoticeChange(e) {
@@ -560,7 +584,11 @@ Page({
       }
       const { agreeNotice, agreeBus, agreeSelf, activityDetail } = this.data;
       let tip = '当前不可报名';
-      if (!agreeNotice) {
+      if (activityDetail.activityEnded) {
+        tip = '活动已结束';
+      } else if (activityDetail.registrationClosed) {
+        tip = '活动报名已截止';
+      } else if (!agreeNotice) {
         tip = '请先阅读并同意《报名参与者须知》';
       } else if (activityDetail.travel && activityDetail.travel[0] === 'bus' && !agreeBus) {
         tip = '请先阅读并同意《大巴行程免责声明》';
@@ -580,6 +608,14 @@ Page({
   },
 
   onCancelSignUpClick() {
+    if (this.data.activityDetail.activityEnded) {
+      wx.showToast({ title: '活动已结束', icon: 'none' });
+      return;
+    }
+    if (this.data.activityDetail.activityStarted) {
+      wx.showToast({ title: '活动已开始', icon: 'none' });
+      return;
+    }
     wx.showModal({
       title: '确认取消报名',
       content: '取消后需重新报名，确定要取消吗？',

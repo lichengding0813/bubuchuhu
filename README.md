@@ -106,6 +106,7 @@
 │   ├── migration_v1_4_3.sql     # v1.4.3 黑名单来源与答题日志迁移
 │   ├── migration_v1_4_4.sql     # v1.4.4 抽奖 v2 全量重建迁移
 │   ├── migration_v1_4_5.sql     # 超级管理员权限收敛与订阅消息任务表
+│   ├── migration_v1_4_6.sql     # 明文可修改抽奖口令与永久核销码迁移
 │   └── migration_official_accounts.sql # 官方账号功能独立增量迁移
 ├── database/           # 数据库建表语句
 │   ├── users.sql
@@ -173,13 +174,13 @@
 | `activity_participants` | 报名记录表 | id, activity_id, user_openid, nickname, phone, wechat_id, status, remark, companion_count |
 | `activity_reviews` | 活动回顾表 | id, activity_id, name, time, location, participants, summary, cover |
 | `verify_questions` | 验证问题表 | id, question, answers, sort_order, is_active |
-| `activity_lotteries` / `lottery_prizes` | 抽奖配置、固定中奖概率、奖品库存和领奖说明 | password_hash, probability_bps, remaining, valid_until |
+| `activity_lotteries` / `lottery_prizes` | 抽奖配置、固定中奖概率、奖品库存和领奖说明 | password, probability_bps, remaining |
 | `lottery_user_states` / `lottery_records` | 用户抽奖机会、每日口令次数和每次抽奖结果 | chances_total, chances_used, chance_no |
 | `lottery_redemptions` / `lottery_chance_grants` | 奖品核销与管理员追加机会记录 | redeem_code, status, quantity |
 | `notification_subscriptions` / `notification_jobs` | 订阅授权额度与去重发送任务 | template_id, available_count, dedupe_key, status |
 | `notification_send_logs` | 微信订阅消息发送结果 | job_id, errcode, errmsg |
 
-> 建表语句详见 `database/`。部署订阅消息与角色拆分前需执行 `database/migration_v1_4_5.sql`。脚本会将 `isAdmin` 收敛为指定三个微信号，并保留原有官方白名单。
+> 建表语句详见 `database/`。部署订阅消息与角色拆分前执行 `database/migration_v1_4_5.sql`；本次抽奖口令和核销状态调整需继续执行 `database/migration_v1_4_6.sql`。
 
 ## 部署信息
 
@@ -277,6 +278,7 @@ python app.py
 | GET | `/api/admin/lottery/records` | 筛选查看抽奖及核销记录 |
 | GET | `/api/admin/lottery/participants` | 查询可追加机会的报名用户 |
 | POST | `/api/admin/lottery/grant-chance` | 为报名用户追加抽奖机会 |
+| POST | `/api/admin/lottery/update-password` | 查看后修改抽奖现场口令 |
 | POST | `/api/admin/lottery/redeem` | 按核销码核销奖品 |
 | POST | `/api/admin/lottery/end` | 提前结束抽奖 |
 | POST | `/api/lottery/check` | 检查用户可参与的抽奖 |

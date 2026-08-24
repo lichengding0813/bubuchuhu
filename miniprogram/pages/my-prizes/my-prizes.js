@@ -6,7 +6,7 @@ Page({
     prizes: [],
     visiblePrizes: [],
     currentFilter: 'all',
-    counts: { all: 0, pending: 0, redeemed: 0, expired: 0 }
+    counts: { all: 0, pending: 0, redeemed: 0 }
   },
 
   onShow() {
@@ -23,8 +23,7 @@ Page({
         counts: {
           all: prizes.length,
           pending: prizes.filter(item => Number(item.redemption_status) === 0).length,
-          redeemed: prizes.filter(item => Number(item.redemption_status) === 1).length,
-          expired: prizes.filter(item => Number(item.redemption_status) === 2).length
+          redeemed: prizes.filter(item => Number(item.redemption_status) === 1).length
         }
       }, () => this.applyFilter());
     } catch (error) {
@@ -40,7 +39,7 @@ Page({
   },
 
   applyFilter() {
-    const map = { pending: 0, redeemed: 1, expired: 2 };
+    const map = { pending: 0, redeemed: 1 };
     const filter = this.data.currentFilter;
     const visiblePrizes = filter === 'all'
       ? this.data.prizes

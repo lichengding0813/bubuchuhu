@@ -174,6 +174,7 @@ Page({
         const formattedList = activities.map(item => {
           const participantCount = Number(item.participant_count) || 0;
           const remainCount = Math.max(item.max_participants - participantCount, 0);
+          const registrationClosed = Boolean(item.registration_closed) || this.isTimeReached(item.deadline);
           return {
             id: item.id,
             name: item.name,
@@ -183,8 +184,8 @@ Page({
             totalCount: item.max_participants,
             participantCount,
             difficulty: this.getDifficultyText(item.difficulty),
-            statusBadge: this.getStatusBadge(item.status, remainCount, item.has_registered),
-            statusClass: this.getStatusClass(item.status),
+            statusBadge: this.getStatusBadge(item.status, remainCount, item.has_registered, registrationClosed),
+            statusClass: registrationClosed && Number(item.status) === 1 ? 'closed' : this.getStatusClass(item.status),
             coverUrl: item.cover_url,
             has_registered: item.has_registered,
             isOfficial: Number(item.is_official) === 1,
@@ -295,6 +296,12 @@ Page({
     return `${month}/${day} ${hour}:${minute}`;
   },
 
+  isTimeReached(timeStr) {
+    const t = this.parseTimeStr(timeStr);
+    if (!t) return false;
+    return Date.now() >= new Date(t.year, t.month - 1, t.day, t.hour, t.minute, t.second || 0).getTime();
+  },
+
   // 获取难度文本
   getDifficultyText(level) {
     return level + '⭐';
@@ -315,7 +322,7 @@ Page({
 
   // 获取状态徽章
   // 优先级：已结束/已取消 > 已报名 > 可报名/已满员
-  getStatusBadge(status, remainCount, has_registered) {
+  getStatusBadge(status, remainCount, has_registered, registrationClosed = false) {
     // 先判断活动是否已结束或已取消（这些状态优先于报名状态）
     if (status === 4) return '已结束';
     if (status === 5) return '已取消';
@@ -323,6 +330,7 @@ Page({
 
     // 再判断报名状态
     if (has_registered) return '已报名';
+    if (registrationClosed) return '报名已截止';
     if (status === 1) {
       if (remainCount <= 0) return '已满员';
       return '可报名';

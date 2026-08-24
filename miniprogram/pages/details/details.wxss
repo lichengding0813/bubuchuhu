@@ -290,6 +290,15 @@ page {
   align-items: center;
 }
 
+.lottery-float.lottery-exhausted {
+  border-color: #d8dfe4;
+  box-shadow: 0 7px 18px rgba(70, 84, 94, 0.13);
+}
+
+.lottery-exhausted .lottery-float-action {
+  background: #b8c1c8;
+}
+
 .lottery-float-header,
 .lottery-countdown-row {
   justify-content: space-between;

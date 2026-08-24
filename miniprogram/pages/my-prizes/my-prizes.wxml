@@ -1,7 +1,7 @@
 <view class="page-container">
   <view class="hero-card">
     <view class="hero-icon"><van-icon name="gift-o" size="29px" color="#fff" /></view>
-    <view><text class="hero-title">我的奖品</text><text class="hero-subtitle">中奖后凭核销码领取，记得留意有效期</text></view>
+    <view><text class="hero-title">我的奖品</text></view>
   </view>
 
   <scroll-view class="filter-scroll" scroll-x enhanced show-scrollbar="{{false}}">
@@ -9,7 +9,6 @@
       <view class="filter-item {{currentFilter === 'all' ? 'active' : ''}}" data-value="all" bindtap="onFilterTap">全部 {{counts.all}}</view>
       <view class="filter-item {{currentFilter === 'pending' ? 'active' : ''}}" data-value="pending" bindtap="onFilterTap">待领取 {{counts.pending}}</view>
       <view class="filter-item {{currentFilter === 'redeemed' ? 'active' : ''}}" data-value="redeemed" bindtap="onFilterTap">已领取 {{counts.redeemed}}</view>
-      <view class="filter-item {{currentFilter === 'expired' ? 'active' : ''}}" data-value="expired" bindtap="onFilterTap">已过期 {{counts.expired}}</view>
     </view>
   </scroll-view>
 
@@ -27,7 +26,6 @@
       <view class="claim-info">
         <text wx:if="{{item.claim_instructions}}">{{item.claim_instructions}}</text>
         <text wx:if="{{item.pickup_location}}">领奖地点：{{item.pickup_location}}</text>
-        <text>有效期至：{{item.valid_until}}</text>
         <text wx:if="{{item.redeemed_at}}">核销时间：{{item.redeemed_at}}</text>
       </view>
       <view class="code-card" wx:if="{{item.redemption_status === 0}}" data-code="{{item.redeem_code}}" bindtap="copyCode">

@@ -38,6 +38,14 @@ Page({
   },
 
   onLoad(options) {
+    this.currentPageScrollTop = 0;
+    this.editorScrollAnchor = 0;
+    this.editorFocused = false;
+    this.keyboardHeightHandler = ({ height }) => {
+      if (height > 0 && this.editorFocused) this.restoreEditorScrollPosition();
+    };
+    wx.onKeyboardHeightChange(this.keyboardHeightHandler);
+
     if (!wx.cloud) {
       console.error('请使用 2.2.3 或以上的基础库以使用云能力');
     } else {
@@ -169,6 +177,31 @@ Page({
   },
 
   // ====== 富文本编辑器 ======
+  onPageScroll(e) {
+    this.currentPageScrollTop = Number(e.scrollTop || 0);
+  },
+
+  onEditorTouchStart() {
+    this.editorScrollAnchor = this.currentPageScrollTop || 0;
+  },
+
+  onEditorFocus() {
+    this.editorFocused = true;
+    this.restoreEditorScrollPosition();
+  },
+
+  onEditorBlur() {
+    this.editorFocused = false;
+  },
+
+  restoreEditorScrollPosition() {
+    const scrollTop = this.editorScrollAnchor || 0;
+    clearTimeout(this.editorScrollTimer);
+    this.editorScrollTimer = setTimeout(() => {
+      if (this.editorFocused) wx.pageScrollTo({ scrollTop, duration: 0 });
+    }, 80);
+  },
+
   onEditorReady() {
     wx.createSelectorQuery().select('#editor').context((res) => {
       this.editorCtx = res.context;
@@ -415,5 +448,10 @@ Page({
 
   onBack() {
     wx.navigateBack();
+  },
+
+  onUnload() {
+    if (this.editorScrollTimer) clearTimeout(this.editorScrollTimer);
+    if (this.keyboardHeightHandler) wx.offKeyboardHeightChange(this.keyboardHeightHandler);
   }
 });

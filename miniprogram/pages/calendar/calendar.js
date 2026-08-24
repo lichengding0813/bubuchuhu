@@ -1,5 +1,5 @@
 const { get } = require('../../utils/api');
-const { formatActivityTime, getDifficultyText } = require('../../utils/time');
+const { formatActivityTime, getDifficultyText, parseTimeStr } = require('../../utils/time');
 
 Page({
   data: {
@@ -110,6 +110,11 @@ Page({
           const totalCount = Number(item.max_participants) || 0;
           const remainCount = Math.max(totalCount - participantCount, 0);
           const status = Number(item.status);
+          const deadline = parseTimeStr(item.deadline);
+          const registrationClosed = Boolean(item.registration_closed) || (!!deadline && Date.now() >= new Date(
+            deadline.year, deadline.month - 1, deadline.day,
+            deadline.hour, deadline.minute, deadline.second || 0
+          ).getTime());
           return {
             ...item,
             time: formatActivityTime(item.activity_time),
@@ -120,8 +125,8 @@ Page({
             remainCount,
             isOfficial: Number(item.is_official) === 1,
             isEnded: status === 4,
-            statusBadge: this.getStatusBadge(status, remainCount, item.has_registered),
-            statusClass: this.getStatusClass(status)
+            statusBadge: this.getStatusBadge(status, remainCount, item.has_registered, registrationClosed),
+            statusClass: registrationClosed && status === 1 ? 'closed' : this.getStatusClass(status)
           };
         });
         this.setData({ dayActivities });
@@ -180,11 +185,12 @@ Page({
     wx.navigateTo({ url: `/pages/details/details?id=${id}` });
   },
 
-  getStatusBadge(status, remainCount, hasRegistered) {
+  getStatusBadge(status, remainCount, hasRegistered, registrationClosed = false) {
     if (status === 4) return '已结束';
     if (status === 5) return '已取消';
     if (status === 2) return '已拒绝';
     if (hasRegistered) return '已报名';
+    if (registrationClosed) return '报名已截止';
     if (status === 1) return remainCount <= 0 ? '已满员' : '可报名';
     return '已截止';
   },

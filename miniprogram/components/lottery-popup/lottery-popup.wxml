@@ -24,10 +24,11 @@
     <view class="draw-info">
       <view class="chance-row"><text>剩余抽奖机会</text><text>{{lotteryInfo.chances_remaining || 0}} 次</text></view>
       <view class="chance-row"><text>距结束</text><text>{{lotteryInfo.end_time}}</text></view>
-      <input class="password-input" password placeholder="输入现场口令" value="{{password}}" disabled="{{drawing}}" bindinput="onPasswordInput" confirm-type="done" bindconfirm="onDraw" />
+      <input class="password-input" password adjust-position="{{false}}" cursor-spacing="20" placeholder="输入现场口令" value="{{password}}" disabled="{{drawing || lotteryInfo.chances_remaining <= 0}}" bindinput="onPasswordInput" confirm-type="done" bindconfirm="onDraw" />
       <text class="error-tip" wx:if="{{errorText}}">{{errorText}}</text>
       <text class="attempts-tip" wx:if="{{attemptsLeft < 3}}">今天还可尝试口令 {{attemptsLeft}} 次</text>
-      <button class="draw-btn" disabled="{{drawing}}" bindtap="onDraw">{{drawing ? '转盘转动中…' : '开始抽奖'}}</button>
+      <button class="draw-btn" disabled="{{drawing || lotteryInfo.chances_remaining <= 0}}" bindtap="onDraw">{{lotteryInfo.chances_remaining <= 0 ? '机会已用完' : drawing ? '转盘转动中…' : '开始抽奖'}}</button>
+      <button class="prize-btn" wx:if="{{lotteryInfo.chances_remaining <= 0 && lotteryInfo.my_prize_count > 0}}" bindtap="goToMyPrizes">查看我的奖品</button>
     </view>
   </block>
 
@@ -40,10 +41,10 @@
       <view><text>核销码</text><text class="claim-code">{{result.redeem_code}}</text></view>
       <text wx:if="{{result.claim_instructions}}">{{result.claim_instructions}}</text>
       <text wx:if="{{result.pickup_location}}">地点：{{result.pickup_location}}</text>
-      <text>有效期至：{{result.valid_until}}</text>
     </view>
     <text class="remaining-copy" wx:if="{{result.chances_remaining > 0}}">你还有 {{result.chances_remaining}} 次机会</text>
     <button class="draw-btn" wx:if="{{result.chances_remaining > 0}}" bindtap="onDrawAgain">再抽一次</button>
+    <button class="draw-btn" wx:else disabled>机会已用完</button>
     <button class="prize-btn" wx:if="{{result.prize_id}}" bindtap="goToMyPrizes">查看我的奖品</button>
     <button class="prize-btn" wx:else bindtap="onClose">知道了</button>
   </view>

@@ -591,12 +591,13 @@ def get_activity_list():
         # 查询列表 - 显式增加 is_force_insurance 字段
         sql = f"""
         SELECT
-            a.id, a.activity_no, a.name, a.description, a.activity_time, a.end_time,
+            a.id, a.activity_no, a.name, a.description, a.activity_time, a.end_time, a.deadline,
             a.location, a.latitude, a.longitude,
             a.difficulty, a.max_participants, a.status, a.cover_url, a.view_count,
             a.created_at, a.is_force_insurance, a.is_official,
             u.nickName as creator_name, u.avatarUrl as creator_avatar,
             COALESCE(pc.participant_count, 0) AS participant_count,
+            CASE WHEN a.deadline IS NOT NULL AND a.deadline <= NOW() THEN TRUE ELSE FALSE END AS registration_closed,
             CASE WHEN mine.id IS NULL THEN FALSE ELSE TRUE END AS has_registered
         FROM activities a
         LEFT JOIN users u ON a.created_by = u.openId
@@ -653,6 +654,8 @@ def get_activity_detail():
     try:
         conn = get_db()
         cursor = conn.cursor()
+        _refresh_activity_statuses(cursor)
+        conn.commit()
 
         # 获取活动基本信息 - SELECT a.* 会自动包含 is_force_insurance 字段
         cursor.execute("""
@@ -665,6 +668,9 @@ def get_activity_detail():
 
         if not activity:
             return jsonify({'code': 404, 'msg': '活动不存在'})
+        activity['registration_closed'] = bool(
+            activity.get('deadline') and datetime.now() >= activity['deadline']
+        )
 
         viewer_is_admin = False
         viewer_is_official = False
@@ -786,8 +792,8 @@ def participate_activity():
         now = datetime.now()
         if activity['status'] != 1:
             return jsonify({'code': 400, 'msg': '活动不可报名'})
-        if activity.get('deadline') and now > activity['deadline']:
-            return jsonify({'code': 400, 'msg': '报名已截止'})
+        if activity.get('deadline') and now >= activity['deadline']:
+            return jsonify({'code': 400, 'msg': '活动报名已截止'})
         if activity.get('activity_time') and now >= activity['activity_time']:
             return jsonify({'code': 400, 'msg': '活动已开始，无法报名'})
 
@@ -878,16 +884,21 @@ def cancel_participation():
         cursor = conn.cursor()
 
         # 检查活动是否存在且未结束
-        cursor.execute("SELECT id, status, activity_time FROM activities WHERE id = %s", (activity_id,))
+        cursor.execute("SELECT id, status, activity_time, end_time FROM activities WHERE id = %s", (activity_id,))
         activity = cursor.fetchone()
 
         if not activity:
             return jsonify({'code': 404, 'msg': '活动不存在'})
 
-        if activity['status'] in (3, 4) or (
-            activity.get('activity_time') and datetime.now() >= activity['activity_time']
+        now = datetime.now()
+        if activity['status'] == 4 or (
+            activity.get('end_time') and now >= activity['end_time']
         ):
-            return jsonify({'code': 400, 'msg': '活动已开始或结束，无法取消报名'})
+            return jsonify({'code': 400, 'msg': '活动已结束'})
+        if activity['status'] == 3 or (
+            activity.get('activity_time') and now >= activity['activity_time']
+        ):
+            return jsonify({'code': 400, 'msg': '活动已开始，无法取消报名'})
 
         # 检查是否已报名
         cursor.execute(
@@ -1767,9 +1778,10 @@ def get_activity_calendar():
             # 查询指定日期的活动列表
             cursor.execute("""
                 SELECT a.id, a.name, a.location, a.latitude, a.longitude,
-                       a.activity_time, a.difficulty,
+                       a.activity_time, a.end_time, a.deadline, a.difficulty,
                        a.max_participants, a.status, a.cover_url, a.is_official,
                        COALESCE(pc.participant_count, 0) AS participant_count,
+                       CASE WHEN a.deadline IS NOT NULL AND a.deadline <= NOW() THEN TRUE ELSE FALSE END AS registration_closed,
                        CASE WHEN mine.activity_id IS NULL THEN FALSE ELSE TRUE END AS has_registered
                 FROM activities a
                 LEFT JOIN (

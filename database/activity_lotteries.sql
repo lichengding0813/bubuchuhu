@@ -7,7 +7,8 @@ DROP TABLE IF EXISTS `activity_lotteries`;
 CREATE TABLE `activity_lotteries` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `activity_id` int(11) NOT NULL COMMENT '关联活动ID',
-  `password_hash` varchar(255) NOT NULL COMMENT '抽奖口令哈希，不保存明文',
+  `lottery_name` varchar(100) NOT NULL COMMENT '抽奖名称',
+  `password` text NOT NULL COMMENT '现场抽奖口令（明文，可修改）',
   `start_time` datetime NOT NULL COMMENT '开放时间',
   `end_time` datetime NOT NULL COMMENT '结束时间',
   `status` tinyint(4) NOT NULL DEFAULT '0' COMMENT '0-按时间开放 1-兼容旧活动中 2-已结束',

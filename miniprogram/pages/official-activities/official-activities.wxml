@@ -1,12 +1,4 @@
 <view class="page-container">
-  <view class="intro-card">
-    <image class="intro-icon official-mascot official-mascot--large" src="/images/official-badge.png" mode="aspectFit" />
-    <view class="intro-content">
-      <view class="intro-title">官方活动共享管理</view>
-      <view class="intro-text">官方活动无需人工审核，白名单内所有账号均可查看和修改。</view>
-    </view>
-  </view>
-
   <button class="create-btn" bindtap="onCreate">
     <van-icon name="plus" size="16px" />
     <text>发布官方活动</text>

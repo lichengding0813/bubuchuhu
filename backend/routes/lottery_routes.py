@@ -4,7 +4,6 @@ import logging
 import secrets
 
 from flask import Blueprint, g, jsonify, request
-from werkzeug.security import check_password_hash, generate_password_hash
 
 from db_utils import get_db
 from domain import (
@@ -49,37 +48,18 @@ def _new_redeem_code():
 def _prize_view(prize):
     item = dict(prize)
     item['probability'] = round(int(item.pop('probability_bps', 0)) / 100, 2)
-    item['valid_until'] = _format_minute(item.get('valid_until'))
     return item
 
 
 def _redemption_label(status):
-    return {0: '待核销', 1: '已核销', 2: '已过期'}.get(int(status or 0), '待核销')
-
-
-def _expire_redemptions(cursor, lottery_id=None, user_openid=None):
-    conditions = ['rd.status = 0', 'p.valid_until IS NOT NULL', 'p.valid_until < NOW()']
-    params = []
-    if lottery_id:
-        conditions.append('r.lottery_id = %s')
-        params.append(lottery_id)
-    if user_openid:
-        conditions.append('r.user_openid = %s')
-        params.append(user_openid)
-    cursor.execute(f"""
-        UPDATE lottery_redemptions rd
-        JOIN lottery_records r ON rd.record_id = r.id
-        JOIN lottery_prizes p ON r.prize_id = p.id
-        SET rd.status = 2
-        WHERE {' AND '.join(conditions)}
-    """, tuple(params))
+    return {0: '待核销', 1: '已核销'}.get(int(status or 0), '待核销')
 
 
 def _load_prizes(cursor, lottery_id, include_empty=True):
     stock_filter = '' if include_empty else ' AND remaining > 0'
     cursor.execute(f"""
         SELECT id, tier_name, tier_level, quantity, remaining, probability_bps,
-               image_url, claim_instructions, pickup_location, valid_until
+               image_url, claim_instructions, pickup_location
         FROM lottery_prizes
         WHERE lottery_id = %s {stock_filter}
         ORDER BY tier_level, id
@@ -123,7 +103,7 @@ def create_lottery():
     data = request.get_json(silent=True) or {}
     activity_id = data.get('activity_id')
     lottery_name = str(data.get('lottery_name') or '活动幸运转盘').strip()
-    password = str(data.get('password') or '').strip()
+    password = str(data.get('password') or '')
     start_time = _parse_minute(data.get('start_time'))
     end_time = _parse_minute(data.get('end_time'))
     prizes = data.get('prizes') or []
@@ -132,8 +112,6 @@ def create_lottery():
         return jsonify({'code': 400, 'msg': '请完整填写抽奖信息'})
     if len(lottery_name) > 100:
         return jsonify({'code': 400, 'msg': '抽奖名称不能超过100字'})
-    if len(password) < 4 or len(password) > 32:
-        return jsonify({'code': 400, 'msg': '抽奖口令长度需为4至32位'})
     if end_time <= start_time:
         return jsonify({'code': 400, 'msg': '结束时间必须晚于开始时间'})
     if end_time <= datetime.now():
@@ -148,7 +126,6 @@ def create_lottery():
         image_url = str(prize.get('image_url') or '').strip()
         claim_instructions = str(prize.get('claim_instructions') or '').strip()
         pickup_location = str(prize.get('pickup_location') or '').strip()
-        valid_until = _parse_minute(prize.get('valid_until'))
         try:
             tier_level = int(prize.get('tier_level') or index + 1)
             quantity = int(prize.get('quantity'))
@@ -164,8 +141,6 @@ def create_lottery():
             return jsonify({'code': 400, 'msg': f'{tier_name}请填写500字以内的领奖说明'})
         if len(pickup_location) > 255:
             return jsonify({'code': 400, 'msg': f'{tier_name}领奖地点过长'})
-        if not valid_until or valid_until < end_time:
-            return jsonify({'code': 400, 'msg': f'{tier_name}领奖有效期不能早于抽奖结束时间'})
         if len(image_url) > 500 or (image_url and not image_url.startswith(('cloud://', 'https://'))):
             return jsonify({'code': 400, 'msg': f'{tier_name}奖品图片地址无效'})
         tier_levels.add(tier_level)
@@ -177,7 +152,6 @@ def create_lottery():
             'image_url': image_url,
             'claim_instructions': claim_instructions,
             'pickup_location': pickup_location,
-            'valid_until': valid_until,
         })
 
     _, probability_error = validate_lottery_probabilities(normalized_prizes)
@@ -207,22 +181,22 @@ def create_lottery():
 
         cursor.execute("""
             INSERT INTO activity_lotteries
-                (activity_id, lottery_name, password_hash, start_time, end_time, status, created_by)
+                (activity_id, lottery_name, password, start_time, end_time, status, created_by)
             VALUES (%s, %s, %s, %s, %s, 0, %s)
         """, (
-            activity_id, lottery_name, generate_password_hash(password),
+            activity_id, lottery_name, password,
             start_time, end_time, g.openid,
         ))
         lottery_id = cursor.lastrowid
         cursor.executemany("""
             INSERT INTO lottery_prizes
                 (lottery_id, tier_name, tier_level, quantity, remaining, probability_bps,
-                 image_url, claim_instructions, pickup_location, valid_until)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                 image_url, claim_instructions, pickup_location)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
         """, [(
             lottery_id, prize['tier_name'], prize['tier_level'], prize['quantity'],
             prize['quantity'], prize['probability_bps'], prize['image_url'],
-            prize['claim_instructions'], prize['pickup_location'], prize['valid_until'],
+            prize['claim_instructions'], prize['pickup_location'],
         ) for prize in normalized_prizes])
         conn.commit()
         return jsonify({'code': 200, 'msg': '抽奖已发布', 'data': {'lottery_id': lottery_id}})
@@ -242,10 +216,8 @@ def list_lotteries():
     cursor = None
     try:
         cursor = conn.cursor()
-        _expire_redemptions(cursor)
-        conn.commit()
         cursor.execute("""
-            SELECT l.id, l.activity_id, l.lottery_name, l.status, l.start_time, l.end_time,
+            SELECT l.id, l.activity_id, l.lottery_name, l.password, l.status, l.start_time, l.end_time,
                    l.created_at, a.name AS activity_name,
                    (SELECT COUNT(*) FROM lottery_records r WHERE r.lottery_id = l.id) AS draw_count,
                    (SELECT COUNT(*) FROM lottery_records r WHERE r.lottery_id = l.id AND r.prize_id IS NOT NULL) AS winning_count,
@@ -285,15 +257,13 @@ def list_lottery_records():
     cursor = None
     try:
         cursor = conn.cursor()
-        _expire_redemptions(cursor, lottery_id=lottery_id)
-        conn.commit()
         conditions = ['r.lottery_id = %s']
         params = [lottery_id]
         if result_filter == 'winner':
             conditions.append('r.prize_id IS NOT NULL')
         elif result_filter == 'loser':
             conditions.append('r.prize_id IS NULL')
-        if redemption_filter in ('0', '1', '2'):
+        if redemption_filter in ('0', '1'):
             conditions.append('rd.status = %s')
             params.append(int(redemption_filter))
         if keyword:
@@ -452,6 +422,41 @@ def grant_lottery_chance():
         _close(cursor)
 
 
+@lottery_bp.route('/admin/lottery/update-password', methods=['POST'])
+@check_verified_and_blacklist
+@check_staff
+def update_lottery_password():
+    """抽奖发布后只允许更新现场口令，口令按业务要求明文保存。"""
+    data = request.get_json(silent=True) or {}
+    lottery_id = data.get('lottery_id')
+    password = str(data.get('password') or '')
+    if not lottery_id:
+        return jsonify({'code': 400, 'msg': '缺少抽奖ID'})
+    if password == '':
+        return jsonify({'code': 400, 'msg': '抽奖口令不能为空'})
+
+    conn = get_db()
+    cursor = None
+    try:
+        cursor = conn.cursor()
+        cursor.execute('SELECT id FROM activity_lotteries WHERE id = %s FOR UPDATE', (lottery_id,))
+        if not cursor.fetchone():
+            conn.rollback()
+            return jsonify({'code': 404, 'msg': '抽奖不存在'})
+        cursor.execute(
+            'UPDATE activity_lotteries SET password = %s WHERE id = %s',
+            (password, lottery_id),
+        )
+        conn.commit()
+        return jsonify({'code': 200, 'msg': '抽奖口令已修改', 'data': {'password': password}})
+    except Exception:
+        conn.rollback()
+        logging.exception('修改抽奖口令失败')
+        return jsonify({'code': 500, 'msg': '服务器内部错误'})
+    finally:
+        _close(cursor)
+
+
 @lottery_bp.route('/admin/lottery/redeem', methods=['POST'])
 @check_verified_and_blacklist
 @check_staff
@@ -466,7 +471,7 @@ def redeem_lottery_prize():
         cursor = conn.cursor()
         cursor.execute("""
             SELECT rd.id, rd.status, rd.redeem_code,
-                   p.tier_name AS prize_name, p.valid_until,
+                   p.tier_name AS prize_name,
                    a.name AS activity_name, u.nickName AS nickname
             FROM lottery_redemptions rd
             JOIN lottery_records r ON rd.record_id = r.id
@@ -483,12 +488,6 @@ def redeem_lottery_prize():
         if int(redemption['status']) == 1:
             conn.rollback()
             return jsonify({'code': 400, 'msg': '该奖品已经核销'})
-        if int(redemption['status']) == 2 or (
-            redemption.get('valid_until') and redemption['valid_until'] < datetime.now()
-        ):
-            cursor.execute('UPDATE lottery_redemptions SET status = 2 WHERE id = %s', (redemption['id'],))
-            conn.commit()
-            return jsonify({'code': 400, 'msg': '该奖品已过期'})
         cursor.execute("""
             UPDATE lottery_redemptions
             SET status = 1, redeemed_by = %s, redeemed_at = NOW()
@@ -691,10 +690,10 @@ def draw_lottery():
             conn.rollback()
             return jsonify({'code': 400, 'msg': '本次抽奖机会已用完', 'no_chance': True})
 
-        try:
-            password_ok = check_password_hash(lottery['password_hash'], password)
-        except (TypeError, ValueError):
-            password_ok = False
+        password_ok = secrets.compare_digest(
+            str(lottery.get('password') or '').encode('utf-8'),
+            password.encode('utf-8'),
+        )
         if not password_ok:
             cursor.execute("""
                 UPDATE lottery_user_states
@@ -711,7 +710,7 @@ def draw_lottery():
 
         cursor.execute("""
             SELECT id, tier_name, tier_level, quantity, remaining, probability_bps,
-                   image_url, claim_instructions, pickup_location, valid_until
+                   image_url, claim_instructions, pickup_location
             FROM lottery_prizes WHERE lottery_id = %s
             ORDER BY tier_level, id FOR UPDATE
         """, (lottery_id,))
@@ -764,7 +763,6 @@ def draw_lottery():
             'prize_image_url': won_prize['image_url'] if won_prize else '',
             'claim_instructions': won_prize['claim_instructions'] if won_prize else '',
             'pickup_location': won_prize['pickup_location'] if won_prize else '',
-            'valid_until': _format_minute(won_prize.get('valid_until')) if won_prize else '',
             'redeem_code': redeem_code,
             'chances_remaining': max(0, chances_remaining),
         }})
@@ -783,13 +781,11 @@ def my_lottery_prizes():
     cursor = None
     try:
         cursor = conn.cursor()
-        _expire_redemptions(cursor, user_openid=g.openid)
-        conn.commit()
         cursor.execute("""
             SELECT r.id AS record_id, r.drawn_at, l.id AS lottery_id, l.lottery_name,
                    a.id AS activity_id, a.name AS activity_name,
                    p.tier_name AS prize_name, p.image_url AS prize_image_url,
-                   p.claim_instructions, p.pickup_location, p.valid_until,
+                   p.claim_instructions, p.pickup_location,
                    rd.redeem_code, rd.status AS redemption_status, rd.redeemed_at
             FROM lottery_records r
             JOIN lottery_prizes p ON r.prize_id = p.id
@@ -801,7 +797,7 @@ def my_lottery_prizes():
         """, (g.openid,))
         prizes = cursor.fetchall()
         for prize in prizes:
-            for field in ('drawn_at', 'valid_until', 'redeemed_at'):
+            for field in ('drawn_at', 'redeemed_at'):
                 prize[field] = _format_minute(prize.get(field))
             prize['redemption_label'] = _redemption_label(prize['redemption_status'])
         return jsonify({'code': 200, 'data': prizes})

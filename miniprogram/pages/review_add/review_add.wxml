@@ -116,7 +116,7 @@
     </view>
 
     <!-- 编辑器 -->
-    <editor id="editor" class="ql-editor" placeholder="请输入活动总结" show-img-toolbar show-img-resize bind:ready="onEditorReady" bind:input="onEditorInput" bind:statuschange="onEditorStatusChange"></editor>
+    <editor id="editor" class="ql-editor" placeholder="请输入活动总结" show-img-toolbar show-img-resize bindtouchstart="onEditorTouchStart" bind:focus="onEditorFocus" bind:blur="onEditorBlur" bind:ready="onEditorReady" bind:input="onEditorInput" bind:statuschange="onEditorStatusChange"></editor>
   </view>
 
   <view class="form-card">
@@ -137,7 +137,6 @@
   <view class="source-picker">
     <view class="source-picker-header">
       <text class="source-picker-title">选择官方活动</text>
-      <text class="source-picker-subtitle">仅展示尚未创建回顾的官方活动</text>
     </view>
 
     <view class="source-search">

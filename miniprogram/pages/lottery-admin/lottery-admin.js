@@ -10,10 +10,10 @@ function formatClock(value) {
   return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
 }
 
-function defaultPrizes(validUntil) {
+function defaultPrizes() {
   return [
-    { _key: `prize_${Date.now()}_1`, tier_name: '一等奖', quantity: 1, probability: 5, image_url: '', claim_instructions: '', pickup_location: '', valid_date: formatDate(validUntil), valid_time: formatClock(validUntil) },
-    { _key: `prize_${Date.now()}_2`, tier_name: '二等奖', quantity: 2, probability: 10, image_url: '', claim_instructions: '', pickup_location: '', valid_date: formatDate(validUntil), valid_time: formatClock(validUntil) }
+    { _key: `prize_${Date.now()}_1`, tier_name: '一等奖', quantity: 1, probability: 5, image_url: '', claim_instructions: '', pickup_location: '' },
+    { _key: `prize_${Date.now()}_2`, tier_name: '二等奖', quantity: 2, probability: 10, image_url: '', claim_instructions: '', pickup_location: '' }
   ];
 }
 
@@ -49,7 +49,12 @@ Page({
 
     showRedeem: false,
     redeemCode: '',
-    redeeming: false
+    redeeming: false,
+
+    showPasswordEditor: false,
+    passwordLotteryId: 0,
+    editPassword: '',
+    passwordSaving: false
   },
 
   onLoad() {
@@ -91,8 +96,7 @@ Page({
     const start = new Date(Date.now() + 5 * 60 * 1000);
     start.setSeconds(0, 0);
     const end = new Date(start.getTime() + 60 * 60 * 1000);
-    const validUntil = new Date(end.getTime() + 7 * 24 * 60 * 60 * 1000);
-    const prizeList = defaultPrizes(validUntil);
+    const prizeList = defaultPrizes();
     this.setData({
       showForm: true,
       formLotteryName: '活动幸运转盘',
@@ -134,8 +138,6 @@ Page({
   onPrizeProbabilityInput(e) { this.updatePrize(Number(e.currentTarget.dataset.index), 'probability', Number(e.detail.value) || 0); },
   onClaimInput(e) { this.updatePrize(Number(e.currentTarget.dataset.index), 'claim_instructions', e.detail.value); },
   onPickupInput(e) { this.updatePrize(Number(e.currentTarget.dataset.index), 'pickup_location', e.detail.value); },
-  onValidDateChange(e) { this.updatePrize(Number(e.currentTarget.dataset.index), 'valid_date', e.detail.value); },
-  onValidTimeChange(e) { this.updatePrize(Number(e.currentTarget.dataset.index), 'valid_time', e.detail.value); },
 
   addPrize() {
     if (this.data.prizeList.length >= 12) {
@@ -146,8 +148,7 @@ Page({
     prizeList.push({
       _key: `prize_${Date.now()}_${prizeList.length}`,
       tier_name: '', quantity: 1, probability: 5, image_url: '',
-      claim_instructions: '', pickup_location: '',
-      valid_date: this.data.formEndDate, valid_time: this.data.formEndTime
+      claim_instructions: '', pickup_location: ''
     });
     this.setData({ prizeList, probabilityTotal: this.sumProbability(prizeList) });
   },
@@ -209,7 +210,7 @@ Page({
     const activity = data.activityOptions[data.activityIndex];
     if (!activity || Number(activity.is_official) !== 1) throw new Error('请选择官方活动');
     if (!data.formLotteryName.trim()) throw new Error('请填写抽奖名称');
-    if (data.formPassword.trim().length < 4) throw new Error('口令至少4位');
+    if (data.formPassword === '') throw new Error('请填写抽奖口令');
     const start = new Date(`${data.formStartDate}T${data.formStartTime}:00`).getTime();
     const end = new Date(`${data.formEndDate}T${data.formEndTime}:00`).getTime();
     if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) throw new Error('抽奖结束时间必须晚于开始时间');
@@ -217,8 +218,6 @@ Page({
     const prizes = data.prizeList.map((item, index) => {
       if (!item.tier_name.trim() || item.quantity < 1 || item.probability <= 0) throw new Error(`请完整配置第${index + 1}个奖项`);
       if (!item.claim_instructions.trim()) throw new Error(`${item.tier_name}缺少领奖说明`);
-      const valid = new Date(`${item.valid_date}T${item.valid_time}:00`).getTime();
-      if (!Number.isFinite(valid) || valid < end) throw new Error(`${item.tier_name}领奖有效期不能早于抽奖结束时间`);
       return {
         tier_name: item.tier_name.trim(),
         tier_level: index + 1,
@@ -226,14 +225,13 @@ Page({
         probability: Number(item.probability),
         image_url: item.image_url || '',
         claim_instructions: item.claim_instructions.trim(),
-        pickup_location: item.pickup_location.trim(),
-        valid_until: `${item.valid_date} ${item.valid_time}`
+        pickup_location: item.pickup_location.trim()
       };
     });
     return {
       activity_id: activity.id,
       lottery_name: data.formLotteryName.trim(),
-      password: data.formPassword.trim(),
+      password: data.formPassword,
       start_time: `${data.formStartDate} ${data.formStartTime}`,
       end_time: `${data.formEndDate} ${data.formEndTime}`,
       prizes
@@ -252,7 +250,7 @@ Page({
     const summary = payload.prizes.map(item => `${item.tier_name}×${item.quantity}（${item.probability}%）`).join('、');
     wx.showModal({
       title: '确认发布抽奖',
-      content: `活动：${activity.name}\n抽奖：${payload.lottery_name}\n奖品：${summary}\n总中奖概率：${this.data.probabilityTotal}%\n\n发布后配置不可修改，请再次确认。`,
+      content: `活动：${activity.name}\n抽奖：${payload.lottery_name}\n奖品：${summary}\n总中奖概率：${this.data.probabilityTotal}%`,
       confirmText: '确认发布',
       confirmColor: '#4d9fd7',
       success: result => { if (result.confirm) this.submitLottery(payload); }
@@ -271,6 +269,43 @@ Page({
       wx.showToast({ title: error.response?.msg || '发布失败', icon: 'none' });
     } finally {
       this.setData({ submitting: false });
+    }
+  },
+
+  showPasswordEditor(e) {
+    const lottery = this.data.lotteryList[Number(e.currentTarget.dataset.index)] || {};
+    this.setData({
+      showPasswordEditor: true,
+      passwordLotteryId: Number(lottery.id || 0),
+      editPassword: String(lottery.password || '')
+    });
+  },
+
+  hidePasswordEditor() {
+    if (!this.data.passwordSaving) {
+      this.setData({ showPasswordEditor: false, passwordLotteryId: 0, editPassword: '' });
+    }
+  },
+
+  onEditPasswordInput(e) {
+    this.setData({ editPassword: e.detail.value });
+  },
+
+  async savePassword() {
+    if (!this.data.passwordLotteryId || this.data.editPassword === '' || this.data.passwordSaving) return;
+    this.setData({ passwordSaving: true });
+    try {
+      await post('/api/admin/lottery/update-password', {
+        lottery_id: this.data.passwordLotteryId,
+        password: this.data.editPassword
+      }, { silent: true });
+      wx.showToast({ title: '口令已修改', icon: 'success' });
+      this.setData({ showPasswordEditor: false, passwordLotteryId: 0, editPassword: '' });
+      this.loadLotteries();
+    } catch (error) {
+      wx.showToast({ title: error.response?.msg || '修改失败', icon: 'none' });
+    } finally {
+      this.setData({ passwordSaving: false });
     }
   },
 
@@ -395,7 +430,7 @@ Page({
     const id = Number(e.currentTarget.dataset.id);
     wx.showModal({
       title: '确认结束抽奖',
-      content: '结束后用户不能继续抽奖，已有奖品仍可在有效期内核销。',
+      content: '结束后用户不能继续抽奖，已有奖品仍可继续核销。',
       success: async result => {
         if (!result.confirm) return;
         try {

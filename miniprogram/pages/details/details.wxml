@@ -136,7 +136,7 @@
   </view>
 
   <!-- 详情页右下角悬浮抽奖卡 -->
-  <view class="lottery-float" wx:if="{{hasLottery}}" catchtap="onLotteryClick">
+  <view class="lottery-float {{!lotteryInfo.can_draw && lotteryInfo.phase !== 'not_started' ? 'lottery-exhausted' : ''}}" wx:if="{{hasLottery}}" catchtap="onLotteryClick">
     <view class="lottery-float-header">
       <view class="lottery-float-title"><text class="lottery-wheel-icon">🎡</text><text>{{lotteryInfo.lottery_name || '活动抽奖'}}</text></view>
       <text class="lottery-live-tag {{lotteryInfo.phase === 'not_started' ? 'waiting' : ''}}">{{lotteryInfo.phase === 'not_started' ? '未开始' : '进行中'}}</text>
@@ -167,14 +167,14 @@
     <block wx:if="{{isRegistered}}">
       <view class="submit-btn-group">
         <van-button type="info" block bindtap="onViewRegistration">已报名，查看报名信息</van-button>
-        <van-button plain type="default" block bindtap="onCancelSignUpClick" custom-class="cancel-btn">取消报名</van-button>
+        <van-button plain type="default" block bindtap="onCancelSignUpClick" disabled="{{activityDetail.activityStarted}}" custom-class="cancel-btn">{{activityDetail.activityEnded ? '活动已结束' : activityDetail.activityStarted ? '活动已开始' : '取消报名'}}</van-button>
       </view>
     </block>
 
     <!-- 未报名：折叠式 -->
     <block wx:else>
       <!-- 折叠/展开切换栏 -->
-      <view class="bottom-toggle" bindtap="toggleBottom">
+      <view class="bottom-toggle" bindtap="toggleBottom" wx:if="{{!activityDetail.registrationClosed && !activityDetail.activityEnded}}">
         <view class="toggle-left">
           <van-icon name="{{bottomExpanded ? 'arrow-up' : 'arrow-down'}}" size="14px" color="#5faee3" />
           <text class="toggle-text">{{bottomExpanded ? '收起' : '报名选项'}}</text>
@@ -187,7 +187,7 @@
       </view>
 
       <!-- 可折叠内容区 -->
-      <view class="bottom-collapsible {{bottomExpanded ? 'expanded' : 'collapsed'}}">
+      <view class="bottom-collapsible {{bottomExpanded ? 'expanded' : 'collapsed'}}" wx:if="{{!activityDetail.registrationClosed && !activityDetail.activityEnded}}">
         <view class="collapsible-inner">
           <!-- 同意条款区域 -->
           <view class="agree-section">
@@ -233,7 +233,9 @@
       <!-- 报名按钮（始终显示） -->
       <view class="submit-btn">
         <van-button type="info" block bindtap="onSignUpClick" disabled="{{!canSignUp}}">
-          立即报名（{{companionCount + 1}}人）
+          <text wx:if="{{activityDetail.activityEnded}}">活动已结束</text>
+          <text wx:elif="{{activityDetail.registrationClosed}}">活动报名已截止</text>
+          <text wx:else>立即报名（{{companionCount + 1}}人）</text>
         </van-button>
       </view>
     </block>

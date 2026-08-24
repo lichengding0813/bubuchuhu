@@ -232,6 +232,14 @@ Page({
   },
 
   onLoad(options) {
+    this.currentPageScrollTop = 0;
+    this.editorScrollAnchor = 0;
+    this.editorFocused = false;
+    this.keyboardHeightHandler = ({ height }) => {
+      if (height > 0 && this.editorFocused) this.restoreEditorScrollPosition();
+    };
+    wx.onKeyboardHeightChange(this.keyboardHeightHandler);
+
     const isOfficialMode = Boolean(options && options.official === '1');
     const hasRouteToLoad = Boolean(options && options.id);
     const isDraft = Boolean(options && options.draft === '1');
@@ -901,6 +909,31 @@ Page({
   },
 
   // ====== 富文本编辑器（路线简介） ======
+  onPageScroll(e) {
+    this.currentPageScrollTop = Number(e.scrollTop || 0);
+  },
+
+  onEditorTouchStart() {
+    this.editorScrollAnchor = this.currentPageScrollTop || 0;
+  },
+
+  onEditorFocus() {
+    this.editorFocused = true;
+    this.restoreEditorScrollPosition();
+  },
+
+  onEditorBlur() {
+    this.editorFocused = false;
+  },
+
+  restoreEditorScrollPosition() {
+    const scrollTop = this.editorScrollAnchor || 0;
+    clearTimeout(this.editorScrollTimer);
+    this.editorScrollTimer = setTimeout(() => {
+      if (this.editorFocused) wx.pageScrollTo({ scrollTop, duration: 0 });
+    }, 80);
+  },
+
   onEditorReady() {
     wx.createSelectorQuery().select('#editor-route').context((res) => {
       if (!res || !res.context) {
@@ -1324,5 +1357,7 @@ Page({
 
   onUnload() {
     if (this.countdownTimer) clearInterval(this.countdownTimer);
+    if (this.editorScrollTimer) clearTimeout(this.editorScrollTimer);
+    if (this.keyboardHeightHandler) wx.offKeyboardHeightChange(this.keyboardHeightHandler);
   }
 });
