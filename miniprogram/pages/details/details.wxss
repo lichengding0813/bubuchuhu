@@ -104,6 +104,73 @@ page {
   border-bottom: 1px solid #e6f0ff;
 }
 
+.activity-weather-row {
+  display: flex;
+  min-height: 58px;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  margin-bottom: 4px;
+  border-top: 1px solid #e6f0ff;
+  box-sizing: border-box;
+}
+
+.activity-weather-row + .activity-stats {
+  border-top: none;
+}
+
+.activity-weather-loading {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  color: #7f9bb3;
+  font-size: 12px;
+}
+
+.activity-weather-icon {
+  display: flex;
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: #edf7fd;
+}
+
+.activity-weather-copy {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.activity-weather-label {
+  overflow: hidden;
+  max-width: 100%;
+  color: #7890a5;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.activity-weather-text {
+  color: #1e4d7c;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.activity-weather-temp {
+  flex-shrink: 0;
+  color: #347fac;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 .stat-item {
   display: flex;
   flex-direction: column;
@@ -403,56 +470,6 @@ page {
   background: linear-gradient(135deg, #69b9e8, #4298d2);
   font-size: 11px;
   font-weight: 600;
-}
-
-/* 天气卡片 */
-.weather-card {
-  margin-bottom: 16px;
-  margin-top: -8px;
-}
-
-.weather-state {
-  display: flex;
-  min-height: 54px;
-  align-items: center;
-  justify-content: center;
-  color: #7f9bb3;
-  font-size: 12px;
-}
-
-.weather-error {
-  border-radius: 10px;
-  background: #f7fbfe;
-}
-
-.weather-scroll {
-  white-space: nowrap;
-  display: flex;
-}
-
-.weather-day {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  padding: 8px 14px;
-  flex-shrink: 0;
-}
-
-.weather-date {
-  font-size: 12px;
-  color: #999;
-}
-
-.weather-text {
-  font-size: 12px;
-  color: #5f7fa3;
-}
-
-.weather-temp {
-  font-size: 12px;
-  color: #ff6b6b;
-  white-space: nowrap;
 }
 
 /* 底部固定区域 */

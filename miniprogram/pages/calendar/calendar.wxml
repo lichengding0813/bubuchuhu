@@ -34,15 +34,16 @@
     </view>
     <view class="weather-inline-card" wx:elif="{{selectedWeather}}">
       <view class="weather-main">
-        <van-icon name="{{selectedWeather.icon}}" size="26px" color="#4d9fd7" />
+        <view class="weather-icon-wrap">
+          <van-icon name="{{selectedWeather.icon}}" size="26px" color="#4d9fd7" />
+        </view>
         <view class="weather-copy">
           <text class="weather-city">{{selectedWeather.city}}</text>
-          <text class="weather-text">{{selectedWeather.text_day}}</text>
+          <text class="weather-text">{{selectedWeather.dateLabel}} · {{selectedWeather.text_day}}</text>
         </view>
       </view>
       <view class="weather-side">
-        <text class="weather-temp">{{selectedWeather.low}}° ~ {{selectedWeather.high}}°</text>
-        <text class="weather-source">数据来源：{{selectedWeather.source}}</text>
+        <text class="weather-temp">{{selectedWeather.low}}℃ ~ {{selectedWeather.high}}℃</text>
       </view>
     </view>
     <view class="weather-note" wx:elif="{{weatherMessage && dayActivities.length > 0}}">{{weatherMessage}}</view>

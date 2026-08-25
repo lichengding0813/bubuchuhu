@@ -31,6 +31,17 @@ def parse_datetime(value):
     raise ValueError('时间格式应为 YYYY-MM-DD HH:MM')
 
 
+def format_review_date(value):
+    """将来源活动时间转换为活动回顾使用的纯日期。"""
+    if isinstance(value, datetime):
+        return value.strftime('%Y.%m.%d')
+    text = str(value or '').strip()
+    match = re.match(r'^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})', text)
+    if match:
+        return f'{match.group(1)}.{int(match.group(2)):02d}.{int(match.group(3)):02d}'
+    return text.split()[0] if text else ''
+
+
 def activity_times(data, allow_partial=False):
     """解析并校验报名截止、开始、结束时间；旧客户端按 12 小时兼容。"""
     try:

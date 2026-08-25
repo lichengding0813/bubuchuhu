@@ -159,7 +159,8 @@ Page({
         this.setData({
           selectedWeather: {
             ...result.data,
-            city: result.data.city || firstActivity.location
+            city: result.data.city || firstActivity.location,
+            dateLabel: this.formatWeatherDate(result.data.date)
           },
           weatherMessage: ''
         });
@@ -178,6 +179,11 @@ Page({
     } finally {
       this.setData({ weatherLoading: false });
     }
+  },
+
+  formatWeatherDate(value) {
+    const match = String(value || '').match(/^\d{4}-(\d{2})-(\d{2})/);
+    return match ? `${match[1]}/${match[2]}` : String(value || '');
   },
 
   onActivityClick(e) {

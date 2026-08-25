@@ -26,7 +26,7 @@
       </view>
       <view class="source-trigger-copy">
         <text class="source-trigger-title">选择已有官方活动</text>
-        <text class="source-trigger-desc">自动带入名称、时间、地点、难度、里程、爬升和报名人数</text>
+        <text class="source-trigger-desc">自动带入名称、日期、地点、难度、里程、爬升和报名人数</text>
       </view>
       <van-icon name="arrow" color="#8aa7ba" />
     </view>
@@ -43,7 +43,7 @@
     </view>
     <view class="edit-field">
       <view class="edit-label">活动时间</view>
-      <input class="edit-input" model:value="{{form.time}}" data-field="time" bindinput="onInput" placeholder="2025.03.20 08:00" />
+      <input class="edit-input" model:value="{{form.time}}" data-field="time" bindinput="onInput" placeholder="2025.03.20" />
     </view>
     <view class="edit-field">
       <view class="edit-label">活动地点</view>
@@ -73,7 +73,6 @@
     <view class="card-title">封面图</view>
     <view class="edit-field">
       <view class="edit-label">人合照</view>
-      <view class="field-help" wx:if="{{mode === 'add' && importedCover}}">已默认带入活动封面，可重新上传替换</view>
       <view class="upload-area" bindtap="chooseCover" data-type="cover">
         <image wx:if="{{form.cover}}" src="{{form.cover}}" mode="aspectFill" class="uploaded-image"></image>
         <view wx:else class="upload-placeholder">

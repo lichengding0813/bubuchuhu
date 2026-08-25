@@ -9,6 +9,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from domain import (
     activity_times,
     effective_lottery_status,
+    format_review_date,
     lottery_activity_error,
     normalize_official_activity_data,
     pick_lottery_prize,
@@ -66,6 +67,13 @@ class ActivityTimeTests(unittest.TestCase):
             'latitude': 100, 'longitude': 121,
         })
         self.assertIn('坐标', error)
+
+    def test_review_import_keeps_date_without_time(self):
+        self.assertEqual(
+            format_review_date(datetime(2026, 8, 25, 9, 30)),
+            '2026.08.25',
+        )
+        self.assertEqual(format_review_date('2026-8-5 09:30'), '2026.08.05')
 
 
 class LotteryRuleTests(unittest.TestCase):

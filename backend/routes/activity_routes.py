@@ -1876,7 +1876,6 @@ def get_calendar_weather():
             'high': highs[0],
             'low': lows[0],
             'icon': icon,
-            'source': 'Open-Meteo',
         }}
         _calendar_weather_cache[cache_key] = {'ts': time.time(), 'response': result}
         return jsonify(result)

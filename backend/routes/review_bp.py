@@ -3,6 +3,7 @@ from datetime import datetime
 import logging
 from db_utils import get_db
 from middleware import check_verified_and_blacklist, check_admin
+from domain import format_review_date
 import uuid
 import os
 import pymysql.cursors
@@ -15,13 +16,6 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
-
-def format_review_time(value):
-    """将活动开始时间转换为回顾页沿用的展示格式。"""
-    if isinstance(value, datetime):
-        return value.strftime('%Y.%m.%d %H:%M')
-    return str(value or '')
 
 
 # -------------------- 上传图片接口（通用） --------------------
@@ -98,7 +92,7 @@ def get_review_official_activities():
         """)
         activities = cursor.fetchall()
         for activity in activities:
-            activity['time'] = format_review_time(activity.pop('activity_time', None))
+            activity['time'] = format_review_date(activity.pop('activity_time', None))
         return jsonify({
             'code': 200,
             'data': {
@@ -248,14 +242,15 @@ def create_review():
         source_difficulty = f'{source_difficulty}⭐' if source_difficulty else '待定'
         review_data = {
             'name': data.get('name') or activity.get('name'),
-            'time': data.get('time') or format_review_time(activity.get('activity_time')),
+            'time': data.get('time') or format_review_date(activity.get('activity_time')),
             'location': data.get('location') or activity.get('location'),
             'difficulty': data.get('difficulty') or source_difficulty,
             'distance': data.get('distance') if data.get('distance') not in (None, '') else activity.get('distance', 0),
             'climb': data.get('climb') if data.get('climb') not in (None, '') else activity.get('climb', 0),
             'participants': data.get('participants') if data.get('participants') not in (None, '') else participant_row.get('participant_count', 0),
             'summary': data.get('summary', ''),
-            'cover': data.get('cover') if 'cover' in data else (activity.get('cover_url') or ''),
+            # 活动封面不等于回顾中的人合照，必须由创建者单独上传。
+            'cover': data.get('cover', ''),
             'cover2': data.get('cover2', ''),
             'cover3': data.get('cover3', ''),
             'photos': data.get('photos', []),

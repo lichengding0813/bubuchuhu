@@ -12,7 +12,6 @@ Page({
     loadingActivities: false,
     showActivityPicker: false,
     activityKeyword: '',
-    importedCover: '',
     form: {
       name: '',
       time: '',
@@ -158,22 +157,26 @@ Page({
     const activity = this.data.officialActivities.find(item => item.id === activityId);
     if (!activity) return;
 
-    const hasCustomCover = this.data.form.cover && this.data.form.cover !== this.data.importedCover;
-    const importedCover = activity.cover_url || '';
     this.setData({
       sourceActivityId: activity.id,
       selectedActivity: activity,
-      importedCover,
       showActivityPicker: false,
       'form.name': activity.name || '',
-      'form.time': activity.time || '',
+      'form.time': this.formatReviewDate(activity.time),
       'form.location': activity.location || '',
       'form.difficulty': activity.difficulty_text,
       'form.distance': activity.distance ?? '',
       'form.climb': activity.climb ?? '',
-      'form.participants': activity.participant_count,
-      'form.cover': hasCustomCover ? this.data.form.cover : importedCover
+      'form.participants': activity.participant_count
     });
+  },
+
+  formatReviewDate(value) {
+    const text = String(value || '').trim();
+    if (!text) return '';
+    const match = text.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})/);
+    if (!match) return text.split(/[ T]/)[0];
+    return `${match[1]}.${String(match[2]).padStart(2, '0')}.${String(match[3]).padStart(2, '0')}`;
   },
 
   // ====== 富文本编辑器 ======

@@ -238,7 +238,12 @@ Page({
     }, () => {
       this.checkSignUpStatus();
     });
-    this.loadWeather(activity.location, activity.latitude, activity.longitude);
+    this.loadWeather(
+      activity.location,
+      activity.latitude,
+      activity.longitude,
+      activity.activity_time
+    );
     this.checkActivityLottery(activity.id || this.data.activityId);
   },
 
@@ -356,13 +361,36 @@ Page({
     this.setData({ lotteryCountdown: countdown });
   },
 
-  async loadWeather(city, latitude, longitude) {
+  async loadWeather(city, latitude, longitude, activityTime) {
+    const parsedDate = this.parseTimeStr(activityTime);
+    if (!parsedDate) {
+      this.setData({ weatherLoading: false, weatherMessage: '', weather: {} });
+      return;
+    }
+    const date = [
+      parsedDate.year,
+      String(parsedDate.month).padStart(2, '0'),
+      String(parsedDate.day).padStart(2, '0')
+    ].join('-');
     this.setData({ weatherLoading: true, weatherMessage: '', weather: {} });
     try {
-      const result = await get('/api/weather', { city, latitude, longitude }, { silent: true });
-      const daily = result.data?.daily || [];
-      if (result.code === 200 && daily.length > 0) {
-        this.setData({ weather: result.data, weatherMessage: '' });
+      const result = await get('/api/activity/calendar-weather', {
+        date,
+        city,
+        latitude,
+        longitude
+      }, { silent: true });
+      if (result.code === 200 && result.data?.date === date) {
+        this.setData({
+          weather: {
+            city: result.data.city || city,
+            daily: [{
+              ...result.data,
+              dateLabel: this.formatWeatherDate(result.data.date)
+            }]
+          },
+          weatherMessage: ''
+        });
       } else {
         this.setData({ weather: {}, weatherMessage: '暂无天气预报' });
       }
@@ -372,6 +400,11 @@ Page({
     } finally {
       this.setData({ weatherLoading: false });
     }
+  },
+
+  formatWeatherDate(value) {
+    const match = String(value || '').match(/^\d{4}-(\d{2})-(\d{2})/);
+    return match ? `${match[1]}/${match[2]}` : String(value || '');
   },
 
   openActivityLocation() {

@@ -152,7 +152,7 @@ Page({
     });
 
     menuList.push({
-      icon: 'gift-o',
+      icon: 'gift',
       text: '我的奖品',
       url: '/pages/my-prizes/my-prizes'
     });
@@ -160,13 +160,13 @@ Page({
     if (isStaff) {
       menuList.push({ isDivider: true });
       menuList.push({
-        icon: 'certificate',
+        icon: 'checked',
         text: '官方活动管理',
         url: '/pages/official-activities/official-activities',
         requestAdminSubscription: true
       });
       menuList.push({
-        icon: 'gift-o',
+        icon: 'gift-card',
         text: '活动抽奖管理',
         url: '/pages/lottery-admin/lottery-admin',
         requestAdminSubscription: true
@@ -195,7 +195,7 @@ Page({
 
     if (Number(isAdmin) === 1) {
       menuList.push({
-        icon: 'friends-o',
+        icon: 'friends',
         text: '官方账号管理',
         url: '/pages/official-accounts/official-accounts'
       });
