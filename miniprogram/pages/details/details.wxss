@@ -139,6 +139,11 @@ page {
   background: #edf7fd;
 }
 
+.weather-emoji {
+  font-size: 25px;
+  line-height: 1;
+}
+
 .activity-weather-copy {
   display: flex;
   min-width: 0;

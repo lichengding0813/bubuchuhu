@@ -202,6 +202,11 @@ page {
   box-shadow: 0 2px 8px rgba(62, 132, 181, 0.1);
 }
 
+.weather-emoji {
+  font-size: 25px;
+  line-height: 1;
+}
+
 .weather-copy {
   align-items: flex-start;
   flex-direction: column;

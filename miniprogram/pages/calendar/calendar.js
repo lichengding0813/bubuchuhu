@@ -1,5 +1,6 @@
 const { get } = require('../../utils/api');
 const { formatActivityTime, getDifficultyText, parseTimeStr } = require('../../utils/time');
+const { getWeatherEmoji } = require('../../utils/weather');
 
 Page({
   data: {
@@ -160,7 +161,8 @@ Page({
           selectedWeather: {
             ...result.data,
             city: result.data.city || firstActivity.location,
-            dateLabel: this.formatWeatherDate(result.data.date)
+            dateLabel: this.formatWeatherDate(result.data.date),
+            emoji: getWeatherEmoji(result.data.text_day)
           },
           weatherMessage: ''
         });

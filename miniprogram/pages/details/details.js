@@ -1,5 +1,6 @@
 const { get, post } = require('../../utils/api');
 const { subscribeUserReminders } = require('../../utils/notifications');
+const { getWeatherEmoji } = require('../../utils/weather');
 
 Page({
   data: {
@@ -386,7 +387,8 @@ Page({
             city: result.data.city || city,
             daily: [{
               ...result.data,
-              dateLabel: this.formatWeatherDate(result.data.date)
+              dateLabel: this.formatWeatherDate(result.data.date),
+              emoji: getWeatherEmoji(result.data.text_day)
             }]
           },
           weatherMessage: ''

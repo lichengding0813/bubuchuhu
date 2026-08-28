@@ -32,7 +32,7 @@
       </view>
       <block wx:else>
         <view class="activity-weather-icon">
-          <van-icon name="{{weather.daily[0].icon}}" size="25px" color="#4d9fd7" />
+          <text class="weather-emoji">{{weather.daily[0].emoji}}</text>
         </view>
         <view class="activity-weather-copy">
           <text class="activity-weather-label">{{weather.daily[0].dateLabel}} · {{weather.city}}</text>

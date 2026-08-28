@@ -35,7 +35,7 @@
     <view class="weather-inline-card" wx:elif="{{selectedWeather}}">
       <view class="weather-main">
         <view class="weather-icon-wrap">
-          <van-icon name="{{selectedWeather.icon}}" size="26px" color="#4d9fd7" />
+          <text class="weather-emoji">{{selectedWeather.emoji}}</text>
         </view>
         <view class="weather-copy">
           <text class="weather-city">{{selectedWeather.city}}</text>
