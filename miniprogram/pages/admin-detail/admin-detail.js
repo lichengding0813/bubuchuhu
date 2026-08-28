@@ -1,330 +1,253 @@
+const { get, post } = require('../../utils/api');
+const {
+  parseTimeStr,
+  formatActivityTime,
+  formatFullTime,
+  getStatusText,
+  getDifficultyText
+} = require('../../utils/time');
+const { getWeatherEmoji } = require('../../utils/weather');
+
 Page({
   data: {
     activityId: null,
     activityDetail: {},
-    travelOptions: [],
-    meetingPoints: [],
-    busQR: null,
-    participantCount: 0,
-    difficultyText: '',
-    statusText: '',
-    
-    // 驳回弹窗
+    weather: {},
+    weatherLoading: false,
+    weatherMessage: '',
     showRejectDialog: false,
-    rejectReason: ''
+    rejectReason: '',
+    reviewing: false
   },
 
   onLoad(options) {
-    if (options.id) {
-      this.setData({ activityId: options.id });
-      this.loadActivityDetail();
+    if (!options.id) {
+      wx.showToast({ title: '活动ID不存在', icon: 'none' });
+      return;
     }
+    this.setData({ activityId: options.id });
+    this.loadActivityDetail();
   },
 
-  // 加载活动详情
   async loadActivityDetail() {
     wx.showLoading({ title: '加载中...' });
-    
     try {
-      const userInfo = wx.getStorageSync('userInfo');
-      const { activityId } = this.data;
-      
-      const result = await wx.cloud.callContainer({
-        config: { env: "prod-3gktwx67d1dd1e76" },
-        path: "/api/activity/detail",
-        header: {
-          "X-WX-SERVICE": "flask-mysql-login",
-          "X-Wx-OpenId": userInfo?.openId,
-          "content-type": "application/json"
-        },
-        method: "GET",
-        data: { id: activityId }
-      });
-      
-      wx.hideLoading();
-      
-      if (result.data && result.data.code === 200) {
-        const detail = result.data.data;
-        detail.is_force_insurance = Number(detail.is_force_insurance) === 1 ? 1 : 0;
-        
-        // 处理出行方式（1=大巴, 2=高铁, 3=自驾）
-        let travelOptions = [];
-        let busQR = null;
-        if (detail.travel_options && detail.travel_options.length > 0) {
-          detail.travel_options.forEach(opt => {
-            if (opt.travel_type === 1) {
-              travelOptions.push('bus');
-              busQR = opt.bus_qr_url;
-            } else if (opt.travel_type === 2) {
-              travelOptions.push('train');
-            } else if (opt.travel_type === 3) {
-              travelOptions.push('self');
-            }
-          });
-        }
-        
-        // 处理集合点
-        const meetingPoints = detail.meeting_points || [];
-        
-        // 格式化时间
-        const deadlineFormatted = this.formatDateTime(detail.deadline);
-        const activityTimeFormatted = this.formatActivityTime(detail.activity_time);
-        
-        this.setData({
-          activityDetail: {
-            ...detail,
-            deadline_formatted: deadlineFormatted,
-            activity_time_formatted: activityTimeFormatted
-          },
-          travelOptions: travelOptions,
-          meetingPoints: meetingPoints,
-          busQR: busQR,
-          participantCount: detail.participant_count || 0,
-          difficultyText: this.getDifficultyText(detail.difficulty),
-          statusText: this.getStatusText(detail.status)
-        });
-      } else {
-        wx.showToast({ title: result.data?.msg || '加载失败', icon: 'none' });
-      }
+      const result = await get('/api/activity/detail', { id: this.data.activityId }, { silent: true });
+      const detail = result.data || {};
+      this.setData({ activityDetail: this.formatActivityDetail(detail) });
+      this.loadWeather(detail.location, detail.latitude, detail.longitude, detail.activity_time);
     } catch (error) {
-      wx.hideLoading();
       console.error('加载活动详情失败:', error);
-      wx.showToast({ title: '加载失败', icon: 'error' });
+      wx.showToast({ title: error.response?.msg || '加载失败', icon: 'none' });
+    } finally {
+      wx.hideLoading();
     }
   },
 
-  // 安全解析时间字符串（兼容 callContainer 的二次转换）
-  parseTimeStr(timeStr) {
-    if (!timeStr) return null;
-    if (timeStr instanceof Date) {
-      return {
-        year: timeStr.getUTCFullYear(),
-        month: timeStr.getUTCMonth() + 1,
-        day: timeStr.getUTCDate(),
-        hour: timeStr.getUTCHours(),
-        minute: timeStr.getUTCMinutes(),
-        second: timeStr.getUTCSeconds()
-      };
-    }
-    const str = String(timeStr).replace('T', ' ');
-    const parts = str.split(/[- :]/);
-    if (parts.length >= 5 && !isNaN(parseInt(parts[0]))) {
-      return {
-        year: parseInt(parts[0]),
-        month: parseInt(parts[1]),
-        day: parseInt(parts[2]),
-        hour: parseInt(parts[3]),
-        minute: parseInt(parts[4]),
-        second: parts.length >= 6 ? parseInt(parts[5]) : 0
-      };
-    }
-    const d = new Date(timeStr);
-    if (!isNaN(d.getTime())) {
-      return {
-        year: d.getUTCFullYear(),
-        month: d.getUTCMonth() + 1,
-        day: d.getUTCDate(),
-        hour: d.getUTCHours(),
-        minute: d.getUTCMinutes(),
-        second: d.getUTCSeconds()
-      };
-    }
-    return null;
+  formatActivityDetail(activity) {
+    const participantCount = Number(activity.participant_count || 0);
+    const totalCount = Number(activity.max_participants || 0);
+    const travel = (activity.travel_options || []).map(item => {
+      if (Number(item.travel_type) === 1) return 'bus';
+      if (Number(item.travel_type) === 2) return 'train';
+      if (Number(item.travel_type) === 3) return 'self';
+      return '';
+    }).filter(Boolean);
+    const meetingPoints = (activity.meeting_points || []).map((point, index) => ({
+      ...point,
+      _key: point.id || `${point.meeting_time || point.time || ''}_${point.location || ''}_${index}`
+    }));
+    const rawStatus = Number(activity.status);
+    const toTimestamp = value => {
+      const parsed = parseTimeStr(value);
+      return parsed
+        ? new Date(parsed.year, parsed.month - 1, parsed.day, parsed.hour, parsed.minute, parsed.second || 0).getTime()
+        : 0;
+    };
+    const now = Date.now();
+    const endTimestamp = toTimestamp(activity.end_time);
+    const deadlineTimestamp = toTimestamp(activity.deadline);
+    const activityEnded = rawStatus === 4 || (endTimestamp > 0 && now >= endTimestamp);
+    const registrationClosed = activityEnded
+      || Boolean(activity.registration_closed)
+      || (deadlineTimestamp > 0 && now >= deadlineTimestamp);
+    const displayStatus = activityEnded
+      ? '已结束'
+      : registrationClosed && rawStatus === 1
+        ? '报名已截止'
+        : getStatusText(rawStatus);
+
+    return {
+      ...activity,
+      name: activity.name || '',
+      time: formatActivityTime(activity.activity_time),
+      endTime: formatActivityTime(activity.end_time),
+      location: activity.location || '',
+      latitude: activity.latitude ?? null,
+      longitude: activity.longitude ?? null,
+      difficulty: getDifficultyText(Number(activity.difficulty || 1)),
+      distance: Number(activity.distance || 0),
+      climb: Number(activity.climb || 0),
+      remainCount: Math.max(totalCount - participantCount, 0),
+      totalCount,
+      participantCount,
+      organizer: activity.creator_name || '未知',
+      wechat: activity.wechat_id || '',
+      cover: activity.cover_url || activity.cover || '',
+      groupQR: activity.group_qr_url || '',
+      creatorAvatar: activity.creator_avatar || '',
+      description: activity.description || '',
+      route: activity.routes || activity.route || '',
+      meetingPoints,
+      deadline: formatFullTime(activity.deadline),
+      status: displayStatus,
+      rawStatus,
+      travel,
+      is_force_insurance: Number(activity.is_force_insurance) === 1 ? 1 : 0,
+      isOfficial: Number(activity.is_official) === 1
+    };
   },
 
-  // 通过审核
+  async loadWeather(city, latitude, longitude, activityTime) {
+    const parsedDate = parseTimeStr(activityTime);
+    if (!parsedDate) return;
+    const date = [
+      parsedDate.year,
+      String(parsedDate.month).padStart(2, '0'),
+      String(parsedDate.day).padStart(2, '0')
+    ].join('-');
+
+    this.setData({ weatherLoading: true, weatherMessage: '', weather: {} });
+    try {
+      const result = await get('/api/activity/calendar-weather', {
+        date,
+        city,
+        latitude,
+        longitude
+      }, { silent: true });
+      if (result.data?.date !== date) {
+        this.setData({ weather: {}, weatherMessage: '暂无天气预报' });
+        return;
+      }
+      this.setData({
+        weather: {
+          city: result.data.city || city,
+          daily: [{
+            ...result.data,
+            dateLabel: this.formatWeatherDate(result.data.date),
+            emoji: getWeatherEmoji(result.data.text_day)
+          }]
+        }
+      });
+    } catch (error) {
+      console.log('审核详情天气加载失败（可忽略）:', error);
+      this.setData({ weather: {}, weatherMessage: error.response?.msg || '天气暂时无法获取' });
+    } finally {
+      this.setData({ weatherLoading: false });
+    }
+  },
+
+  formatWeatherDate(value) {
+    const match = String(value || '').match(/^\d{4}-(\d{2})-(\d{2})/);
+    return match ? `${match[1]}/${match[2]}` : String(value || '');
+  },
+
+  previewCoverImage(e) {
+    const src = e.currentTarget.dataset.src;
+    if (src) wx.previewImage({ urls: [src], current: src });
+  },
+
+  previewQRCode(e) {
+    const url = e.currentTarget.dataset.url;
+    if (url) wx.previewImage({ urls: [url], current: url });
+  },
+
+  openActivityLocation() {
+    const { latitude, longitude, location } = this.data.activityDetail;
+    if (latitude == null || longitude == null) return;
+    wx.openLocation({
+      latitude: Number(latitude),
+      longitude: Number(longitude),
+      name: location || '活动地点'
+    });
+  },
+
+  openMeetingLocation(e) {
+    const point = this.data.activityDetail.meetingPoints?.[e.currentTarget.dataset.index];
+    if (!point || point.latitude == null || point.longitude == null) return;
+    wx.openLocation({
+      latitude: Number(point.latitude),
+      longitude: Number(point.longitude),
+      name: point.location || '集合点'
+    });
+  },
+
   onApproveClick() {
+    if (this.data.reviewing) return;
     wx.showModal({
       title: '确认通过',
       content: '确定要通过该活动吗？',
       confirmText: '确认通过',
-      confirmColor: '#1e4d7c',
-      success: (res) => {
-        if (res.confirm) {
-          this.reviewActivity('approve');
-        }
+      confirmColor: '#3e8dcc',
+      success: res => {
+        if (res.confirm) this.submitReview('approve', '');
       }
     });
   },
 
-  // 驳回 - 显示弹窗
   onRejectClick() {
-    this.setData({
-      showRejectDialog: true,
-      rejectReason: ''
-    });
+    if (this.data.reviewing) return;
+    this.setData({ showRejectDialog: true, rejectReason: '' });
   },
 
-  // 驳回原因输入
   onRejectReasonInput(e) {
     this.setData({ rejectReason: e.detail.value });
   },
 
-  // 取消驳回
   cancelReject() {
-    this.setData({
-      showRejectDialog: false,
-      rejectReason: ''
-    });
+    this.setData({ showRejectDialog: false, rejectReason: '' });
   },
 
-  // 确认驳回
-  async confirmReject() {
-    const { activityId, rejectReason } = this.data;
-    
-    wx.showLoading({ title: '处理中...' });
-    
-    const userInfo = wx.getStorageSync('userInfo');
-    
+  confirmReject() {
+    if (this.data.reviewing) return;
+    this.submitReview('reject', this.data.rejectReason);
+  },
+
+  async submitReview(action, rejectReason) {
+    this.setData({ reviewing: true });
+    wx.showLoading({ title: '处理中...', mask: true });
     try {
-      const result = await wx.cloud.callContainer({
-        config: { env: "prod-3gktwx67d1dd1e76" },
-        path: "/api/admin/review-activity",
-        header: {
-          "X-WX-SERVICE": "flask-mysql-login",
-          "X-Wx-OpenId": userInfo?.openId,
-          "content-type": "application/json"
-        },
-        method: "POST",
-        data: {
-          activity_id: parseInt(activityId),
-          action: 'reject',
-          reject_reason: rejectReason
-        }
-      });
-
-      wx.hideLoading();
-
-      if (result.data && result.data.code === 200) {
-        wx.showToast({ title: '已驳回', icon: 'success' });
-        this.setData({
-          showRejectDialog: false,
-          rejectReason: ''
-        });
-        // 返回上一页并刷新
-        const pages = getCurrentPages();
-        const prevPage = pages[pages.length - 2];
-        if (prevPage && prevPage.loadActivities) {
-          prevPage.loadActivities(true);
-          prevPage.loadTotalCount();
-        }
-        setTimeout(() => {
-          wx.navigateBack();
-        }, 1500);
-      } else {
-        wx.showToast({ title: result.data?.msg || '操作失败', icon: 'none' });
-      }
+      await post('/api/admin/review-activity', {
+        activity_id: Number(this.data.activityId),
+        action,
+        reject_reason: rejectReason || ''
+      }, { silent: true });
+      this.setData({ showRejectDialog: false, rejectReason: '' });
+      wx.showToast({ title: action === 'approve' ? '已通过' : '已驳回', icon: 'success' });
+      this.refreshPreviousPage();
+      setTimeout(() => wx.navigateBack(), 1000);
     } catch (error) {
+      console.error('审核活动失败:', error);
+      wx.showToast({ title: error.response?.msg || '操作失败', icon: 'none' });
+    } finally {
       wx.hideLoading();
-      console.error('驳回失败:', error);
-      wx.showToast({ title: '操作失败', icon: 'error' });
+      this.setData({ reviewing: false });
     }
   },
 
-  // 审核活动
-  async reviewActivity(action) {
-    wx.showLoading({ title: '处理中...' });
-
-    const userInfo = wx.getStorageSync('userInfo');
-    const { activityId } = this.data;
-
-    try {
-      const result = await wx.cloud.callContainer({
-        config: { env: "prod-3gktwx67d1dd1e76" },
-        path: "/api/admin/review-activity",
-        header: {
-          "X-WX-SERVICE": "flask-mysql-login",
-          "X-Wx-OpenId": userInfo?.openId,
-          "content-type": "application/json"
-        },
-        method: "POST",
-        data: {
-          activity_id: parseInt(activityId),
-          action: action,
-          reject_reason: ''
-        }
-      });
-
-      wx.hideLoading();
-
-      if (result.data && result.data.code === 200) {
-        wx.showToast({ title: action === 'approve' ? '已通过' : '已驳回', icon: 'success' });
-        // 返回上一页并刷新
-        const pages = getCurrentPages();
-        const prevPage = pages[pages.length - 2];
-        if (prevPage && prevPage.loadActivities) {
-          prevPage.loadActivities(true);
-          prevPage.loadTotalCount();
-        }
-        setTimeout(() => {
-          wx.navigateBack();
-        }, 1500);
-      } else {
-        wx.showToast({ title: result.data?.msg || '操作失败', icon: 'none' });
-      }
-    } catch (error) {
-      wx.hideLoading();
-      console.error('审核失败:', error);
-      wx.showToast({ title: '操作失败', icon: 'error' });
-    }
+  refreshPreviousPage() {
+    const pages = getCurrentPages();
+    const previousPage = pages[pages.length - 2];
+    if (!previousPage) return;
+    if (typeof previousPage.loadActivities === 'function') previousPage.loadActivities(true);
+    if (typeof previousPage.loadTotalCount === 'function') previousPage.loadTotalCount();
   },
 
-  // 返回
   onBackClick() {
     const pages = getCurrentPages();
-    if (pages.length > 1) {
-      wx.navigateBack({ delta: 1 });
-    } else {
-      wx.switchTab({ url: '/pages/home/home' });
-    }
+    if (pages.length > 1) wx.navigateBack({ delta: 1 });
+    else wx.switchTab({ url: '/pages/home/home' });
   },
 
-  preventTouchMove() {
-    return;
-  },
-
-  // ========== 工具函数 ==========
-  formatActivityTime(timeStr) {
-    const t = this.parseTimeStr(timeStr);
-    if (!t) return '';
-    const month = String(t.month).padStart(2, '0');
-    const day = String(t.day).padStart(2, '0');
-    const hour = String(t.hour).padStart(2, '0');
-    const minute = String(t.minute).padStart(2, '0');
-    return `${month}/${day} ${hour}:${minute}`;
-  },
-
-  formatDateTime(timeStr) {
-    const t = this.parseTimeStr(timeStr);
-    if (!t) return '';
-    const year = t.year;
-    const month = String(t.month).padStart(2, '0');
-    const day = String(t.day).padStart(2, '0');
-    const hour = String(t.hour).padStart(2, '0');
-    const minute = String(t.minute).padStart(2, '0');
-    return `${year}-${month}-${day} ${hour}:${minute}`;
-  },
-
-  getDifficultyText(level) {
-    const map = {
-      1: '1⭐ 简单',
-      2: '2⭐ 轻松',
-      3: '3⭐ 中等',
-      4: '4⭐ 困难',
-      5: '5⭐ 挑战'
-    };
-    return map[level] || '1⭐ 简单';
-  },
-
-  getStatusText(status) {
-    const map = {
-      0: '待审核',
-      1: '报名中',
-      2: '已驳回',
-      3: '进行中',
-      4: '已结束',
-      5: '已取消'
-    };
-    return map[status] || '未知';
-  }
+  preventTouchMove() {}
 });

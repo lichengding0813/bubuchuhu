@@ -1,165 +1,143 @@
-/* pages/admin-review/admin-review.wxss */
-/* pages/admin-review/admin-review.wxss */
 page {
-  background-color: #e6f7ff;
-  height: 100%;
-  overflow-y: auto;
+  min-height: 100%;
+  background: #f4f8fb;
+  color: #173f63;
 }
 
-/* 列表区域 */
 .list-section {
   padding: 22px 16px 32px;
 }
 
 .section-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
   margin-bottom: 12px;
   padding: 0 4px;
 }
 
 .section-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: #1e4d7c;
   position: relative;
   padding-left: 12px;
+  color: #173f63;
+  font-size: 18px;
+  font-weight: 700;
 }
 
 .section-title::before {
-  content: '';
   position: absolute;
-  left: 0;
   top: 4px;
   bottom: 4px;
+  left: 0;
   width: 4px;
-  background-color: #5faee3;
   border-radius: 4px;
+  background: #5faee3;
+  content: '';
 }
 
 .filter-tabs {
   display: flex;
-  gap: 12px;
+  gap: 8px;
 }
 
 .tab {
-  font-size: 14px;
+  padding: 5px 10px;
+  border-radius: 18px;
   color: #7a9ec2;
-  padding: 4px 8px;
-  border-radius: 20px;
-  transition: all 0.2s;
+  font-size: 13px;
 }
 
 .tab.active {
-  color: #5faee3;
-  background-color: #e3f0ff;
-  font-weight: 500;
+  color: #3988c2;
+  background: #e5f3fc;
+  font-weight: 600;
 }
 
-/* 加载状态 */
-.loading-container {
+.loading-container,
+.empty-container {
   display: flex;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
+}
+
+.loading-container {
   padding: 60px 0;
 }
 
 .empty-container {
-  display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
   padding: 80px 0;
 }
 
 .empty-text {
+  margin-top: 16px;
   color: #7a9ec2;
   font-size: 14px;
-  margin-top: 16px;
 }
 
-.load-more {
-  text-align: center;
-  padding: 16px 0 20px;
-}
-
-.load-more-text {
-  font-size: 13px;
-  color: #aaa;
-}
-
-/* 活动卡片 */
 .activity-card {
-  background-color: white;
-  border-radius: 18px;
   margin-bottom: 14px;
   padding: 16px;
-  box-shadow: 0 4px 12px rgba(0, 130, 210, 0.08);
-  border: 1px solid rgba(160, 200, 255, 0.4);
+  border: 1px solid rgba(160, 200, 225, 0.35);
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 6px 18px rgba(56, 111, 150, 0.08);
 }
 
 .card-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
   margin-bottom: 12px;
   padding-bottom: 12px;
   border-bottom: 1px solid #e8f0f8;
 }
 
 .activity-name {
-  font-size: 16px;
-  font-weight: 600;
-  color: #134579;
+  min-width: 0;
   flex: 1;
+  color: #134579;
+  font-size: 16px;
+  font-weight: 700;
 }
 
 .card-badges {
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   gap: 6px;
-  flex-shrink: 0;
+  margin-left: 8px;
 }
 
 .official-badge {
   padding: 4px 10px;
   border-radius: 20px;
-  color: #fff;
-  background-color: #2f80c5;
+  color: #317daf;
+  background: #edf7fd;
   font-size: 12px;
-  font-weight: 500;
-}
-
-.inline-official-v {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  height: 16px;
-  margin-left: 4px;
-  border-radius: 50%;
-  color: #fff;
-  background-color: #2f80c5;
-  font-size: 9px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .status-badge {
-  padding: 4px 12px;
+  padding: 4px 11px;
   border-radius: 20px;
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .status-badge.pending {
-  background-color: #fff3e0;
-  color: #ff9800;
+  color: #d98717;
+  background: #fff4e1;
 }
 
 .status-badge.all {
-  background-color: #e8f5e9;
-  color: #4caf50;
+  color: #3e8dcc;
+  background: #eaf5fc;
+}
+
+.status-badge.rejected {
+  color: #c94f4f;
+  background: #fff0f0;
 }
 
 .card-content {
@@ -169,18 +147,18 @@ page {
 .info-row {
   display: flex;
   align-items: flex-start;
-  font-size: 13px;
-  color: #5f7fa3;
   margin-bottom: 8px;
-  line-height: 1.4;
+  color: #5f7fa3;
+  font-size: 13px;
+  line-height: 1.45;
 }
 
 .info-row van-icon {
-  margin-right: 8px;
-  font-size: 14px;
-  color: #77b0e0;
   flex-shrink: 0;
   margin-top: 2px;
+  margin-right: 8px;
+  color: #77b0e0;
+  font-size: 14px;
 }
 
 .description-text {
@@ -188,284 +166,21 @@ page {
   word-break: break-all;
 }
 
-.card-footer {
-  display: flex;
-  gap: 12px;
-  justify-content: flex-end;
-  border-top: 1px solid #e8f0f8;
-  padding-top: 12px;
-}
-
-.approve-btn, .reject-btn {
-  padding: 8px 20px;
-  border-radius: 24px;
-  font-size: 14px;
-  font-weight: 500;
-  border: none;
-  line-height: 1.2;
-}
-
-.approve-btn {
-  background-color: #5faee3;
-  color: white;
-}
-
-.approve-btn:active {
-  background-color: #4a9ad0;
-}
-
-.reject-btn {
-  background-color: #ffcdcd;
-  color: #d32f2f;
-}
-
-.reject-btn:active {
-  background-color: #ffb8b8;
-}
-
-.reject-reason {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  color: #ff6b6b;
-  background-color: #fff5f5;
-  padding: 8px 12px;
-  border-radius: 8px;
-}
-
-/* 加载更多 */
-.load-more {
-  text-align: center;
-  padding: 20px 0;
-  color: #7a9ec2;
-  font-size: 14px;
-}
-
-/* ========== 驳回弹窗样式 ========== */
-.custom-dialog {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 1000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.dialog-mask {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
-}
-
-.dialog-container {
-  position: relative;
-  width: 600rpx;
-  background-color: #ffffff;
-  border-radius: 32rpx;
-  overflow: hidden;
-  box-shadow: 0 8rpx 32rpx rgba(30, 110, 180, 0.3);
-  z-index: 1001;
-}
-
-.dialog-image {
-  width: 50%;
-  height: auto;
-  display: block;
-  border-radius: 32rpx;
-  margin: 20rpx auto 20rpx auto;
-}
-
-.dialog-title {
-  padding: 24rpx 24rpx 8rpx;
-  font-size: 36rpx;
-  font-weight: 600;
-  color: #1e4d7c;
-  text-align: center;
-}
-
-.dialog-content {
-  padding: 0 32rpx 24rpx;
-}
-
-.question {
-  font-size: 32rpx;
-  color: #2e5a8a;
-  margin-bottom: 24rpx;
-  text-align: center;
-  font-weight: 500;
-}
-
-.reject-tip {
-  font-size: 28rpx;
-  color: #2e5a8a;
-  margin-bottom: 16rpx;
-}
-
-.reject-textarea {
-  width: 100%;
-  min-height: 160rpx;
-  background-color: #f0f9ff;
-  border-radius: 16rpx;
-  padding: 16rpx;
-  font-size: 28rpx;
-  color: #1e3e60;
-  box-sizing: border-box;
-  border: 2rpx solid #c0e0ff;
-}
-
-.char-count {
-  text-align: right;
-  font-size: 24rpx;
-  color: #7a9ec2;
-  margin-top: 8rpx;
-}
-
-.dialog-input {
-  width: 100%;
-  height: 80rpx;
-  background-color: #f0f9ff;
-  border-radius: 40rpx;
-  padding: 0 32rpx;
-  font-size: 28rpx;
-  color: #1e3e60;
-  box-sizing: border-box;
-  border: 2rpx solid #c0e0ff;
-}
-
-.dialog-input:focus {
-  border-color: #5faee3;
-  background-color: #ffffff;
-}
-
-.error-tip {
-  color: #ff6b6b;
-  font-size: 26rpx;
-  margin-top: 16rpx;
-  text-align: center;
-}
-
-.plain-text {
-  font-size: 28rpx;
-  color: #2e5a8a;
-  text-align: center;
-  padding: 20rpx 0;
-}
-
-.dialog-buttons {
-  display: flex;
-  border-top: 2rpx solid #d9ecff;
-}
-
-.dialog-btn {
-  flex: 1;
-  height: 88rpx;
-  line-height: 88rpx;
-  text-align: center;
-  font-size: 32rpx;
-  transition: background-color 0.2s;
-  font-weight: 500;
-}
-
-.dialog-btn-cancel {
-  color: #7f8c8d;
-  border-right: 2rpx solid #d9ecff;
-  background-color: #f9fcff;
-}
-
-.dialog-btn-cancel:active {
-  background-color: #e6f0fa;
-}
-
-.dialog-btn-confirm {
-  color: #ffffff;
-  background-color: #5faee3;
-}
-
-.dialog-btn-confirm:active {
-  background-color: #4a9ad0;
-}
-
-
-/* 在文件末尾添加 */
-
-/* 查看详情按钮 */
-.detail-btn {
-  width: 100%;
-  height: 36px;
-  line-height: 36px;
-  background: linear-gradient(135deg, #5faee3 0%, #4a9ad0 100%);
-  color: white;
-  border-radius: 30px;
-  font-size: 14px;
-  font-weight: 500;
-  border: none;
-}
-
-.detail-btn:active {
-  background: linear-gradient(135deg, #4a9ad0 0%, #3a8abe 100%);
-}
-
-/* 驳回原因底部区域 */
-.reject-reason-footer {
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid #e8f0f8;
-}
-
-.reject-reason {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
-  color: #ff6b6b;
-  background-color: #fff5f5;
-  padding: 8px 12px;
-  border-radius: 8px;
-}
-
-
-/* 在文件末尾添加 */
-
-/* 查看详情按钮 */
-.detail-btn {
-  width: 100%;
-  height: 36px;
-  line-height: 36px;
-  background: linear-gradient(135deg, #5faee3 0%, #4a9ad0 100%);
-  color: white;
-  border-radius: 30px;
-  font-size: 14px;
-  font-weight: 500;
-  border: none;
-}
-
-.detail-btn:active {
-  background: linear-gradient(135deg, #4a9ad0 0%, #3a8abe 100%);
-}
-
-/* 驳回原因区域 */
 .reject-reason-section {
-  margin: 12px 0 8px 0;
+  margin: 12px 0 8px;
   padding: 10px 12px;
-  background-color: #fff5f5;
+  border-left: 3px solid #e78181;
   border-radius: 8px;
-  border-left: 3px solid #ff6b6b;
+  background: #fff7f7;
 }
 
 .reject-reason {
   display: flex;
   align-items: flex-start;
   gap: 8px;
+  color: #c94f4f;
   font-size: 12px;
-  line-height: 1.4;
+  line-height: 1.45;
 }
 
 .reject-reason van-icon {
@@ -475,23 +190,51 @@ page {
 
 .reject-reason-label {
   flex-shrink: 0;
-  color: #d32f2f;
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .reject-reason-text {
   flex: 1;
-  color: #d32f2f;
   word-break: break-all;
 }
 
-/* 状态徽章 - 已驳回 */
-.status-badge.rejected {
-  background-color: #ffcdcd;
-  color: #d32f2f;
+.card-footer {
+  display: flex;
+  margin-top: 8px;
+  padding-top: 12px;
+  border-top: 1px solid #e8f0f8;
 }
 
-/* 卡片底部 */
-.card-footer {
-  margin-top: 8px;
+/* 使用 flex 居中，避免原生 button 在部分真机上文字基线下沉。 */
+.detail-btn {
+  display: flex;
+  width: 100%;
+  height: 42px;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  padding: 0 20px;
+  border-radius: 24px;
+  color: #ffffff;
+  background: linear-gradient(135deg, #62b3e8 0%, #327fbd 100%);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.detail-btn--pressed {
+  opacity: 0.86;
+  transform: scale(0.99);
+}
+
+.load-more {
+  padding: 18px 0 20px;
+  color: #91a9bb;
+  font-size: 13px;
+  text-align: center;
+}
+
+.load-more-text {
+  color: inherit;
+  font-size: inherit;
 }

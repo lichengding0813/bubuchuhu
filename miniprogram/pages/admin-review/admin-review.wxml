@@ -83,7 +83,14 @@
 
   <!-- 底部查看详情按钮 -->
   <view class="card-footer">
-    <button class="detail-btn" data-id="{{item.id}}" catchtap="onActivityClick">查看详情</button>
+    <view
+      class="detail-btn"
+      hover-class="detail-btn--pressed"
+      aria-role="button"
+      aria-label="查看活动详情"
+      data-id="{{item.id}}"
+      catchtap="onActivityClick"
+    >查看详情</view>
   </view>
 </view>
 
