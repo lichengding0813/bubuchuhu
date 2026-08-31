@@ -165,7 +165,21 @@ Page({
       if (filterTravel !== '') params.travel = filterTravel;
       if (filterOfficial) params.official = 1;
 
-      const result = await get('/api/activity/list', params, { silent: true });
+      let result;
+      let pairedTabResult = null;
+      if (reset) {
+        const pairedTab = currentTab === 'ongoing' ? 'ended' : 'ongoing';
+        const pairedParams = { ...params, page: 1, size: 1, tab: pairedTab };
+        [result, pairedTabResult] = await Promise.all([
+          get('/api/activity/list', params, { silent: true }),
+          get('/api/activity/list', pairedParams, { silent: true }).catch((error) => {
+            console.warn('获取另一分类活动数量失败:', error);
+            return null;
+          })
+        ]);
+      } else {
+        result = await get('/api/activity/list', params, { silent: true });
+      }
 
       if (result.code === 200) {
         const activities = result.data.list || [];
@@ -194,12 +208,20 @@ Page({
         });
 
         const newList = reset ? formattedList : [...this.data.activityList, ...formattedList];
+        const countUpdates = {
+          [currentTab === 'ongoing' ? 'ongoingCount' : 'endedCount']: total
+        };
+        if (pairedTabResult && pairedTabResult.code === 200) {
+          countUpdates[currentTab === 'ongoing' ? 'endedCount' : 'ongoingCount'] = pairedTabResult.data.total || 0;
+        }
         this.setData({
           activityList: newList,
           hasMore: newList.length < total,
           isLoading: false,
-          [currentTab === 'ongoing' ? 'ongoingCount' : 'endedCount']: total
+          ...countUpdates
         });
+      } else {
+        this.setData({ isLoading: false });
       }
     } catch (error) {
       console.error('获取活动列表失败:', error);

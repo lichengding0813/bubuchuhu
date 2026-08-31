@@ -158,6 +158,7 @@
     <view class="dialog-title">账户已锁定</view>
     <view class="dialog-content">
       <view class="plain-text">由于多次验证失败，您的账户已被锁定。</view>
+      <view class="lock-contact">联系方式：待补充</view>
     </view>
     <view class="dialog-buttons">
       <view class="dialog-btn dialog-btn-confirm" bindtap="onLockedConfirm">知道了</view>

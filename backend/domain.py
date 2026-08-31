@@ -100,14 +100,13 @@ def validate_activity_payload(data):
         return '请完整填写集合点时间和地点'
 
     latitude, longitude = data.get('latitude'), data.get('longitude')
-    if (latitude is None) != (longitude is None):
-        return '活动地点坐标不完整'
-    if latitude is not None:
-        try:
-            if not -90 <= float(latitude) <= 90 or not -180 <= float(longitude) <= 180:
-                return '活动地点坐标无效'
-        except (TypeError, ValueError):
+    if latitude is None or longitude is None:
+        return '请使用地图搜索并选择活动地点'
+    try:
+        if not -90 <= float(latitude) <= 90 or not -180 <= float(longitude) <= 180:
             return '活动地点坐标无效'
+    except (TypeError, ValueError):
+        return '活动地点坐标无效'
     return None
 
 

@@ -75,13 +75,6 @@ page {
   font-weight: 600;
 }
 
-.publish-mode-desc {
-  margin-top: 2px;
-  color: #8aa1b5;
-  font-size: 9px;
-  line-height: 1.35;
-}
-
 .official-publish-banner {
   display: flex;
   align-items: center;
@@ -303,17 +296,65 @@ page {
   border-radius: 10px;
 }
 
-.location-field-row,
 .meeting-location-row {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.location-field-row van-field,
 .meeting-location-row van-field {
   flex: 1;
   min-width: 0;
+}
+
+.location-select-row {
+  display: flex;
+  min-height: 48px;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 6px 6px 12px;
+  border: 1px solid #d9e9f5;
+  border-radius: 14px;
+  background: #fff;
+  box-sizing: border-box;
+}
+
+.location-select-row.selected {
+  border-color: rgba(95, 174, 227, 0.55);
+  background: #fbfdff;
+}
+
+.selected-location {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  gap: 7px;
+  color: #8aa1b5;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.selected-location text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.location-select-row.selected .selected-location {
+  color: #285b83;
+}
+
+.location-required-hint {
+  display: block;
+  margin-top: 7px;
+  color: #8aa1b5;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.location-remark-field {
+  margin-top: 16px;
 }
 
 .location-picker-btn,
@@ -329,7 +370,7 @@ page {
 
 .location-picker-btn {
   gap: 4px;
-  min-width: 92px;
+  min-width: 88px;
   height: 40px;
   padding: 0 10px;
   border-radius: 13px;

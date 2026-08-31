@@ -68,6 +68,16 @@ class ActivityTimeTests(unittest.TestCase):
         })
         self.assertIn('坐标', error)
 
+    def test_formal_payload_requires_map_coordinates(self):
+        error = validate_activity_payload({
+            'name': '测试活动', 'description': '描述', 'location': '上海',
+            'route': '路线', 'wechat': 'wechat', 'groupQR': 'cloud://qr',
+            'difficulty': 3, 'maxParticipants': 20,
+            'travelOptions': [1],
+            'meetingPoints': [{'time': '2026-08-10 07:00', 'location': '集合点'}],
+        })
+        self.assertIn('地图', error)
+
     def test_review_import_keeps_date_without_time(self):
         self.assertEqual(
             format_review_date(datetime(2026, 8, 25, 9, 30)),

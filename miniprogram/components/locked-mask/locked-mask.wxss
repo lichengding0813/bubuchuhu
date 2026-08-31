@@ -62,6 +62,13 @@
   padding: 20rpx 0;
 }
 
+.lock-contact {
+  color: #8aa1b5;
+  font-size: 24rpx;
+  line-height: 1.5;
+  text-align: center;
+}
+
 .dialog-buttons {
   display: flex;
   border-top: 2rpx solid #d9ecff;

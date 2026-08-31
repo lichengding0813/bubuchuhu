@@ -1,4 +1,5 @@
 const OFFICIAL_TITLE_PREFIX = '【步步出沪】';
+const LOCATION_REMARK_SEPARATOR = ' · ';
 
 Page({
   data: {
@@ -69,6 +70,7 @@ Page({
     activityTime: '',
     endTime: '',
     location: '',
+    locationRemark: '',
     travel: [],
     route: '',
     // 富文本编辑器
@@ -317,6 +319,28 @@ Page({
     return value;
   },
 
+  splitStoredLocation(storedLocation, hasCoordinates) {
+    const value = String(storedLocation || '').trim();
+    if (!hasCoordinates) {
+      return { location: '', locationRemark: value };
+    }
+    const separatorIndex = value.lastIndexOf(LOCATION_REMARK_SEPARATOR);
+    if (separatorIndex <= 0) {
+      return { location: value, locationRemark: '' };
+    }
+    return {
+      location: value.slice(0, separatorIndex).trim(),
+      locationRemark: value.slice(separatorIndex + LOCATION_REMARK_SEPARATOR.length).trim()
+    };
+  },
+
+  buildStoredLocation() {
+    const location = String(this.data.location || '').trim();
+    const remark = String(this.data.locationRemark || '').trim();
+    if (!location) return remark;
+    return remark ? `${location}${LOCATION_REMARK_SEPARATOR}${remark}` : location;
+  },
+
   onPublishModeChange(e) {
     const mode = e.currentTarget.dataset.mode;
     const isOfficialMode = mode === 'official';
@@ -370,6 +394,8 @@ Page({
   fillFormWithData(activity) {
     const difficulty = activity.difficulty || 1;
     const loadedOfficial = Number(activity.is_official) === 1;
+    const hasCoordinates = activity.latitude != null && activity.longitude != null;
+    const storedLocation = this.splitStoredLocation(activity.location, hasCoordinates);
 
     const travelTypeMap = { 1: 'bus', 2: 'train', 3: 'self' };
     const travelOptionsFromBackend = (activity.travel_options || []).map(t => travelTypeMap[t.travel_type]).filter(v => v);
@@ -394,7 +420,8 @@ Page({
       description: activity.description || '',
       activityTime: this.formatTimeForInput(activity.activity_time),
       endTime: this.formatTimeForInput(activity.end_time),
-      location: activity.location || '',
+      location: storedLocation.location,
+      locationRemark: storedLocation.locationRemark,
       latitude: activity.latitude ?? null,
       longitude: activity.longitude ?? null,
       marker: activity.latitude != null && activity.longitude != null
@@ -472,7 +499,7 @@ Page({
       description: this.data.description,
       activityTime: this.data.activityTime,
       endTime: this.data.endTime,
-      location: this.data.location,
+      location: this.buildStoredLocation(),
       latitude: this.data.latitude,
       longitude: this.data.longitude,
       route: this.data.route,
@@ -577,8 +604,12 @@ Page({
       wx.showToast({ title: '请填写发起人微信号', icon: 'none' });
       return;
     }
-    if (!this.data.agree) {
+    if (!this.data.isOfficialMode && !this.data.agree) {
       wx.showToast({ title: '请阅读并同意发起者须知', icon: 'none' });
+      return;
+    }
+    if (!this.data.location || this.data.latitude == null || this.data.longitude == null) {
+      wx.showToast({ title: '请使用地图搜索并选择活动地点', icon: 'none' });
       return;
     }
     // 校验报名截止时间不能晚于活动开始时间
@@ -905,7 +936,7 @@ Page({
       });
       return;
     }
-    wx.showToast({ title: '地图暂不可用，可先手动输入', icon: 'none' });
+    wx.showToast({ title: '地图暂不可用，请稍后重试', icon: 'none' });
   },
 
   // ====== 富文本编辑器（路线简介） ======
@@ -1322,17 +1353,19 @@ Page({
 
   checkCanSubmit() {
     const {
-      agree, name, description, activityTime, endTime, location, travel, meetingPoints,
-      route, difficulty, maxParticipants, wechat, groupQR
+      agree, isOfficialMode, name, description, activityTime, endTime, location,
+      latitude, longitude, travel, meetingPoints, route, difficulty,
+      maxParticipants, wechat, groupQR
     } = this.data;
     const isWechatValid = wechat && wechat.trim().length > 0;
+    const hasMapLocation = Boolean(location) && latitude != null && longitude != null;
     const requiredFields = [
-      name, description, activityTime, endTime, location, travel.length > 0,
+      name, description, activityTime, endTime, hasMapLocation, travel.length > 0,
       route, difficulty, maxParticipants >= 2, isWechatValid, groupQR
     ];
     const meetingPointsValid = meetingPoints.every(p => p.time && p.location);
     const allRequiredValid = [...requiredFields, meetingPointsValid].every(Boolean);
-    this.setData({ canSubmit: agree && allRequiredValid });
+    this.setData({ canSubmit: (isOfficialMode || agree) && allRequiredValid });
   },
 
   onNoticeClick() {

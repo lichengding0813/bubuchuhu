@@ -1639,7 +1639,7 @@ def publish_draft():
 
         # 校验归属和状态
         cursor.execute(
-            "SELECT id, name, description, activity_time, end_time, deadline, location, wechat_id, group_qr_url FROM activities WHERE id = %s AND created_by = %s AND status = -1",
+            "SELECT id, name, description, activity_time, end_time, deadline, location, latitude, longitude, wechat_id, group_qr_url FROM activities WHERE id = %s AND created_by = %s AND status = -1",
             (draft_id, openid)
         )
         activity = cursor.fetchone()
@@ -1656,6 +1656,8 @@ def publish_draft():
         if not activity.get('group_qr_url'): missing.append('微信群二维码')
         if missing:
             return jsonify({'code': 400, 'msg': f'草稿信息不完整，缺少：{"、".join(missing)}'})
+        if not _valid_coordinates(activity.get('latitude'), activity.get('longitude')):
+            return jsonify({'code': 400, 'msg': '请使用地图搜索并选择活动地点'})
 
         end_time = activity.get('end_time') or (activity['activity_time'] + timedelta(hours=12))
         if end_time <= activity['activity_time']:
