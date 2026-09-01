@@ -11,6 +11,7 @@ import requests
 
 from config import WX_API_BASE, WX_APPID, WX_SECRET
 from db_utils import get_db
+from domain import weather_code_summary
 
 
 TEMPLATE_BLACKLIST = os.environ.get(
@@ -37,6 +38,9 @@ ALL_TEMPLATE_IDS = set(ADMIN_TEMPLATE_IDS + USER_TEMPLATE_IDS)
 _access_token_cache = {'token': None, 'expires_at': 0}
 _worker_started = False
 _worker_start_lock = threading.Lock()
+_WEATHER_CA_BUNDLE = '/etc/ssl/certs/ca-certificates.crt'
+_weather_session = requests.Session()
+_weather_session.trust_env = False
 
 
 def _format_time(value):
@@ -48,6 +52,12 @@ def _format_time(value):
 def _thing(value, limit=20):
     text = ' '.join(str(value or '').strip().split())
     return text[:limit] or '-'
+
+
+def _thing_with_suffix(value, suffix, limit=20):
+    text = ' '.join(str(value or '').strip().split())
+    suffix = str(suffix or '')
+    return f'{text[:max(limit - len(suffix), 0)]}{suffix}'[:limit] or '-'
 
 
 def _message_data(values):
@@ -169,7 +179,7 @@ def queue_pending_approval(activity_id, activity_name):
         'pending_approval',
         _message_data({
             'thing1': _thing(activity_name),
-            'thing2': _thing('普通活动待审核，请及时处理'),
+            'thing2': _thing('新增1个活动待审核，请及时处理'),
         }),
         'pages/admin-review/admin-review',
         f'pending:{activity_id}',
@@ -177,15 +187,16 @@ def queue_pending_approval(activity_id, activity_name):
 
 
 def queue_blacklist_notice(target, source):
+    if source == 'manual':
+        return
     nickname = target.get('nickName') or target.get('wechatId') or target.get('openId') or '未知用户'
-    manual = source == 'manual'
     _queue_staff_message(
         TEMPLATE_BLACKLIST,
         'blacklist_added',
         _message_data({
-            'thing1': _thing('管理员手动拉黑' if manual else '验证答题错误达到上限'),
+            'thing1': _thing('验证问题回答错误'),
             'thing2': _thing(nickname),
-            'thing3': _thing('账号违规处理' if manual else '身份验证连续答错3次'),
+            'thing3': _thing('验证问题答题错误超上限'),
             'thing4': _thing('已加入黑名单'),
             'time5': _format_time(datetime.now()),
         }),
@@ -194,9 +205,73 @@ def queue_blacklist_notice(target, source):
     )
 
 
+def _weather_advice(code, low, high):
+    if code in (95, 96, 99):
+        return '注意雷电'
+    if code in (71, 73, 75, 77, 85, 86):
+        return '防寒防滑'
+    if code in (51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82):
+        return '请带雨具'
+    if code in (45, 48):
+        return '注意能见度'
+    if high >= 30:
+        return '注意防暑'
+    if low <= 5:
+        return '注意保暖'
+    if code == 0:
+        return '注意防晒'
+    return '注意温差'
+
+
+def _fit_weather_tip(location, weather_text, low, high, advice, limit=20):
+    place = str(location or '').split(' · ', 1)[0].strip() or '活动地'
+    suffix = f' {weather_text}{low}~{high}℃，{advice}'
+    prefix = '当天'
+    place_limit = max(limit - len(prefix) - len(suffix), 0)
+    return f'{prefix}{place[:place_limit]}{suffix}'[:limit]
+
+
+def _activity_weather_tip(row):
+    fallback_place = str(row.get('location') or '').split(' · ', 1)[0].strip() or '活动地'
+    fallback = _thing(f'当天{fallback_place}天气待更新，请留意变化')
+    try:
+        latitude = float(row.get('latitude'))
+        longitude = float(row.get('longitude'))
+        activity_time = row.get('activity_time')
+        if not isinstance(activity_time, datetime):
+            return fallback
+        date_text = activity_time.strftime('%Y-%m-%d')
+        verify = _WEATHER_CA_BUNDLE if os.path.isfile(_WEATHER_CA_BUNDLE) else True
+        response = _weather_session.get(
+            'https://api.open-meteo.com/v1/forecast',
+            params={
+                'latitude': latitude,
+                'longitude': longitude,
+                'daily': 'weather_code,temperature_2m_max,temperature_2m_min',
+                'timezone': 'Asia/Shanghai',
+                'start_date': date_text,
+                'end_date': date_text,
+            },
+            timeout=(3, 6),
+            verify=verify,
+        )
+        response.raise_for_status()
+        daily = response.json().get('daily') or {}
+        code = int((daily.get('weather_code') or [])[0])
+        high = int(round(float((daily.get('temperature_2m_max') or [])[0])))
+        low = int(round(float((daily.get('temperature_2m_min') or [])[0])))
+        weather_text, _ = weather_code_summary(code)
+        advice = _weather_advice(code, low, high)
+        return _fit_weather_tip(row.get('location'), weather_text, low, high, advice)
+    except Exception:
+        logging.exception('生成行前天气提醒失败，将使用兜底文案')
+        return fallback
+
+
 def _discover_activity_reminders(cursor):
     cursor.execute("""
         SELECT a.id AS activity_id, a.name, a.activity_time, a.location,
+               a.latitude, a.longitude,
                p.user_openid
         FROM activities a
         JOIN activity_participants p ON p.activity_id = a.id AND p.status = 1
@@ -204,11 +279,19 @@ def _discover_activity_reminders(cursor):
         JOIN notification_subscriptions s
           ON s.user_openid = p.user_openid
          AND s.template_id = %s AND s.available_count > 0
+        LEFT JOIN notification_jobs existing_job
+          ON existing_job.dedupe_key = CONCAT(
+              'activity-reminder:', a.id, ':', p.user_openid
+          )
         WHERE a.status IN (1, 3)
           AND a.activity_time > NOW()
           AND a.activity_time <= DATE_ADD(NOW(), INTERVAL 24 HOUR)
+          AND existing_job.id IS NULL
     """, (TEMPLATE_ACTIVITY_REMINDER,))
+    weather_tips = {}
     for row in cursor.fetchall():
+        if row['activity_id'] not in weather_tips:
+            weather_tips[row['activity_id']] = _activity_weather_tip(row)
         _insert_job(
             cursor,
             template_id=TEMPLATE_ACTIVITY_REMINDER,
@@ -222,7 +305,7 @@ def _discover_activity_reminders(cursor):
                 'time2': _format_time(row['activity_time']),
                 'thing3': _thing(row.get('location')),
                 'thing4': _thing(row.get('name')),
-                'thing5': _thing('请留意集合安排并提前做好准备'),
+                'thing5': _thing(weather_tips[row['activity_id']]),
             }),
         )
 
@@ -259,7 +342,7 @@ def _discover_lottery_reminders(cursor):
             scheduled_at=datetime.now(),
             page=f"pages/details/details?id={row['activity_id']}",
             data=_message_data({
-                'thing1': _thing(name),
+                'thing1': _thing_with_suffix(name, ' 抽奖活动'),
                 'time2': _format_time(row['start_time']),
             }),
         )
