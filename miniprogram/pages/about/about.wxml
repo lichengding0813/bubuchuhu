@@ -18,11 +18,7 @@
       <text class="contact-title">联系我们</text>
       <view class="contact-item">
         <van-icon name="wechat" />
-        <text>公众号：步步出沪</text>
-      </view>
-      <view class="contact-item">
-        <van-icon name="notes-o" />
-        <text>小红书：jingyaa110</text>
+        <text>微信：Galaxy79215</text>
       </view>
     </view>
   </view>
