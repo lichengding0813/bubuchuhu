@@ -15,17 +15,8 @@ RUN groupadd -r appuser && useradd -r -g appuser appuser
 # 设置工作目录
 WORKDIR /app
 
-# ==================== 环境变量（生产配置） ====================
-# 数据库配置
-ENV DB_HOST=sh-cynosdbmysql-grp-1khjmoc4.sql.tencentcdb.com
-ENV DB_PORT=20599
-ENV DB_USER=root
-ENV DB_PASSWORD=fNau8XqS
-ENV DB_NAME=flask_demo
-# 微信小程序配置
-ENV WX_APPID=wxd1a366672ab0f5ef
-ENV WX_SECRET=d336268096323dc418d18ad93097db9f
-# 运行环境
+# 生产凭证必须由云托管环境变量或部署平台的 Secret 注入。
+# 仓库版本不得在镜像层中保存数据库、微信或第三方 API 凭证。
 ENV FLASK_DEBUG=0
 
 # 先复制依赖文件，利用 Docker 缓存层
