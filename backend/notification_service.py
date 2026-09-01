@@ -207,11 +207,11 @@ def queue_blacklist_notice(target, source):
 
 def _weather_advice(code, low, high):
     if code in (95, 96, 99):
-        return '注意雷电'
+        return '防雷'
     if code in (71, 73, 75, 77, 85, 86):
         return '防寒防滑'
     if code in (51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82):
-        return '请带雨具'
+        return '带雨具'
     if code in (45, 48):
         return '注意能见度'
     if high >= 30:
@@ -223,21 +223,36 @@ def _weather_advice(code, low, high):
     return '注意温差'
 
 
-def _fit_weather_tip(location, weather_text, low, high, advice, limit=20):
+def _fit_weather_tip(date_label, location, weather_text, low, high, advice, limit=20):
     place = str(location or '').split(' · ', 1)[0].strip() or '活动地'
-    suffix = f' {weather_text}{low}~{high}℃，{advice}'
-    prefix = '当天'
+    compact_weather = {
+        '晴间多云': '多云',
+        '毛毛雨': '小雨',
+        '天气未知': '天气',
+    }.get(weather_text, weather_text)
+    suffix = f'{compact_weather}{low}~{high}℃{advice}'
+    prefix = str(date_label or '')
     place_limit = max(limit - len(prefix) - len(suffix), 0)
     return f'{prefix}{place[:place_limit]}{suffix}'[:limit]
 
 
 def _activity_weather_tip(row):
     fallback_place = str(row.get('location') or '').split(' · ', 1)[0].strip() or '活动地'
-    fallback = _thing(f'当天{fallback_place}天气待更新，请留意变化')
+    activity_time = row.get('activity_time')
+    if isinstance(activity_time, datetime):
+        date_label = activity_time.strftime('%m/%d')
+    else:
+        try:
+            activity_time = datetime.strptime(str(activity_time)[:19], '%Y-%m-%d %H:%M:%S')
+            date_label = activity_time.strftime('%m/%d')
+        except (TypeError, ValueError):
+            date_label = '--/--'
+    fallback_suffix = '天气待更新，请留意变化'
+    fallback_place_limit = max(20 - len(date_label) - len(fallback_suffix), 0)
+    fallback = f'{date_label}{fallback_place[:fallback_place_limit]}{fallback_suffix}'[:20]
     try:
         latitude = float(row.get('latitude'))
         longitude = float(row.get('longitude'))
-        activity_time = row.get('activity_time')
         if not isinstance(activity_time, datetime):
             return fallback
         date_text = activity_time.strftime('%Y-%m-%d')
@@ -262,7 +277,7 @@ def _activity_weather_tip(row):
         low = int(round(float((daily.get('temperature_2m_min') or [])[0])))
         weather_text, _ = weather_code_summary(code)
         advice = _weather_advice(code, low, high)
-        return _fit_weather_tip(row.get('location'), weather_text, low, high, advice)
+        return _fit_weather_tip(date_label, row.get('location'), weather_text, low, high, advice)
     except Exception:
         logging.exception('生成行前天气提醒失败，将使用兜底文案')
         return fallback
