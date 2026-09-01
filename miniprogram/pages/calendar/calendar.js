@@ -1,5 +1,10 @@
 const { get } = require('../../utils/api');
-const { formatActivityTime, getDifficultyText, parseTimeStr } = require('../../utils/time');
+const {
+  formatActivityTime,
+  getDifficultyText,
+  isWithinWeatherDisplayWindow,
+  parseTimeStr
+} = require('../../utils/time');
 const { getWeatherEmoji } = require('../../utils/weather');
 
 Page({
@@ -142,8 +147,9 @@ Page({
 
   async loadSelectedDateWeather(dateStr, activities) {
     const firstActivity = (activities || []).find(item => (
-      item.location || (item.latitude !== null && item.latitude !== undefined
-        && item.longitude !== null && item.longitude !== undefined)
+      isWithinWeatherDisplayWindow(item.activity_time)
+      && (item.location || (item.latitude !== null && item.latitude !== undefined
+        && item.longitude !== null && item.longitude !== undefined))
     ));
     if (!firstActivity) {
       this.setData({ selectedWeather: null, weatherLoading: false, weatherMessage: '' });
@@ -158,6 +164,7 @@ Page({
         latitude: firstActivity.latitude,
         longitude: firstActivity.longitude
       }, { silent: true });
+      if (this.data.selectedDate !== dateStr) return;
       if (result.data?.date === dateStr) {
         this.setData({
           selectedWeather: {
@@ -175,13 +182,16 @@ Page({
         });
       }
     } catch (err) {
+      if (this.data.selectedDate !== dateStr) return;
       console.log('日历天气加载失败（可忽略）:', err);
       this.setData({
         selectedWeather: null,
         weatherMessage: err.response?.msg || '天气暂时无法获取'
       });
     } finally {
-      this.setData({ weatherLoading: false });
+      if (this.data.selectedDate === dateStr) {
+        this.setData({ weatherLoading: false });
+      }
     }
   },
 

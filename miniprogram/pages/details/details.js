@@ -1,6 +1,7 @@
 const { get, post } = require('../../utils/api');
 const { subscribeUserReminders } = require('../../utils/notifications');
 const { getWeatherEmoji } = require('../../utils/weather');
+const { isWithinWeatherDisplayWindow } = require('../../utils/time');
 
 Page({
   data: {
@@ -366,18 +367,7 @@ Page({
   },
 
   shouldShowWeather(activityTime, now = Date.now()) {
-    const parsedTime = this.parseTimeStr(activityTime);
-    if (!parsedTime) return false;
-    const startTimestamp = new Date(
-      parsedTime.year,
-      parsedTime.month - 1,
-      parsedTime.day,
-      parsedTime.hour,
-      parsedTime.minute,
-      parsedTime.second || 0
-    ).getTime();
-    const timeUntilStart = startTimestamp - now;
-    return timeUntilStart > 0 && timeUntilStart <= 24 * 60 * 60 * 1000;
+    return isWithinWeatherDisplayWindow(activityTime, now);
   },
 
   refreshWeatherVisibility() {

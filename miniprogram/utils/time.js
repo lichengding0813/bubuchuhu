@@ -129,6 +129,30 @@ function formatRelativeTime(timeStr) {
 }
 
 /**
+ * 活动天气仅在开始前 24 小时内展示。
+ * 已开始、已结束或超过 24 小时的活动均不展示，也不请求天气。
+ *
+ * @param {Date|string} activityTime
+ * @param {number} now 当前时间戳，便于页面刷新和测试
+ * @returns {boolean}
+ */
+function isWithinWeatherDisplayWindow(activityTime, now = Date.now()) {
+  const time = parseTimeStr(activityTime);
+  if (!time) return false;
+
+  const startTimestamp = new Date(
+    time.year,
+    time.month - 1,
+    time.day,
+    time.hour,
+    time.minute,
+    time.second || 0
+  ).getTime();
+  const timeUntilStart = startTimestamp - now;
+  return timeUntilStart > 0 && timeUntilStart <= 24 * 60 * 60 * 1000;
+}
+
+/**
  * 活动状态码映射
  */
 const STATUS_MAP = {
@@ -178,6 +202,7 @@ module.exports = {
   formatFullTime,
   formatDateCN,
   formatRelativeTime,
+  isWithinWeatherDisplayWindow,
   getStatusText,
   getDifficultyText,
   getTravelText,
