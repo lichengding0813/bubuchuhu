@@ -8,6 +8,7 @@ Page({
     weather: {},
     weatherLoading: false,
     weatherMessage: '',
+    weatherVisible: false,
     hasLottery: false,
     lotteryInfo: {},
     lotteryCountdown: '',
@@ -92,6 +93,7 @@ Page({
     if (this.data.hasLottery && !this.data.lotteryDrawn) {
       this.startLotteryCountdown();
     }
+    this.refreshWeatherVisibility();
   },
 
   onHide() {
@@ -239,12 +241,13 @@ Page({
     }, () => {
       this.checkSignUpStatus();
     });
-    this.loadWeather(
-      activity.location,
-      activity.latitude,
-      activity.longitude,
-      activity.activity_time
-    );
+    this.weatherContext = {
+      city: activity.location,
+      latitude: activity.latitude,
+      longitude: activity.longitude,
+      activityTime: activity.activity_time
+    };
+    this.refreshWeatherVisibility();
     this.checkActivityLottery(activity.id || this.data.activityId);
   },
 
@@ -362,10 +365,43 @@ Page({
     this.setData({ lotteryCountdown: countdown });
   },
 
+  shouldShowWeather(activityTime, now = Date.now()) {
+    const parsedTime = this.parseTimeStr(activityTime);
+    if (!parsedTime) return false;
+    const startTimestamp = new Date(
+      parsedTime.year,
+      parsedTime.month - 1,
+      parsedTime.day,
+      parsedTime.hour,
+      parsedTime.minute,
+      parsedTime.second || 0
+    ).getTime();
+    const timeUntilStart = startTimestamp - now;
+    return timeUntilStart > 0 && timeUntilStart <= 24 * 60 * 60 * 1000;
+  },
+
+  refreshWeatherVisibility() {
+    const context = this.weatherContext;
+    if (!context) return;
+    const weatherVisible = this.shouldShowWeather(context.activityTime);
+    if (!weatherVisible) {
+      this.setData({ weatherVisible: false, weatherLoading: false, weatherMessage: '', weather: {} });
+      return;
+    }
+    this.setData({ weatherVisible: true });
+    if (!this.data.weatherLoading && !(this.data.weather.daily && this.data.weather.daily.length > 0)) {
+      this.loadWeather(context.city, context.latitude, context.longitude, context.activityTime);
+    }
+  },
+
   async loadWeather(city, latitude, longitude, activityTime) {
+    if (!this.shouldShowWeather(activityTime)) {
+      this.setData({ weatherVisible: false, weatherLoading: false, weatherMessage: '', weather: {} });
+      return;
+    }
     const parsedDate = this.parseTimeStr(activityTime);
     if (!parsedDate) {
-      this.setData({ weatherLoading: false, weatherMessage: '', weather: {} });
+      this.setData({ weatherVisible: false, weatherLoading: false, weatherMessage: '', weather: {} });
       return;
     }
     const date = [
@@ -373,7 +409,7 @@ Page({
       String(parsedDate.month).padStart(2, '0'),
       String(parsedDate.day).padStart(2, '0')
     ].join('-');
-    this.setData({ weatherLoading: true, weatherMessage: '', weather: {} });
+    this.setData({ weatherVisible: true, weatherLoading: true, weatherMessage: '', weather: {} });
     try {
       const result = await get('/api/activity/calendar-weather', {
         date,

@@ -26,7 +26,7 @@
         <text>{{activityDetail.location}}</text>
       </view>
     </view>
-    <view class="activity-weather-row" wx:if="{{weatherLoading || (weather.daily && weather.daily.length > 0)}}">
+    <view class="activity-weather-row" wx:if="{{weatherVisible && (weatherLoading || (weather.daily && weather.daily.length > 0))}}">
       <view class="activity-weather-loading" wx:if="{{weatherLoading}}">
         <van-loading size="16px">天气加载中...</van-loading>
       </view>
@@ -272,7 +272,7 @@
         </view>
       </view>
 
-      <view class="success-reminder-tip">活动开始前2天、抽奖开始时可收到微信提醒</view>
+      <view class="success-reminder-tip">活动开始前24小时、抽奖开始前5分钟可收到微信提醒</view>
       <van-button type="info" block bindtap="onSubscribeActivityReminders" custom-class="success-close-btn">开启活动提醒</van-button>
       <van-button type="info" block bindtap="onSuccessPopupClose" custom-class="success-close-btn">我知道了</van-button>
     </view>

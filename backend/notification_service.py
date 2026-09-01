@@ -206,7 +206,7 @@ def _discover_activity_reminders(cursor):
          AND s.template_id = %s AND s.available_count > 0
         WHERE a.status IN (1, 3)
           AND a.activity_time > NOW()
-          AND a.activity_time <= DATE_ADD(NOW(), INTERVAL 48 HOUR)
+          AND a.activity_time <= DATE_ADD(NOW(), INTERVAL 24 HOUR)
     """, (TEMPLATE_ACTIVITY_REMINDER,))
     for row in cursor.fetchall():
         _insert_job(
@@ -241,7 +241,9 @@ def _discover_lottery_reminders(cursor):
         LEFT JOIN lottery_user_states state
           ON state.lottery_id = l.id AND state.user_openid = p.user_openid
         WHERE l.status <> 2
-          AND l.start_time <= NOW() AND l.end_time > NOW()
+          AND l.start_time > NOW()
+          AND l.start_time <= DATE_ADD(NOW(), INTERVAL 5 MINUTE)
+          AND l.end_time > NOW()
           AND COALESCE(state.chances_used, 0) < COALESCE(state.chances_total, 1)
     """, (TEMPLATE_LOTTERY_START,))
     for row in cursor.fetchall():
