@@ -11,7 +11,6 @@ import requests
 
 from config import WX_API_BASE, WX_APPID, WX_SECRET
 from db_utils import get_db
-from domain import weather_code_summary
 
 
 TEMPLATE_BLACKLIST = os.environ.get(
@@ -207,11 +206,11 @@ def queue_blacklist_notice(target, source):
 
 def _weather_advice(code, low, high):
     if code in (95, 96, 99):
-        return '防雷'
+        return '请注意防雷'
     if code in (71, 73, 75, 77, 85, 86):
-        return '防寒防滑'
+        return '请注意防寒防滑'
     if code in (51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82):
-        return '带雨具'
+        return '请带好雨具'
     if code in (45, 48):
         return '注意能见度'
     if high >= 30:
@@ -223,33 +222,36 @@ def _weather_advice(code, low, high):
     return '注意温差'
 
 
-def _fit_weather_tip(date_label, location, weather_text, low, high, advice, limit=20):
-    place = str(location or '').split(' · ', 1)[0].strip() or '活动地'
-    compact_weather = {
-        '晴间多云': '多云',
-        '毛毛雨': '小雨',
-        '天气未知': '天气',
-    }.get(weather_text, weather_text)
-    suffix = f'{compact_weather}{low}~{high}℃{advice}'
-    prefix = str(date_label or '')
-    place_limit = max(limit - len(prefix) - len(suffix), 0)
-    return f'{prefix}{place[:place_limit]}{suffix}'[:limit]
+def _weather_phrase(code):
+    if code == 0:
+        return '晴'
+    if code in (1, 2):
+        return '多云'
+    if code == 3:
+        return '阴'
+    if code in (45, 48):
+        return '有雾'
+    if code in (51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82):
+        return '有雨'
+    if code in (71, 73, 75, 77, 85, 86):
+        return '有雪'
+    if code in (95, 96, 99):
+        return '有雷雨'
+    return '天气待定'
+
+
+def _fit_weather_tip(weather_text, low, high, advice, limit=20):
+    return _thing(f'明日{weather_text}，{low}-{high}°C，{advice}', limit)
 
 
 def _activity_weather_tip(row):
-    fallback_place = str(row.get('location') or '').split(' · ', 1)[0].strip() or '活动地'
     activity_time = row.get('activity_time')
-    if isinstance(activity_time, datetime):
-        date_label = activity_time.strftime('%m/%d')
-    else:
+    if not isinstance(activity_time, datetime):
         try:
             activity_time = datetime.strptime(str(activity_time)[:19], '%Y-%m-%d %H:%M:%S')
-            date_label = activity_time.strftime('%m/%d')
         except (TypeError, ValueError):
-            date_label = '--/--'
-    fallback_suffix = '天气待更新，请留意变化'
-    fallback_place_limit = max(20 - len(date_label) - len(fallback_suffix), 0)
-    fallback = f'{date_label}{fallback_place[:fallback_place_limit]}{fallback_suffix}'[:20]
+            activity_time = None
+    fallback = _thing('明日天气待更新，请留意天气变化')
     try:
         latitude = float(row.get('latitude'))
         longitude = float(row.get('longitude'))
@@ -275,9 +277,9 @@ def _activity_weather_tip(row):
         code = int((daily.get('weather_code') or [])[0])
         high = int(round(float((daily.get('temperature_2m_max') or [])[0])))
         low = int(round(float((daily.get('temperature_2m_min') or [])[0])))
-        weather_text, _ = weather_code_summary(code)
+        weather_text = _weather_phrase(code)
         advice = _weather_advice(code, low, high)
-        return _fit_weather_tip(date_label, row.get('location'), weather_text, low, high, advice)
+        return _fit_weather_tip(weather_text, low, high, advice)
     except Exception:
         logging.exception('生成行前天气提醒失败，将使用兜底文案')
         return fallback
