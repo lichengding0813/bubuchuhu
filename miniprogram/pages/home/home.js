@@ -199,7 +199,9 @@ Page({
             participantCount,
             difficulty: this.getDifficultyText(item.difficulty),
             statusBadge: this.getStatusBadge(item.status, remainCount, item.has_registered, registrationClosed),
-            statusClass: registrationClosed && Number(item.status) === 1 ? 'closed' : this.getStatusClass(item.status),
+            statusClass: Number(item.status) === 1
+              ? (registrationClosed ? 'closed' : (remainCount <= 0 ? 'full' : 'ongoing'))
+              : this.getStatusClass(item.status),
             coverUrl: item.cover_url,
             has_registered: item.has_registered,
             isOfficial: Number(item.is_official) === 1,

@@ -127,7 +127,9 @@ Page({
             isOfficial: Number(item.is_official) === 1,
             isEnded: status === 4,
             statusBadge: this.getStatusBadge(status, remainCount, item.has_registered, registrationClosed),
-            statusClass: registrationClosed && status === 1 ? 'closed' : this.getStatusClass(status)
+            statusClass: status === 1
+              ? (registrationClosed ? 'closed' : (remainCount <= 0 ? 'full' : 'ongoing'))
+              : this.getStatusClass(status)
           };
         });
         this.setData({ dayActivities });

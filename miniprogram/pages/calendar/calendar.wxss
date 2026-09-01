@@ -416,6 +416,11 @@ page {
   background: #e1f2fd;
 }
 
+.status-badge.full {
+  color: #b56528;
+  background: #fff0da;
+}
+
 .status-badge.registered-badge {
   color: #35815a;
   background: #e2f5e9;
