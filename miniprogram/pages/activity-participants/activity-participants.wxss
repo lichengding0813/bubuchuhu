@@ -124,6 +124,8 @@ page {
 
 .user-info {
   display: flex;
+  min-width: 0;
+  flex: 1;
   align-items: center;
   gap: 12px;
 }
@@ -138,6 +140,38 @@ page {
   white-space: nowrap;
 }
 
+.participant-card-actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
+}
+
+.manage-btn {
+  display: flex;
+  height: 30px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 12px;
+  border-radius: 15px;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.manage-btn.cancel {
+  color: #d45d5d;
+  background: #fff2f2;
+}
+
+.manage-btn.restore {
+  color: #2f79aa;
+  background: #e9f5fc;
+}
+
+.manage-btn.disabled {
+  opacity: 0.45;
+}
+
 .avatar van-icon {
   display: block;
   background-color: #f0f9ff;
@@ -147,6 +181,7 @@ page {
 
 .user-detail {
   display: flex;
+  min-width: 0;
   flex-direction: column;
   gap: 4px;
 }
@@ -276,4 +311,22 @@ page {
 
 .cancelled-info van-icon {
   color: #ccc !important;
+}
+
+.managed-cancelled-header {
+  background: #edf5fa;
+}
+
+.managed-cancelled-title {
+  color: #55758d;
+}
+
+.managed-cancelled-card {
+  border-color: #bfd5e4;
+  background: #f7fbfd;
+  opacity: 1;
+}
+
+.managed-cancelled-tag {
+  background: #7899af;
 }

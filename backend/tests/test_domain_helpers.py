@@ -8,6 +8,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from domain import (
     activity_times,
+    can_manage_activity_participants,
     effective_lottery_status,
     format_review_date,
     lottery_activity_error,
@@ -84,6 +85,34 @@ class ActivityTimeTests(unittest.TestCase):
             '2026.08.25',
         )
         self.assertEqual(format_review_date('2026-8-5 09:30'), '2026.08.05')
+
+    def test_official_activity_can_raise_participant_limit_to_two_hundred(self):
+        payload = {
+            'name': '测试活动', 'description': '描述', 'location': '上海',
+            'route': '路线', 'wechat': 'wechat', 'groupQR': 'cloud://qr',
+            'difficulty': 3, 'maxParticipants': 200,
+            'travelOptions': [1],
+            'meetingPoints': [{'time': '2026-08-10 07:00', 'location': '集合点'}],
+            'latitude': 31.2, 'longitude': 121.5,
+        }
+        self.assertIn('100', validate_activity_payload(payload))
+        self.assertIsNone(validate_activity_payload(payload, max_participants_limit=200))
+
+
+class ParticipantManagementPermissionTests(unittest.TestCase):
+    def test_personal_activity_is_managed_only_by_creator(self):
+        activity = {'created_by': 'creator', 'is_official': 0}
+        self.assertTrue(can_manage_activity_participants(activity, 'creator', {}))
+        self.assertFalse(can_manage_activity_participants(
+            activity, 'official-user', {'isOfficial': 1}
+        ))
+
+    def test_official_activity_is_shared_by_official_accounts(self):
+        activity = {'created_by': 'creator', 'is_official': 1}
+        self.assertTrue(can_manage_activity_participants(
+            activity, 'official-user', {'isOfficial': 1}
+        ))
+        self.assertFalse(can_manage_activity_participants(activity, 'creator', {}))
 
 
 class LotteryRuleTests(unittest.TestCase):

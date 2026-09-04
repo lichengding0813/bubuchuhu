@@ -25,7 +25,7 @@
     </view>
 
     <!-- 空状态 -->
-    <view wx:elif="{{activeParticipants.length === 0 && cancelledParticipants.length === 0}}" class="empty-container">
+    <view wx:elif="{{activeParticipants.length === 0 && cancelledParticipants.length === 0 && managedCancelledParticipants.length === 0}}" class="empty-container">
       <van-icon name="user-o" size="80" color="#ccc" />
       <text class="empty-text">暂无报名人员</text>
     </view>
@@ -43,8 +43,18 @@
               <text class="join-time">报名时间：{{item.created_at_formatted}}</text>
             </view>
           </view>
-          <view class="companion-badge" wx:if="{{item.companion_count > 0}}">
-            +{{item.companion_count}}同行
+          <view class="participant-card-actions">
+            <view class="companion-badge" wx:if="{{item.companion_count > 0}}">
+              +{{item.companion_count}}同行
+            </view>
+            <view
+              wx:if="{{canManage}}"
+              class="manage-btn cancel {{managingParticipantId ? 'disabled' : ''}}"
+              bindtap="onManageParticipant"
+              data-id="{{item.id}}"
+              data-action="cancel"
+              data-name="{{item.nickname}}"
+            >取消报名</view>
           </view>
         </view>
 
@@ -94,6 +104,61 @@
                   <text class="join-time cancelled-time">报名时间：{{item.created_at_formatted}}</text>
                 </view>
               </view>
+            </view>
+
+            <view class="card-content" wx:if="{{item.companion_count > 0 || item.phone || item.wechat_id || item.remark}}">
+              <view class="info-row cancelled-info" wx:if="{{item.companion_count > 0}}">
+                <van-icon name="friends-o" />
+                <text>同行人数：{{item.companion_count}}人</text>
+              </view>
+              <view class="info-row cancelled-info" wx:if="{{item.phone}}">
+                <van-icon name="phone-o" />
+                <text>手机号：{{item.phone}}</text>
+              </view>
+              <view class="info-row cancelled-info" wx:if="{{item.wechat_id}}">
+                <van-icon name="wechat" />
+                <text>微信号：{{item.wechat_id}}</text>
+              </view>
+              <view class="info-row cancelled-info" wx:if="{{item.remark}}">
+                <van-icon name="comment-o" />
+                <text>备注：{{item.remark}}</text>
+              </view>
+            </view>
+          </view>
+        </block>
+      </view>
+
+      <!-- 管理账号手动取消（折叠区） -->
+      <view wx:if="{{managedCancelledParticipants.length > 0}}" class="cancelled-section managed-cancelled-section">
+        <view class="cancelled-header managed-cancelled-header" bindtap="toggleManagedCancelled">
+          <text class="cancelled-title managed-cancelled-title">已取消报名（手动） · {{managedCancelledParticipants.length}}人</text>
+          <van-icon name="{{showManagedCancelled ? 'arrow-up' : 'arrow-down'}}" size="14px" color="#6f8ca4" />
+        </view>
+
+        <block wx:if="{{showManagedCancelled}}">
+          <view wx:for="{{managedCancelledParticipants}}" wx:key="id" class="participant-card cancelled-card managed-cancelled-card">
+            <view class="card-header">
+              <view class="user-info">
+                <view class="avatar cancelled-avatar">
+                  <image class="avatar-image" src="{{item.avatarUrl}}" mode="aspectFill"></image>
+                </view>
+                <view class="user-detail">
+                  <view class="nickname-row">
+                    <text class="nickname cancelled-nickname">{{item.nickname || '未知用户'}}</text>
+                    <text class="cancelled-tag managed-cancelled-tag">手动取消</text>
+                  </view>
+                  <text class="join-time cancelled-time">操作账号：{{item.cancelled_by_display || '未知账号'}}</text>
+                  <text class="join-time cancelled-time" wx:if="{{item.cancelled_at_formatted}}">操作时间：{{item.cancelled_at_formatted}}</text>
+                </view>
+              </view>
+              <view
+                wx:if="{{canManage}}"
+                class="manage-btn restore {{managingParticipantId ? 'disabled' : ''}}"
+                bindtap="onManageParticipant"
+                data-id="{{item.id}}"
+                data-action="restore"
+                data-name="{{item.nickname}}"
+              >恢复报名</view>
             </view>
 
             <view class="card-content" wx:if="{{item.companion_count > 0 || item.phone || item.wechat_id || item.remark}}">

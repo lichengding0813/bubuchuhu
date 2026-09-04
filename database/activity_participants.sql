@@ -26,6 +26,9 @@ CREATE TABLE `activity_participants` (
   `travel_option` tinyint(4) DEFAULT NULL COMMENT '选择的出行方式：1-大巴 2-高铁 3-自驾',
   `remark` varchar(255) DEFAULT NULL COMMENT '备注',
   `companion_count` int(11) NOT NULL DEFAULT '0' COMMENT '同行人数（不含本人），0-3',
+  `cancel_source` varchar(20) NOT NULL DEFAULT '' COMMENT '取消来源：self-用户自主，manager-管理操作',
+  `cancelled_by` varchar(100) DEFAULT NULL COMMENT '管理取消操作账号openId',
+  `cancelled_at` datetime DEFAULT NULL COMMENT '取消时间',
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
@@ -34,6 +37,7 @@ CREATE TABLE `activity_participants` (
   KEY `idx_user_openid` (`user_openid`),
   KEY `idx_status` (`status`),
   KEY `idx_companion_count` (`companion_count`),
+  KEY `idx_cancel_source` (`activity_id`,`status`,`cancel_source`),
   CONSTRAINT `activity_participants_ibfk_1` FOREIGN KEY (`activity_id`) REFERENCES `activities` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='活动报名表';
 

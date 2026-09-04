@@ -92,6 +92,7 @@ Page({
     climb: '',
     difficulty: '',
     maxParticipants: 2,
+    maxParticipantsLimit: 100,
     deadline: '',
     wechat: '',
     groupQR: '',
@@ -264,7 +265,7 @@ Page({
         });
         return;
       }
-      this.setData({ isOfficialMode: true });
+      this.setData({ isOfficialMode: true, maxParticipantsLimit: 200 });
       wx.setNavigationBarTitle({
         title: options.id ? '编辑官方活动' : '发布官方活动'
       });
@@ -347,7 +348,11 @@ Page({
     if (isOfficialMode === this.data.isOfficialMode) return;
     this.setData({
       isOfficialMode,
-      name: this.stripOfficialTitlePrefix(this.data.name)
+      name: this.stripOfficialTitlePrefix(this.data.name),
+      maxParticipantsLimit: isOfficialMode ? 200 : 100,
+      maxParticipants: isOfficialMode
+        ? this.data.maxParticipants
+        : Math.min(Number(this.data.maxParticipants) || 2, 100)
     }, () => this.checkCanSubmit());
     wx.setNavigationBarTitle({ title: isOfficialMode ? '发布官方活动' : '发起活动' });
   },
@@ -431,6 +436,7 @@ Page({
       climb: activity.climb ? String(activity.climb) : '',
       difficulty: difficulty,
       maxParticipants: activity.max_participants || 2,
+      maxParticipantsLimit: loadedOfficial ? 200 : 100,
       deadline: this.formatTimeForInput(activity.deadline),
       wechat: activity.wechat_id || '',
       groupQR: activity.group_qr_url || '',
@@ -1355,13 +1361,15 @@ Page({
     const {
       agree, isOfficialMode, name, description, activityTime, endTime, location,
       latitude, longitude, travel, meetingPoints, route, difficulty,
-      maxParticipants, wechat, groupQR
+      maxParticipants, maxParticipantsLimit, wechat, groupQR
     } = this.data;
     const isWechatValid = wechat && wechat.trim().length > 0;
     const hasMapLocation = Boolean(location) && latitude != null && longitude != null;
     const requiredFields = [
       name, description, activityTime, endTime, hasMapLocation, travel.length > 0,
-      route, difficulty, maxParticipants >= 2, isWechatValid, groupQR
+      route, difficulty,
+      maxParticipants >= 2 && maxParticipants <= maxParticipantsLimit,
+      isWechatValid, groupQR
     ];
     const meetingPointsValid = meetingPoints.every(p => p.time && p.location);
     const allRequiredValid = [...requiredFields, meetingPointsValid].every(Boolean);

@@ -8,6 +8,7 @@ import requests
 from db_utils import get_db
 from domain import (
     activity_times,
+    can_manage_activity_participants,
     normalize_official_activity_data,
     published_activity_status,
     validate_activity_payload,
@@ -356,7 +357,7 @@ def create_official_activity():
     data, title_error = normalize_official_activity_data(request.get_json(silent=True) or {})
     if title_error:
         return jsonify({'code': 400, 'msg': title_error})
-    payload_error = validate_activity_payload(data)
+    payload_error = validate_activity_payload(data, max_participants_limit=200)
     if payload_error:
         return jsonify({'code': 400, 'msg': payload_error})
     start_time, end_time, deadline, time_error = activity_times(data)
@@ -441,7 +442,7 @@ def update_official_activity():
     activity_id = data.get('activity_id')
     if not activity_id:
         return jsonify({'code': 400, 'msg': '缺少活动ID'})
-    payload_error = validate_activity_payload(data)
+    payload_error = validate_activity_payload(data, max_participants_limit=200)
     if payload_error:
         return jsonify({'code': 400, 'msg': payload_error})
     start_time, end_time, deadline, time_error = activity_times(data)
@@ -819,15 +820,27 @@ def participate_activity():
 
         # 检查是否有已取消的报名记录，有则恢复
         cursor.execute(
-            "SELECT id FROM activity_participants WHERE activity_id = %s AND user_openid = %s AND status = 0",
+            """
+            SELECT id, cancel_source
+            FROM activity_participants
+            WHERE activity_id = %s AND user_openid = %s AND status = 0
+            """,
             (activity_id, openid)
         )
         cancelled_record = cursor.fetchone()
 
         if cancelled_record:
+            if cancelled_record.get('cancel_source') == 'manager':
+                return jsonify({'code': 403, 'msg': '报名已由活动管理账号取消，请联系活动方恢复'})
             # 恢复已取消的记录
             cursor.execute(
-                "UPDATE activity_participants SET status = 1, nickname = %s, phone = %s, wechat_id = %s, travel_option = %s, remark = %s, companion_count = %s WHERE id = %s",
+                """
+                UPDATE activity_participants
+                SET status = 1, nickname = %s, phone = %s, wechat_id = %s,
+                    travel_option = %s, remark = %s, companion_count = %s,
+                    cancel_source = '', cancelled_by = NULL, cancelled_at = NULL
+                WHERE id = %s
+                """,
                 (data.get('nickname'), data.get('phone'), data.get('wechat_id'),
                  travel_option, data.get('remark'), companion_count, cancelled_record['id'])
             )
@@ -910,9 +923,14 @@ def cancel_participation():
         if not participation:
             return jsonify({'code': 400, 'msg': '您未报名该活动'})
 
-        # 软删除：将 status 设为 0（已取消）
+        # 用户自主取消保持原流程，并明确标记来源，避免进入管理取消列表。
         cursor.execute(
-            "UPDATE activity_participants SET status = 0 WHERE id = %s",
+            """
+            UPDATE activity_participants
+            SET status = 0, cancel_source = 'self',
+                cancelled_by = NULL, cancelled_at = NOW()
+            WHERE id = %s
+            """,
             (participation['id'],)
         )
 
@@ -1314,7 +1332,7 @@ def update_activities_status():
 @activity_bp.route('/participants', methods=['GET'])
 @check_verified_and_blacklist
 def get_activity_participants():
-    """仅活动发起人和管理员可查看报名联系方式。"""
+    """普通活动仅发起者查看；官方活动由官方账号共同查看和管理。"""
     openid = g.openid
     activity_id = request.args.get('activity_id')
     if not activity_id:
@@ -1335,30 +1353,24 @@ def get_activity_participants():
             return jsonify({'code': 404, 'msg': '活动不存在'})
         cursor.execute("SELECT isAdmin, isOfficial FROM users WHERE openId = %s", (openid,))
         viewer = cursor.fetchone()
-        can_manage_official = bool(
-            viewer
-            and viewer.get('isOfficial') == 1
-            and activity.get('is_official') == 1
-        )
-        if (
-            activity['created_by'] != openid
-            and not (
-                viewer and (viewer.get('isAdmin') == 1 or viewer.get('isOfficial') == 1)
-            )
-            and not can_manage_official
-        ):
+        can_manage = can_manage_activity_participants(activity, openid, viewer)
+        if not can_manage:
             return jsonify({'code': 403, 'msg': '无权查看报名人员'})
 
         # 查询所有报名记录，关联 users 表获取头像和昵称（使用报名时填写的昵称优先，若为空则取 users 表中的昵称）
         cursor.execute("""
             SELECT 
-                p.id, p.user_openid, p.status,
+                p.id, p.user_openid, p.status, p.cancel_source,
+                p.cancelled_by, p.cancelled_at,
                 IFNULL(p.nickname, u.nickName) AS nickname,
                 u.avatarUrl,
                 p.phone, p.wechat_id, 
-                p.travel_option, p.remark, p.companion_count, p.created_at
+                p.travel_option, p.remark, p.companion_count, p.created_at,
+                cancel_user.nickName AS cancelled_by_nickname,
+                cancel_user.wechatId AS cancelled_by_wechat
             FROM activity_participants p
             LEFT JOIN users u ON p.user_openid = u.openId
+            LEFT JOIN users cancel_user ON p.cancelled_by = cancel_user.openId
             WHERE p.activity_id = %s
             ORDER BY p.created_at ASC
         """, (activity_id,))
@@ -1375,16 +1387,129 @@ def get_activity_participants():
 
             travel_map = {1: '大巴', 2: '高铁/火车', 3: '自驾'}
             p['travel_option_text'] = travel_map.get(p.get('travel_option'), '未选择')
+            if p.get('cancelled_at'):
+                p['cancelled_at_formatted'] = p['cancelled_at'].strftime('%m/%d %H:%M') if isinstance(
+                    p['cancelled_at'], datetime
+                ) else str(p['cancelled_at'])
+            else:
+                p['cancelled_at_formatted'] = ''
+
+            operator_name = p.pop('cancelled_by_nickname', '') or ''
+            operator_wechat = p.pop('cancelled_by_wechat', '') or ''
+            if operator_name and operator_wechat:
+                p['cancelled_by_display'] = f'{operator_name}（{operator_wechat}）'
+            else:
+                p['cancelled_by_display'] = operator_wechat or operator_name or p.get('cancelled_by') or ''
 
         return jsonify({
             'code': 200,
             'data': {
                 'total': len(participants),
+                'can_manage': can_manage,
                 'list': participants
             }
         })
 
     except Exception as e:
+        return jsonify({'code': 500, 'msg': '服务器内部错误，请稍后重试'})
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+
+@activity_bp.route('/participants/manage-status', methods=['POST'])
+@check_verified_and_blacklist
+def manage_activity_participant_status():
+    """发起者管理个人活动报名，官方账号共同管理官方活动报名。"""
+    openid = g.openid
+    data = request.get_json(silent=True) or {}
+    activity_id = data.get('activity_id')
+    participant_id = data.get('participant_id')
+    action = str(data.get('action') or '').strip().lower()
+    if not activity_id or not participant_id:
+        return jsonify({'code': 400, 'msg': '缺少活动或报名记录ID'})
+    if action not in ('cancel', 'restore'):
+        return jsonify({'code': 400, 'msg': '无效的管理操作'})
+
+    conn = None
+    cursor = None
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT id, created_by, is_official, max_participants FROM activities WHERE id = %s FOR UPDATE",
+            (activity_id,)
+        )
+        activity = cursor.fetchone()
+        if not activity:
+            return jsonify({'code': 404, 'msg': '活动不存在'})
+
+        cursor.execute("SELECT isAdmin, isOfficial FROM users WHERE openId = %s", (openid,))
+        viewer = cursor.fetchone()
+        if not can_manage_activity_participants(activity, openid, viewer):
+            return jsonify({'code': 403, 'msg': '无权管理该活动报名'})
+
+        cursor.execute(
+            """
+            SELECT id, status, cancel_source, companion_count
+            FROM activity_participants
+            WHERE id = %s AND activity_id = %s
+            FOR UPDATE
+            """,
+            (participant_id, activity_id)
+        )
+        participant = cursor.fetchone()
+        if not participant:
+            return jsonify({'code': 404, 'msg': '报名记录不存在'})
+
+        if action == 'cancel':
+            if int(participant.get('status') or 0) != 1:
+                return jsonify({'code': 400, 'msg': '该报名当前不是有效状态'})
+            cursor.execute(
+                """
+                UPDATE activity_participants
+                SET status = 0, cancel_source = 'manager',
+                    cancelled_by = %s, cancelled_at = NOW()
+                WHERE id = %s
+                """,
+                (openid, participant_id)
+            )
+            message = '已取消该用户报名'
+        else:
+            if int(participant.get('status') or 0) != 0 or participant.get('cancel_source') != 'manager':
+                return jsonify({'code': 400, 'msg': '只能恢复由管理账号取消的报名'})
+            cursor.execute(
+                """
+                SELECT COALESCE(SUM(companion_count + 1), 0) AS occupied
+                FROM activity_participants
+                WHERE activity_id = %s AND status = 1
+                """,
+                (activity_id,)
+            )
+            occupied = int((cursor.fetchone() or {}).get('occupied') or 0)
+            slots_needed = int(participant.get('companion_count') or 0) + 1
+            if occupied + slots_needed > int(activity.get('max_participants') or 0):
+                remain = max(int(activity.get('max_participants') or 0) - occupied, 0)
+                return jsonify({'code': 400, 'msg': f'名额不足，当前剩余{remain}个'})
+            cursor.execute(
+                """
+                UPDATE activity_participants
+                SET status = 1, cancel_source = '',
+                    cancelled_by = NULL, cancelled_at = NULL
+                WHERE id = %s
+                """,
+                (participant_id,)
+            )
+            message = '已恢复该用户报名'
+
+        conn.commit()
+        return jsonify({'code': 200, 'msg': message})
+    except Exception:
+        if conn:
+            conn.rollback()
+        logging.exception('管理活动报名状态失败')
         return jsonify({'code': 500, 'msg': '服务器内部错误，请稍后重试'})
     finally:
         if cursor:

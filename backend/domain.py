@@ -64,7 +64,7 @@ def activity_times(data, allow_partial=False):
     return start_time, end_time, deadline, None
 
 
-def validate_activity_payload(data):
+def validate_activity_payload(data, max_participants_limit=100):
     """校验正式发布/重提所需字段，不能只依赖前端按钮状态。"""
     required = {
         'name': '活动名称',
@@ -86,8 +86,8 @@ def validate_activity_payload(data):
         return '难度和人数限制格式无效'
     if difficulty not in range(1, 6):
         return '难度等级需为1至5星'
-    if max_participants < 2 or max_participants > 100:
-        return '人数限制需在2至100之间'
+    if max_participants < 2 or max_participants > max_participants_limit:
+        return f'人数限制需在2至{max_participants_limit}之间'
 
     travel_options = data.get('travelOptions') or []
     if not travel_options or any(option not in (1, 2, 3) for option in travel_options):
@@ -108,6 +108,16 @@ def validate_activity_payload(data):
     except (TypeError, ValueError):
         return '活动地点坐标无效'
     return None
+
+
+def can_manage_activity_participants(activity, viewer_openid, viewer=None):
+    """普通活动仅发起者可管理；官方活动由当前官方账号共同管理。"""
+    if not activity or not viewer_openid:
+        return False
+    if int(activity.get('is_official') or 0) == 1:
+        viewer = viewer or {}
+        return int(viewer.get('isOfficial') or 0) == 1 or int(viewer.get('isAdmin') or 0) == 1
+    return activity.get('created_by') == viewer_openid
 
 
 def published_activity_status(start_time, end_time, now=None):
