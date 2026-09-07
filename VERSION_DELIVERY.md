@@ -5,12 +5,12 @@
 - 交付日期：2026-09-07
 - 小程序展示版本：`v1.3.2`
 - 完整项目远程仓库：`https://github.com/lichengding0813/bubuchuhu.git`
-- 完整项目基线分支：`codex/v1.3-weather-fix`
-- 代码基线提交：`7f0b895` (`feat: replace weather emoji with custom icons`)
+- 完整项目分支：`dev`（日常开发）、`master`（主分支，GitHub 默认分支）
+- 分支整理前代码基线：`5e8083b`（包含最新天气图标、报名人员管理和此前完整功能）
 - 前端本地基准：`/Users/dinglicheng/miniprogram`
 - 统一交付目录：`/Users/dinglicheng/bubuchuhu`
 
-> GitHub 的默认分支当前指向 `master`，但该分支落后于本次完整项目交付分支。获取当前最新整体代码时，必须明确使用 `codex/v1.3-weather-fix`；`backend` 仅保存后端安全版。
+> 2026-09-07 分支整理将 `dev` 和 `master` 同步到最新完整项目代码，并补充功能与分支文档。原 `codex/*`、`backend` 和 `database` 远程分支已清理；后端和数据库继续保存在完整项目的对应目录中。后续开发使用 `dev`，验收后再将其合入 `master`。
 
 ### 交付内容
 
@@ -37,9 +37,9 @@
 ### 分支与推送
 
 1. 开发前先确认分支和上游：`git branch -vv`。
-2. 完整项目以 `codex/v1.3-weather-fix` 为当前交付基线；`master` 当前不是最新交付，`backend` 仅用于后端安全版。
-3. 每个需求使用独立分支或已确认的交付分支，不在未确认的情况下直接改远程主分支。
-4. 推送时明确指定分支：`git push origin <branch>`。
+2. 远程只保留 `dev` 和 `master`，两个分支均维护完整项目，不再按前后端或版本号拆远程分支。
+3. 日常需求在 `dev` 开发；本地临时分支不推送。验收后将 `dev` 合入 `master`，发布仍按部署流程执行。
+4. 推送时明确指定目标分支：日常使用 `git push origin dev`，主分支更新使用 `git push origin master`。
 5. 不使用强制推送，不重写已经推送的历史，除非为凭证泄漏处理且已明确确认。
 
 ### 提交范围
@@ -66,7 +66,7 @@
 
 1. 远程仓库只保存安全版，凭证由云托管 Secret/环境变量注入。
 2. `.env`、包含凭证的 Dockerfile、部署压缩包和 `project.private.config.json` 不允许提交。
-3. 本机私有版放在 `local-deploy/`，并写入该工作区的 `.git/info/exclude`。
+3. 本机私有版及分支备份放在 `local-deploy/`，由根目录 `.gitignore` 排除；不得上传该目录或历史备份包。
 4. 一旦凭证出现在公开提交中，应先在对应平台轮换凭证，再处理 Git 历史和安全告警。
 
 ## 3. 本地前端快照规则
@@ -117,7 +117,7 @@
 
 ## 5. 当前部署注意事项
 
-- 生产凭证不存在于远程代码中。
+- 当前源码中的部署凭证通过环境变量注入。2026-09-07 检查在旧 Git 历史中发现过数据库密码和微信 Secret；当前文件清理及分支删除不代表历史已净化，旧凭证应确认已轮换。本次没有重写 Git 历史，也没有新增推送凭证或部署包。
 - 私有 Dockerfile 当前保留数据库和微信配置；天气 `WEATHER_API_KEY` 仍需由云托管环境变量或 Secret 注入。
 - 后端部署前应核对 `.env.example` 中的所有变量名，不应依赖代码中的默认凭证。
 - 订阅消息定时任务依赖持续运行实例，生产环境至少保留 1 个运行实例。
