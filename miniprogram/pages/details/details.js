@@ -1,6 +1,6 @@
 const { get, post } = require('../../utils/api');
 const { subscribeUserReminders } = require('../../utils/notifications');
-const { getWeatherEmoji } = require('../../utils/weather');
+const { getWeatherIcon } = require('../../utils/weather');
 const { isWithinWeatherDisplayWindow } = require('../../utils/time');
 
 Page({
@@ -414,7 +414,7 @@ Page({
             daily: [{
               ...result.data,
               dateLabel: this.formatWeatherDate(result.data.date),
-              emoji: getWeatherEmoji(result.data.text_day)
+              iconUrl: getWeatherIcon(result.data.text_day)
             }]
           },
           weatherMessage: ''

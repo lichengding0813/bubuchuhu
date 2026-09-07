@@ -35,7 +35,7 @@
     <view class="weather-inline-card" wx:elif="{{selectedWeather}}">
       <view class="weather-main">
         <view class="weather-icon-wrap">
-          <text class="weather-emoji">{{selectedWeather.emoji}}</text>
+          <image class="weather-icon-image" src="{{selectedWeather.iconUrl}}" mode="aspectFit" />
         </view>
         <view class="weather-copy">
           <text class="weather-city">{{selectedWeather.city}}</text>

@@ -6,7 +6,7 @@ const {
   getStatusText,
   getDifficultyText
 } = require('../../utils/time');
-const { getWeatherEmoji } = require('../../utils/weather');
+const { getWeatherIcon } = require('../../utils/weather');
 
 Page({
   data: {
@@ -135,7 +135,7 @@ Page({
           daily: [{
             ...result.data,
             dateLabel: this.formatWeatherDate(result.data.date),
-            emoji: getWeatherEmoji(result.data.text_day)
+            iconUrl: getWeatherIcon(result.data.text_day)
           }]
         }
       });

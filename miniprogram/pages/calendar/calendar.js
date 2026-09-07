@@ -5,7 +5,7 @@ const {
   isWithinWeatherDisplayWindow,
   parseTimeStr
 } = require('../../utils/time');
-const { getWeatherEmoji } = require('../../utils/weather');
+const { getWeatherIcon } = require('../../utils/weather');
 
 Page({
   data: {
@@ -171,7 +171,7 @@ Page({
             ...result.data,
             city: result.data.city || firstActivity.location,
             dateLabel: this.formatWeatherDate(result.data.date),
-            emoji: getWeatherEmoji(result.data.text_day)
+            iconUrl: getWeatherIcon(result.data.text_day)
           },
           weatherMessage: ''
         });

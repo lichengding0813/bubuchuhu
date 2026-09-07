@@ -139,9 +139,10 @@ page {
   background: #edf7fd;
 }
 
-.weather-emoji {
-  font-size: 25px;
-  line-height: 1;
+.weather-icon-image {
+  display: block;
+  width: 34px;
+  height: 34px;
 }
 
 .activity-weather-copy {
