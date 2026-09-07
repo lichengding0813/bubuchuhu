@@ -211,8 +211,8 @@
 ### 后端
 
 ```bash
-# 克隆仓库（master 包含全部代码，也可单独拉 backend 分支）
-git clone https://github.com/lichengding0813/bubuchuhu.git
+# 克隆当前完整项目交付分支
+git clone -b codex/v1.3-weather-fix https://github.com/lichengding0813/bubuchuhu.git
 cd bubuchuhu/backend
 
 # 安装依赖

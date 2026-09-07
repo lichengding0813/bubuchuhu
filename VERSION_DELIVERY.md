@@ -10,7 +10,7 @@
 - 前端本地基准：`/Users/dinglicheng/miniprogram`
 - 统一交付目录：`/Users/dinglicheng/bubuchuhu`
 
-> GitHub 的默认分支当前指向 `backend`，该分支不是完整项目交付分支。获取整个项目时，必须明确使用 `codex/v1.3-weather-fix`，不能只克隆默认分支。
+> GitHub 的默认分支当前指向 `master`，但该分支落后于本次完整项目交付分支。获取当前最新整体代码时，必须明确使用 `codex/v1.3-weather-fix`；`backend` 仅保存后端安全版。
 
 ### 交付内容
 
@@ -37,7 +37,7 @@
 ### 分支与推送
 
 1. 开发前先确认分支和上游：`git branch -vv`。
-2. 完整项目以 `codex/v1.3-weather-fix` 为当前交付基线；`backend` 仅用于后端安全版，不作为完整项目基线。
+2. 完整项目以 `codex/v1.3-weather-fix` 为当前交付基线；`master` 当前不是最新交付，`backend` 仅用于后端安全版。
 3. 每个需求使用独立分支或已确认的交付分支，不在未确认的情况下直接改远程主分支。
 4. 推送时明确指定分支：`git push origin <branch>`。
 5. 不使用强制推送，不重写已经推送的历史，除非为凭证泄漏处理且已明确确认。
