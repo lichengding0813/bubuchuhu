@@ -10,3 +10,4 @@ __pycache__/
 static/uploads/
 deploy.zip
 *.zip
+local-deploy/
