@@ -160,7 +160,7 @@ Page({
 
     try {
       const { currentTab, page, pageSize, filterDifficulty, filterTravel, filterOfficial } = this.data;
-      const params = { page, size: pageSize, tab: currentTab };
+      const params = { page, size: pageSize, tab: currentTab, sort: 'end_time' };
       if (filterDifficulty !== '') params.difficulty = filterDifficulty;
       if (filterTravel !== '') params.travel = filterTravel;
       if (filterOfficial) params.official = 1;

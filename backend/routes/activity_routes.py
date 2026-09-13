@@ -530,6 +530,7 @@ def get_activity_list():
     difficulty = request.args.get('difficulty')
     travel_type = request.args.get('travel')
     official = request.args.get('official')
+    sort = request.args.get('sort', '')
     openid = request.headers.get('X-Wx-OpenId')
 
     offset = (page - 1) * size
@@ -585,6 +586,15 @@ def get_activity_list():
             elif normalized_official not in ('', '0', 'false'):
                 return jsonify({'code': 400, 'msg': '官方活动筛选参数无效'})
 
+        if sort not in ('', 'end_time'):
+            return jsonify({'code': 400, 'msg': '活动排序参数无效'})
+
+        order_clause = 'a.created_at DESC'
+        if sort == 'end_time':
+            effective_end_time = 'COALESCE(a.end_time, DATE_ADD(a.activity_time, INTERVAL 12 HOUR))'
+            direction = 'DESC' if tab == 'ended' else 'ASC'
+            order_clause = f'{effective_end_time} {direction}, a.id {direction}'
+
         # 查询总数
         cursor.execute(f"SELECT COUNT(*) as total FROM activities a {where_clause}", params)
         total = cursor.fetchone()['total']
@@ -614,7 +624,7 @@ def get_activity_list():
             WHERE user_openid = %s AND status = 1
         ) mine ON mine.activity_id = a.id
         {where_clause}
-        ORDER BY a.created_at DESC
+        ORDER BY {order_clause}
         LIMIT %s OFFSET %s
         """
         list_params = [openid or '', *params, size, offset]
