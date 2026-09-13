@@ -28,3 +28,12 @@ page { background: #f4f8fb; color: #173f5c; }
 .code-label { color: #8298a9; font-size: 9px; }
 .code-value { margin-top: 2px; color: #2878ac; font-size: 15px; font-weight: 900; letter-spacing: .8px; }
 .copy { padding: 5px 10px; border-radius: 12px; color: #fff; background: #4d9fd7; font-size: 9px; }
+.qr-entry { display: flex; height: 38px; align-items: center; justify-content: center; margin-top: 8px; border-radius: 19px; color: #fff; background: #4d9fd7; font-size: 11px; font-weight: 700; }
+.qr-panel { display: flex; align-items: center; flex-direction: column; padding: 23px 20px 20px; background: #fff; }
+.qr-panel-title { max-width: 100%; overflow: hidden; margin-bottom: 14px; color: #173f5c; font-size: 17px; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
+.qr-canvas { width: 200px; height: 200px; border-radius: 8px; background: #fff; }
+.qr-state { display: flex; width: 200px; height: 200px; align-items: center; justify-content: center; border-radius: 8px; color: #7f96a7; background: #f5f8fa; font-size: 11px; text-align: center; }
+.qr-state.retry { color: #3f8dbc; }
+.qr-countdown { margin-top: 8px; color: #7f96a7; font-size: 10px; }
+.qr-close { display: flex; width: 100%; height: 42px; align-items: center; justify-content: center; padding: 0; margin-top: 15px; border: 0; border-radius: 21px; color: #3f8dbc; background: #eaf6fd; font-size: 12px; font-weight: 700; line-height: 42px; }
+.qr-close::after { display: none; }

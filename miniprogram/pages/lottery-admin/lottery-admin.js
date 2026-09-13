@@ -1,4 +1,5 @@
 const { get, post } = require('../../utils/api');
+const { parseRedemptionQrResult } = require('../../utils/redemption-qr');
 
 function formatDate(value) {
   const date = new Date(value);
@@ -401,16 +402,51 @@ Page({
     });
   },
 
-  showRedeemPanel() { this.setData({ showRedeem: true, redeemCode: '' }); },
+  showRedeemPanel() {
+    this.setData({ showRedeem: true, redeemCode: '' }, () => this.scanRedemptionQr());
+  },
   hideRedeemPanel() { if (!this.data.redeeming) this.setData({ showRedeem: false }); },
   onRedeemCodeInput(e) { this.setData({ redeemCode: e.detail.value.toUpperCase() }); },
   onRedeemRecord(e) { this.setData({ showRedeem: true, redeemCode: e.currentTarget.dataset.code || '' }); },
 
+  scanRedemptionQr() {
+    if (this.data.redeeming) return;
+    wx.scanCode({
+      onlyFromCamera: true,
+      scanType: ['qrCode'],
+      success: result => {
+        const qrToken = parseRedemptionQrResult(result.result);
+        if (!qrToken) {
+          wx.showToast({ title: '不是有效的奖品核销二维码', icon: 'none' });
+          return;
+        }
+        wx.showModal({
+          title: '确认核销',
+          content: '已识别奖品核销二维码，确认后该奖品将标记为已领取。',
+          confirmText: '确认核销',
+          confirmColor: '#4d9fd7',
+          success: modal => {
+            if (modal.confirm) this.redeemPrize({ qr_token: qrToken });
+          }
+        });
+      },
+      fail: error => {
+        if (/cancel/i.test(error.errMsg || '')) return;
+        wx.showToast({ title: '无法打开扫码，请手动输入核销码', icon: 'none' });
+      }
+    });
+  },
+
   async submitRedeem() {
     if (!this.data.redeemCode.trim() || this.data.redeeming) return;
+    return this.redeemPrize({ redeem_code: this.data.redeemCode.trim() });
+  },
+
+  async redeemPrize(payload) {
+    if (this.data.redeeming) return;
     this.setData({ redeeming: true });
     try {
-      const result = await post('/api/admin/lottery/redeem', { redeem_code: this.data.redeemCode.trim() }, { silent: true });
+      const result = await post('/api/admin/lottery/redeem', payload, { silent: true });
       wx.showModal({
         title: '核销成功',
         content: `${result.data.nickname}\n${result.data.activity_name}\n${result.data.prize_name}`,

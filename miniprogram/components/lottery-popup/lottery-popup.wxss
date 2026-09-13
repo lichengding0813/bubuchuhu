@@ -32,7 +32,12 @@
 .result-kicker { margin-top: 7px; color: #879cab; font-size: 11px; }
 .result-text { margin-top: 4px; color: #e2774f; font-size: 23px; font-weight: 900; }
 .claim-card { padding: 12px; margin: 15px 0 10px; border: 1px solid #dceaf3; border-radius: 15px; color: #6f899b; background: #fff; font-size: 10px; line-height: 1.6; text-align: left; }
-.claim-card view { display: flex; align-items: center; justify-content: space-between; padding-bottom: 7px; margin-bottom: 7px; border-bottom: 1px solid #edf2f6; }
+.claim-header { display: flex; align-items: center; justify-content: space-between; padding-bottom: 7px; margin-bottom: 7px; border-bottom: 1px solid #edf2f6; }
 .claim-code { color: #327fb2; font-size: 14px; font-weight: 900; letter-spacing: .7px; }
 .claim-card > text { display: block; }
+.redemption-qr { display: flex; align-items: center; flex-direction: column; margin: 10px 0; }
+.redemption-qr-canvas { width: 200px; height: 200px; border-radius: 8px; background: #fff; }
+.redemption-qr-state { display: flex; width: 200px; height: 200px; align-items: center; justify-content: center; border-radius: 8px; color: #7f96a7; background: #f5f8fa; }
+.redemption-qr-state.retry { color: #3f8dbc; }
+.redemption-qr-tip { margin-top: 6px; color: #7f96a7; font-size: 10px; text-align: center; }
 .remaining-copy { margin: 8px 0 2px; color: #6d879a; font-size: 10px; }

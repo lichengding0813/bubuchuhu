@@ -24,7 +24,7 @@
     <view class="draw-info">
       <view class="chance-row"><text>剩余抽奖机会</text><text>{{lotteryInfo.chances_remaining || 0}} 次</text></view>
       <view class="chance-row"><text>距结束</text><text>{{lotteryInfo.end_time}}</text></view>
-      <input class="password-input" password adjust-position="{{false}}" cursor-spacing="20" placeholder="输入现场口令" value="{{password}}" disabled="{{drawing || lotteryInfo.chances_remaining <= 0}}" bindinput="onPasswordInput" confirm-type="done" bindconfirm="onDraw" />
+      <input class="password-input" type="text" maxlength="-1" adjust-position="{{false}}" cursor-spacing="20" placeholder="输入现场口令" value="{{password}}" disabled="{{drawing || lotteryInfo.chances_remaining <= 0}}" bindinput="onPasswordInput" confirm-type="done" bindconfirm="onDraw" />
       <text class="error-tip" wx:if="{{errorText}}">{{errorText}}</text>
       <text class="attempts-tip" wx:if="{{attemptsLeft < 3}}">今天还可尝试口令 {{attemptsLeft}} 次</text>
       <button class="draw-btn" disabled="{{drawing || lotteryInfo.chances_remaining <= 0}}" bindtap="onDraw">{{lotteryInfo.chances_remaining <= 0 ? '机会已用完' : drawing ? '转盘转动中…' : '开始抽奖'}}</button>
@@ -38,7 +38,13 @@
     <text class="result-kicker">{{result.prize_id ? '恭喜中奖' : '这次差一点'}}</text>
     <text class="result-text">{{result.prize_name}}</text>
     <view class="claim-card" wx:if="{{result.prize_id}}">
-      <view><text>核销码</text><text class="claim-code">{{result.redeem_code}}</text></view>
+      <view class="claim-header"><text>核销码</text><text class="claim-code">{{result.redeem_code}}</text></view>
+      <view class="redemption-qr">
+        <canvas wx:if="{{qrReady}}" class="redemption-qr-canvas" canvas-id="lotteryRedemptionQr"></canvas>
+        <view class="redemption-qr-state" wx:elif="{{qrLoading}}"><van-loading size="22px">生成二维码</van-loading></view>
+        <view class="redemption-qr-state retry" wx:else bindtap="refreshRedemptionQr">{{qrError || '点击生成核销二维码'}}</view>
+        <text class="redemption-qr-tip" wx:if="{{qrReady}}">{{qrCountdown}} 秒后自动刷新</text>
+      </view>
       <text wx:if="{{result.claim_instructions}}">{{result.claim_instructions}}</text>
       <text wx:if="{{result.pickup_location}}">地点：{{result.pickup_location}}</text>
     </view>

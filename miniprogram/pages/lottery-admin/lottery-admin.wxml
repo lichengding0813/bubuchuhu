@@ -187,7 +187,9 @@
   <view class="redeem-panel">
     <view class="redeem-icon"><van-icon name="passed" size="30px" color="#4d9fd7" /></view>
     <text class="form-title">奖品核销</text>
-    <text class="redeem-hint">核对用户手机上的核销码后提交</text>
+    <text class="redeem-hint">扫描用户出示的动态二维码</text>
+    <button class="scan-button" disabled="{{redeeming}}" bindtap="scanRedemptionQr"><van-icon name="photograph" size="17px" />扫描二维码</button>
+    <text class="redeem-divider">或手动输入核销码</text>
     <input class="redeem-input" maxlength="32" adjust-position="{{false}}" cursor-spacing="20" value="{{redeemCode}}" bindinput="onRedeemCodeInput" placeholder="BBCH-XXXX-XXXX" />
     <button class="submit-button" loading="{{redeeming}}" disabled="{{redeeming || !redeemCode}}" bindtap="submitRedeem">确认核销</button>
   </view>

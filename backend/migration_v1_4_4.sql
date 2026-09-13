@@ -85,11 +85,14 @@ CREATE TABLE `lottery_redemptions` (
   `status` tinyint(4) NOT NULL DEFAULT '0' COMMENT '0-待核销，1-已核销',
   `redeemed_by` varchar(100) DEFAULT NULL,
   `redeemed_at` datetime DEFAULT NULL,
+  `qr_token` varchar(64) DEFAULT NULL COMMENT '120秒动态核销二维码随机令牌',
+  `qr_expires_at` datetime DEFAULT NULL COMMENT '动态核销二维码过期时间',
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_redemption_record` (`record_id`),
   UNIQUE KEY `uk_redemption_code` (`redeem_code`),
+  UNIQUE KEY `uk_redemption_qr_token` (`qr_token`),
   KEY `idx_redemption_status` (`status`,`updated_at`),
   CONSTRAINT `fk_redemption_record` FOREIGN KEY (`record_id`) REFERENCES `lottery_records` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='中奖奖品核销';

@@ -35,6 +35,15 @@ for (const page of appConfig.pages) {
   }
 }
 
+const { parseRedemptionQrResult } = require(path.join(root, 'utils/redemption-qr'));
+const sampleToken = 'AbCdEfGhIjKlMnOpQrStUvWxYz_12345';
+if (parseRedemptionQrResult(`BBCH-REDEEM:1:${sampleToken}`) !== sampleToken) {
+  errors.push('动态核销二维码解析失败');
+}
+if (parseRedemptionQrResult('BBCH-1234-5678') || parseRedemptionQrResult('https://example.com')) {
+  errors.push('动态核销二维码接受了无效内容');
+}
+
 if (errors.length) {
   console.error(errors.join('\n'));
   process.exit(1);

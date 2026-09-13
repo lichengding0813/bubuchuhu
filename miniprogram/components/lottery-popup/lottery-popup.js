@@ -1,4 +1,8 @@
 const { post } = require('../../utils/api');
+const {
+  drawQrMatrix,
+  REDEMPTION_QR_REFRESH_SECONDS
+} = require('../../utils/redemption-qr');
 
 const WHEEL_COLORS = ['#dff2fd', '#fff0d9', '#e8f5e9', '#fce5eb', '#e9e5fb', '#dff5f2', '#ffe9d9', '#e7f0ff'];
 
@@ -14,6 +18,10 @@ Component({
     attemptsLeft: 3,
     drawing: false,
     result: null,
+    qrLoading: false,
+    qrReady: false,
+    qrError: '',
+    qrCountdown: REDEMPTION_QR_REFRESH_SECONDS,
     wheelSegments: [],
     wheelBackground: '',
     wheelStyle: 'transform:rotate(0deg);',
@@ -24,10 +32,12 @@ Component({
   observers: {
     'show, lotteryInfo': function(show, lotteryInfo) {
       if (!show) {
+        this.stopQrTimer();
         this.setData({ currentLotteryId: 0 });
         return;
       }
       if (lotteryInfo?.id && Number(lotteryInfo.id) !== Number(this.data.currentLotteryId)) {
+        this.stopQrTimer();
         const segments = this.buildSegments(lotteryInfo.prizes || []);
         this.setData({
           currentLotteryId: Number(lotteryInfo.id),
@@ -37,7 +47,11 @@ Component({
           wheelStyle: 'transform:rotate(0deg);',
           wheelRotation: 0,
           result: null,
-          errorText: ''
+          errorText: '',
+          qrLoading: false,
+          qrReady: false,
+          qrError: '',
+          qrCountdown: REDEMPTION_QR_REFRESH_SECONDS
         });
       }
     }
@@ -46,6 +60,7 @@ Component({
   lifetimes: {
     detached() {
       if (this.resultTimer) clearTimeout(this.resultTimer);
+      this.stopQrTimer();
     }
   },
 
@@ -127,13 +142,81 @@ Component({
         wheelStyle: `transform:rotate(${rotation}deg);transition:transform 2.6s cubic-bezier(.16,.72,.18,1);`
       });
       this.resultTimer = setTimeout(() => {
-        this.setData({ drawing: false, result });
+        this.setData({ drawing: false, result }, () => {
+          if (result.prize_id) this.refreshRedemptionQr();
+        });
         this.triggerEvent('drawn', result);
       }, 2700);
     },
 
+    stopQrTimer() {
+      if (this.qrTimer) {
+        clearInterval(this.qrTimer);
+        this.qrTimer = null;
+      }
+      this.qrDeadline = 0;
+    },
+
+    startQrTimer(seconds) {
+      this.stopQrTimer();
+      const duration = Math.max(1, Number(seconds) || REDEMPTION_QR_REFRESH_SECONDS);
+      this.qrDeadline = Date.now() + duration * 1000;
+      this.setData({ qrCountdown: duration });
+      this.qrTimer = setInterval(() => {
+        const remaining = Math.max(0, Math.ceil((this.qrDeadline - Date.now()) / 1000));
+        if (remaining > 0) {
+          if (remaining !== this.data.qrCountdown) this.setData({ qrCountdown: remaining });
+          return;
+        }
+        this.stopQrTimer();
+        this.refreshRedemptionQr();
+      }, 1000);
+    },
+
+    async refreshRedemptionQr() {
+      const recordId = Number(this.data.result?.record_id || 0);
+      if (!recordId || this.data.qrLoading) return;
+      this.setData({ qrLoading: true, qrReady: false, qrError: '' });
+      try {
+        const response = await post('/api/lottery/redemption-qr', {
+          record_id: recordId
+        }, { silent: true });
+        if (Number(this.data.result?.record_id || 0) !== recordId) return;
+        const matrix = response.data?.matrix || [];
+        const expiresIn = Number(response.data?.expires_in) || REDEMPTION_QR_REFRESH_SECONDS;
+        this.setData({
+          qrLoading: false,
+          qrReady: true,
+          qrError: '',
+          qrCountdown: expiresIn
+        }, () => {
+          try {
+            drawQrMatrix('lotteryRedemptionQr', matrix, 200, this);
+            this.startQrTimer(expiresIn);
+          } catch (error) {
+            this.setData({ qrReady: false, qrError: error.message || '二维码绘制失败' });
+          }
+        });
+      } catch (error) {
+        this.stopQrTimer();
+        this.setData({
+          qrLoading: false,
+          qrReady: false,
+          qrError: error.response?.msg || '二维码生成失败，点击重试'
+        });
+      }
+    },
+
     onDrawAgain() {
-      this.setData({ result: null, password: '', errorText: '' });
+      this.stopQrTimer();
+      this.setData({
+        result: null,
+        password: '',
+        errorText: '',
+        qrLoading: false,
+        qrReady: false,
+        qrError: ''
+      });
     },
 
     goToMyPrizes() {
@@ -143,7 +226,16 @@ Component({
 
     onClose() {
       if (this.data.drawing) return;
-      this.setData({ password: '', errorText: '', result: null, attemptsLeft: 3 });
+      this.stopQrTimer();
+      this.setData({
+        password: '',
+        errorText: '',
+        result: null,
+        attemptsLeft: 3,
+        qrLoading: false,
+        qrReady: false,
+        qrError: ''
+      });
       this.triggerEvent('close');
     },
 

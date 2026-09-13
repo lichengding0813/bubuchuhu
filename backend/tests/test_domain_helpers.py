@@ -22,6 +22,12 @@ from domain import (
     weather_code_summary,
     weather_location_candidates,
 )
+from redemption_qr import (
+    REDEMPTION_QR_TTL_SECONDS,
+    is_redemption_qr_expired,
+    is_valid_redemption_qr_token,
+    new_redemption_qr_token,
+)
 
 
 class OfficialActivityTitleTests(unittest.TestCase):
@@ -162,6 +168,26 @@ class LotteryRuleTests(unittest.TestCase):
         self.assertEqual(pick_lottery_prize(prizes, 500)['id'], 1)
         self.assertIsNone(pick_lottery_prize(prizes, 1500))
         self.assertIsNone(pick_lottery_prize(prizes, 9000))
+
+
+class RedemptionQrTests(unittest.TestCase):
+    def test_token_is_random_and_url_safe(self):
+        first = new_redemption_qr_token()
+        second = new_redemption_qr_token()
+        self.assertNotEqual(first, second)
+        self.assertTrue(is_valid_redemption_qr_token(first))
+        self.assertTrue(is_valid_redemption_qr_token(second))
+
+    def test_invalid_token_is_rejected(self):
+        self.assertFalse(is_valid_redemption_qr_token('too-short'))
+        self.assertFalse(is_valid_redemption_qr_token('a' * 31 + '!'))
+
+    def test_qr_expires_after_one_hundred_twenty_seconds(self):
+        issued_at = datetime(2026, 9, 13, 12, 0, 0)
+        expires_at = issued_at + timedelta(seconds=REDEMPTION_QR_TTL_SECONDS)
+        self.assertFalse(is_redemption_qr_expired(expires_at, issued_at))
+        self.assertTrue(is_redemption_qr_expired(expires_at, expires_at))
+        self.assertEqual(REDEMPTION_QR_TTL_SECONDS, 120)
 
 
 class PublishedActivityStatusTests(unittest.TestCase):

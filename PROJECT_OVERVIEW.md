@@ -9,7 +9,7 @@
 | 层级 | 当前实现 |
 |---|---|
 | 小程序 | 微信原生 WXML/WXSS/JavaScript，Vant Weapp；23 个注册页面、4 个自定义组件 |
-| 后端 | Flask，5 个业务蓝图；共 72 处路由声明，包含健康检查 |
+| 后端 | Flask，5 个业务蓝图；共 73 处路由声明，包含健康检查 |
 | 数据库 | MySQL/CynosDB，PyMySQL、DBUtils 连接池；建表和迁移涉及 20 张业务表 |
 | 部署 | Docker、Gunicorn、微信云托管；前端通过 `wx.cloud.callContainer` 调用后端 |
 | 图片 | 微信云存储上传、图片预览、封面、头像、微信群二维码和回顾照片墙 |
@@ -27,7 +27,7 @@
 | 官方活动 | 官方账号共享创建和编辑官方活动，免人工审核，统一标题前缀与认证徽章；普通活动上限 100 人、官方活动上限 200 人 | `routes/activity_routes.py`；`pages/official-activities`、`pages/publish` |
 | 日历、地图与天气 | 月视图活动标记、按日期查看活动、地图查看活动及集合地点；详情、审核和日历页面仅在活动开始前 24 小时内展示天气，使用 Open-Meteo 单日天气与本地天气图标 | `routes/activity_routes.py`；`utils/time.js`、`utils/weather.js`；`pages/calendar`、`pages/details`、`pages/admin-detail` |
 | 幸运转盘 | 仅官方活动创建抽奖；最多 12 个奖项，配置图片、库存、固定中奖概率、时间、现场口令和领奖说明；有效报名用户默认有一次机会，每日最多答错口令 3 次；支持追加机会、修改口令、提前结束、记录筛选 | `backend/domain.py`；`routes/lottery_routes.py`；`pages/lottery-admin`、`components/lottery-popup` |
-| 奖品核销 | 中奖生成核销码；我的奖品按领取状态筛选；管理员核销；抽奖结束后已有奖品仍可核销，核销码不自动过期 | `routes/lottery_routes.py`；`pages/my-prizes`、`pages/lottery-admin` |
+| 奖品核销 | 中奖生成长期核销码和仅包含随机令牌的动态二维码；二维码每 120 秒自动刷新，旧码随即失效；我的奖品可重新出示二维码；有权限的账号可唤醒相机扫码核销，也可手动输入核销码；抽奖结束后已有奖品仍可核销 | `routes/lottery_routes.py`；`pages/my-prizes`、`pages/lottery-admin`、`components/lottery-popup` |
 | 活动回顾 | 回顾列表、分享、富文本总结、三类封面和照片墙；超级管理员从尚无回顾的官方活动导入基础信息，防重复创建；可编辑，后端支持软删除 | `routes/review_bp.py`；`pages/review`、`pages/review-detail`、`pages/review_add` |
 | 个人中心 | 我发起的、我报名的、草稿箱、我的奖品；统计有效参与且已结束活动的累计次数、里程、爬升；按身份显示管理入口 | `backend/app.py`；`pages/profile` 及对应列表页面 |
 | 业务管理 | 审核普通活动、手动拉黑/解封、记录黑名单来源、查看答题记录、验证题增删改查及启停、全员重新验证 | `routes/admin_routes.py`；`pages/blacklist`、`pages/verify-management`、`pages/admin-review` |
@@ -51,9 +51,9 @@
 2. **天气**：现有详情、审核、日历与行前提醒主要使用 Open-Meteo；后端还保留需要环境变量配置的心知天气 `/api/weather` 接口。当前页面不是常驻的七天天气预报。
 3. **回顾图片**：导入官方活动带入基础信息与报名人数，人合照、卜合照、公益记录图片需单独上传，不自动把活动封面当作合照。
 4. **草稿示例**：草稿接口失败时仍可能显示明确标记的示例草稿，并禁用编辑、删除；示例不是已保存的真实活动。
-5. **数据库迁移**：报名管理所需 `migration_v1_4_7.sql` 当前仅位于 `backend/`。仅执行基础建表文件不能代替全部所需迁移；部分历史重建/回滚脚本会删除数据，应根据现有结构选择，不能盲目顺序重跑。
+5. **数据库迁移**：报名管理需执行 `migration_v1_4_7.sql`，动态核销二维码需执行 `migration_v1_4_8.sql`。仅执行基础建表文件不能代替全部所需迁移；部分历史重建/回滚脚本会删除数据，应根据现有结构选择，不能盲目顺序重跑。
 6. **版本标识**：本地个人页显示 `v1.3.2`；`package.json` 为 `1.3.0`，公共配置为 `1.3`。个人页版本号与更新日志原有两处未提交修改已保留，不纳入本次文档提交。
-7. **验证范围**：本次通过小程序 JS/JSON/页面注册静态检查、Python 编译检查及 23 项业务规则单元测试；未验证生产环境的数据库迁移、消息实际送达和微信真机界面。
+7. **验证范围**：本次通过小程序 JS/JSON/页面注册静态检查、Python 编译检查及 26 项业务规则单元测试；未验证生产环境的数据库迁移、消息实际送达和微信真机界面。
 
 ## 分支整理与凭证记录
 

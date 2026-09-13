@@ -1,5 +1,5 @@
 """抽奖 v2：官方活动抽奖、固定概率、多次机会、奖品核销。"""
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 import logging
 import secrets
 
@@ -14,6 +14,13 @@ from domain import (
     validate_lottery_probabilities,
 )
 from middleware import check_staff, check_verified_and_blacklist
+from redemption_qr import (
+    REDEMPTION_QR_TTL_SECONDS,
+    is_redemption_qr_expired,
+    is_valid_redemption_qr_token,
+    new_redemption_qr_token,
+    redemption_qr_matrix,
+)
 
 
 lottery_bp = Blueprint('lottery', __name__)
@@ -463,14 +470,20 @@ def update_lottery_password():
 def redeem_lottery_prize():
     data = request.get_json(silent=True) or {}
     redeem_code = str(data.get('redeem_code') or '').strip().upper()
-    if not redeem_code:
-        return jsonify({'code': 400, 'msg': '请输入核销码'})
+    qr_token = str(data.get('qr_token') or '').strip()
+    if not redeem_code and not qr_token:
+        return jsonify({'code': 400, 'msg': '请扫描核销二维码或输入核销码'})
+    if qr_token and not is_valid_redemption_qr_token(qr_token):
+        return jsonify({'code': 400, 'msg': '核销二维码无效'})
     conn = get_db()
     cursor = None
     try:
         cursor = conn.cursor()
-        cursor.execute("""
+        lookup_field = 'rd.qr_token' if qr_token else 'rd.redeem_code'
+        lookup_value = qr_token or redeem_code
+        cursor.execute(f"""
             SELECT rd.id, rd.status, rd.redeem_code,
+                   rd.qr_expires_at,
                    p.tier_name AS prize_name,
                    a.name AS activity_name, u.nickName AS nickname
             FROM lottery_redemptions rd
@@ -479,18 +492,23 @@ def redeem_lottery_prize():
             JOIN activity_lotteries l ON r.lottery_id = l.id
             JOIN activities a ON l.activity_id = a.id
             LEFT JOIN users u ON r.user_openid = u.openId
-            WHERE rd.redeem_code = %s FOR UPDATE
-        """, (redeem_code,))
+            WHERE {lookup_field} = %s FOR UPDATE
+        """, (lookup_value,))
         redemption = cursor.fetchone()
         if not redemption:
             conn.rollback()
-            return jsonify({'code': 404, 'msg': '核销码不存在'})
+            message = '核销二维码无效' if qr_token else '核销码不存在'
+            return jsonify({'code': 404, 'msg': message})
+        if qr_token and is_redemption_qr_expired(redemption.get('qr_expires_at')):
+            conn.rollback()
+            return jsonify({'code': 410, 'msg': '二维码已过期，请让用户刷新后重试'})
         if int(redemption['status']) == 1:
             conn.rollback()
             return jsonify({'code': 400, 'msg': '该奖品已经核销'})
         cursor.execute("""
             UPDATE lottery_redemptions
-            SET status = 1, redeemed_by = %s, redeemed_at = NOW()
+            SET status = 1, redeemed_by = %s, redeemed_at = NOW(),
+                qr_token = NULL, qr_expires_at = NULL
             WHERE id = %s AND status = 0
         """, (g.openid, redemption['id']))
         conn.commit()
@@ -632,6 +650,60 @@ def check_lottery():
     except Exception:
         logging.exception('检查抽奖失败')
         return jsonify({'code': 500, 'msg': '服务器内部错误'})
+    finally:
+        _close(cursor)
+
+
+@lottery_bp.route('/lottery/redemption-qr', methods=['POST'])
+@check_verified_and_blacklist
+def create_redemption_qr():
+    """为当前用户未核销的中奖记录签发 120 秒动态二维码。"""
+    try:
+        record_id = int((request.get_json(silent=True) or {}).get('record_id'))
+        if record_id <= 0:
+            raise ValueError
+    except (TypeError, ValueError):
+        return jsonify({'code': 400, 'msg': '中奖记录无效'})
+
+    conn = get_db()
+    cursor = None
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT rd.id, rd.status
+            FROM lottery_redemptions rd
+            JOIN lottery_records r ON rd.record_id = r.id
+            WHERE r.id = %s AND r.user_openid = %s
+            FOR UPDATE
+        """, (record_id, g.openid))
+        redemption = cursor.fetchone()
+        if not redemption:
+            conn.rollback()
+            return jsonify({'code': 404, 'msg': '中奖记录不存在'})
+        if int(redemption['status']) == 1:
+            conn.rollback()
+            return jsonify({'code': 400, 'msg': '该奖品已经核销'})
+
+        token = new_redemption_qr_token()
+        matrix = redemption_qr_matrix(token)
+        expires_at = datetime.now() + timedelta(seconds=REDEMPTION_QR_TTL_SECONDS)
+        cursor.execute("""
+            UPDATE lottery_redemptions
+            SET qr_token = %s, qr_expires_at = %s
+            WHERE id = %s AND status = 0
+        """, (token, expires_at, redemption['id']))
+        if cursor.rowcount != 1:
+            conn.rollback()
+            return jsonify({'code': 409, 'msg': '奖品状态已变化，请刷新后重试'})
+        conn.commit()
+        return jsonify({'code': 200, 'data': {
+            'matrix': matrix,
+            'expires_in': REDEMPTION_QR_TTL_SECONDS,
+        }})
+    except Exception:
+        conn.rollback()
+        logging.exception('生成核销二维码失败')
+        return jsonify({'code': 500, 'msg': '二维码生成失败，请稍后重试'})
     finally:
         _close(cursor)
 

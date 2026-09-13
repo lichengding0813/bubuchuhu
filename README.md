@@ -110,6 +110,7 @@
 │   ├── migration_v1_4_5.sql     # 超级管理员权限收敛与订阅消息任务表
 │   ├── migration_v1_4_6.sql     # 明文可修改抽奖口令与永久核销码迁移
 │   ├── migration_v1_4_7.sql     # 报名管理取消来源、操作人和时间迁移
+│   ├── migration_v1_4_8.sql     # 120 秒动态奖品核销二维码迁移
 │   └── migration_official_accounts.sql # 官方账号功能独立增量迁移
 ├── database/           # 数据库建表语句
 │   ├── users.sql
@@ -181,11 +182,11 @@
 | `verify_questions` | 验证问题表 | id, question, answers, sort_order, is_active |
 | `activity_lotteries` / `lottery_prizes` | 抽奖配置、固定中奖概率、奖品库存和领奖说明 | password, probability_bps, remaining |
 | `lottery_user_states` / `lottery_records` | 用户抽奖机会、每日口令次数和每次抽奖结果 | chances_total, chances_used, chance_no |
-| `lottery_redemptions` / `lottery_chance_grants` | 奖品核销与管理员追加机会记录 | redeem_code, status, quantity |
+| `lottery_redemptions` / `lottery_chance_grants` | 奖品核销、120 秒动态二维码与管理员追加机会记录 | redeem_code, qr_token, qr_expires_at, status, quantity |
 | `notification_subscriptions` / `notification_jobs` | 订阅授权额度与去重发送任务 | template_id, available_count, dedupe_key, status |
 | `notification_send_logs` | 微信订阅消息发送结果 | job_id, errcode, errmsg |
 
-> 建表语句详见 `database/`。部署订阅消息与角色拆分前执行 `database/migration_v1_4_5.sql`；抽奖口令和核销状态调整需继续执行 `database/migration_v1_4_6.sql`；已有数据库启用报名人员管理还需执行 `backend/migration_v1_4_7.sql`。应先核对现有结构和迁移内容，不要批量重跑全部 SQL。
+> 建表语句详见 `database/`。部署订阅消息与角色拆分前执行 `database/migration_v1_4_5.sql`；抽奖口令和核销状态调整需继续执行 `database/migration_v1_4_6.sql`；已有数据库启用报名人员管理需执行 `backend/migration_v1_4_7.sql`，启用动态核销二维码需继续执行 `backend/migration_v1_4_8.sql`。应先核对现有结构和迁移内容，不要批量重跑全部 SQL。
 
 ## 部署信息
 
@@ -289,6 +290,7 @@ python app.py
 | POST | `/api/lottery/check` | 检查用户可参与的抽奖 |
 | GET | `/api/lottery/activity-status` | 获取活动详情页抽奖状态 |
 | POST | `/api/lottery/draw` | 校验口令并抽奖 |
+| POST | `/api/lottery/redemption-qr` | 为当前用户的待核销奖品生成 120 秒动态二维码 |
 | GET | `/api/lottery/my-result` | 获取用户抽奖结果 |
 | GET | `/api/lottery/my-prizes` | 获取我的中奖奖品与核销状态 |
 | POST | `/api/notifications/consent` | 保存用户主动订阅结果 |

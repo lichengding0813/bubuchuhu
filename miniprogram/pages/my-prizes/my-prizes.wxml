@@ -27,6 +27,18 @@
         <view><text class="code-label">现场核销码</text><text class="code-value">{{item.redeem_code}}</text></view>
         <text class="copy">复制</text>
       </view>
+      <view class="qr-entry" wx:if="{{item.redemption_status === 0}}" data-record-id="{{item.record_id}}" data-prize-name="{{item.prize_name}}" catchtap="showQrCode">出示核销二维码</view>
     </view>
   </view>
 </view>
+
+<van-popup show="{{showQr}}" round position="center" custom-style="width:86%;" bind:close="closeQrCode">
+  <view class="qr-panel">
+    <text class="qr-panel-title">{{qrPrize.prize_name}}</text>
+    <canvas wx:if="{{qrReady}}" class="qr-canvas" canvas-id="myPrizeRedemptionQr"></canvas>
+    <view class="qr-state" wx:elif="{{qrLoading}}"><van-loading size="24px">生成二维码</van-loading></view>
+    <view class="qr-state retry" wx:else bindtap="refreshQrCode">{{qrError || '点击生成核销二维码'}}</view>
+    <text class="qr-countdown" wx:if="{{qrReady}}">{{qrCountdown}} 秒后自动刷新</text>
+    <button class="qr-close" bindtap="closeQrCode">关闭</button>
+  </view>
+</van-popup>

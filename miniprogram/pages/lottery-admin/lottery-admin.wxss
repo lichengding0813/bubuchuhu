@@ -120,5 +120,9 @@ page { background: #f4f8fb; color: #173f5c; }
 .redeem-panel { display: flex; align-items: center; flex-direction: column; padding: 26px 22px 22px; background: #fff; }
 .redeem-icon { display: flex; width: 58px; height: 58px; align-items: center; justify-content: center; margin-bottom: 12px; border-radius: 50%; background: #eaf6fd; }
 .redeem-hint { margin: 7px 0 16px; color: #8ca2b2; font-size: 10px; }
+.scan-button { display: flex; width: 100%; height: 45px; align-items: center; justify-content: center; gap: 7px; padding: 0; border: 0; border-radius: 23px; color: #fff; background: #4d9fd7; font-size: 12px; font-weight: 700; line-height: 45px; }
+.scan-button::after { display: none; }
+.scan-button[disabled] { color: rgba(255,255,255,.78); background: #9fc8e2; }
+.redeem-divider { margin: 13px 0 9px; color: #9aabb7; font-size: 9px; }
 .redeem-input { width: 100%; height: 45px; padding: 0 12px; margin-bottom: 14px; text-align: center; letter-spacing: 1px; }
 .password-editor { width: 100%; min-height: 76px; padding: 11px 12px; margin: 16px 0 14px; border: 1px solid #dbe8f1; border-radius: 13px; box-sizing: border-box; color: #214b69; background: #fafdff; font-size: 13px; line-height: 1.5; text-align: left; }
