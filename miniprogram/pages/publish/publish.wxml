@@ -10,7 +10,7 @@
         <van-icon name="success" wx:if="{{!isOfficialMode}}" color="#4d9fd7" size="18px" />
       </view>
       <view class="publish-mode-option {{isOfficialMode ? 'active' : ''}}" data-mode="official" bindtap="onPublishModeChange">
-        <image class="publish-mode-mascot" src="/images/official-badge.png" mode="aspectFit" />
+        <image class="publish-mode-mascot" src="cloud://prod-3gktwx67d1dd1e76.7072-prod-3gktwx67d1dd1e76-1392222183/official-badge.png" mode="aspectFit" />
         <view class="publish-mode-content">
           <text class="publish-mode-name">官方活动</text>
         </view>
@@ -19,7 +19,7 @@
     </view>
   </view>
   <view class="official-publish-banner" wx:if="{{isOfficialMode}}">
-    <image class="official-banner-v" src="/images/official-badge.png" mode="aspectFit" />
+    <image class="official-banner-v" src="cloud://prod-3gktwx67d1dd1e76.7072-prod-3gktwx67d1dd1e76-1392222183/official-badge.png" mode="aspectFit" />
     <view>
       <view class="official-banner-title">官方活动</view>
       <view class="official-banner-desc">保存后直接发布，全部官方账号均可查看和修改</view>

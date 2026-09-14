@@ -6,7 +6,7 @@
         <open-data type="userAvatarUrl" wx:if="{{!userInfo.avatarUrl}}"></open-data>
         <image src="{{userInfo.avatarUrl}}" wx:else mode="aspectFill"></image>
       </view>
-      <image class="profile-official-v" wx:if="{{userInfo.isAdmin === 1 || userInfo.isOfficial === 1}}" src="/images/official-badge.png" mode="aspectFit" />
+      <image class="profile-official-v" wx:if="{{userInfo.isAdmin === 1 || userInfo.isOfficial === 1}}" src="cloud://prod-3gktwx67d1dd1e76.7072-prod-3gktwx67d1dd1e76-1392222183/official-badge.png" mode="aspectFit" />
     </view>
     <view class="user-info">
       <view class="user-name-row">

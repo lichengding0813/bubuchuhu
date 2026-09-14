@@ -59,7 +59,7 @@
       </view>
 
       <view class="official-corner official-chip" wx:if="{{item.isOfficial}}">
-        <image class="official-mascot official-mascot--tiny" src="/images/official-badge.png" mode="aspectFit" />
+        <image class="official-mascot official-mascot--tiny" src="cloud://prod-3gktwx67d1dd1e76.7072-prod-3gktwx67d1dd1e76-1392222183/official-badge.png" mode="aspectFit" />
         <text>官方</text>
       </view>
 

@@ -41,7 +41,7 @@
     <view class="section-heading">
       <text class="section-title">发现活动</text>
       <view class="official-filter {{filterOfficial ? 'active' : ''}}" bindtap="onToggleOfficial">
-        <image class="official-mascot official-mascot--tiny" src="/images/official-badge.png" mode="aspectFit" />
+        <image class="official-mascot official-mascot--tiny" src="cloud://prod-3gktwx67d1dd1e76.7072-prod-3gktwx67d1dd1e76-1392222183/official-badge.png" mode="aspectFit" />
         <text>只看官方</text>
       </view>
     </view>
@@ -85,7 +85,7 @@
         </view>
 
         <view class="official-corner official-chip" wx:if="{{item.isOfficial}}">
-          <image class="official-mascot official-mascot--tiny" src="/images/official-badge.png" mode="aspectFit" />
+          <image class="official-mascot official-mascot--tiny" src="cloud://prod-3gktwx67d1dd1e76.7072-prod-3gktwx67d1dd1e76-1392222183/official-badge.png" mode="aspectFit" />
           <text>官方</text>
         </view>
 

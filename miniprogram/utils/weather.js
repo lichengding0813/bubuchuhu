@@ -1,4 +1,4 @@
-const WEATHER_ICON_BASE = '/images/weather';
+const WEATHER_ICON_BASE = 'cloud://prod-3gktwx67d1dd1e76.7072-prod-3gktwx67d1dd1e76-1392222183/weather';
 
 function getWeatherIcon(weatherText) {
   const text = String(weatherText || '').trim();
