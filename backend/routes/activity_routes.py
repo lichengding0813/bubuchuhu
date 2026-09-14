@@ -530,6 +530,8 @@ def get_activity_list():
     difficulty = request.args.get('difficulty')
     travel_type = request.args.get('travel')
     official = request.args.get('official')
+    available = request.args.get('available')
+    activity_date = request.args.get('activity_date')
     sort = request.args.get('sort', '')
     openid = request.headers.get('X-Wx-OpenId')
 
@@ -586,14 +588,55 @@ def get_activity_list():
             elif normalized_official not in ('', '0', 'false'):
                 return jsonify({'code': 400, 'msg': '官方活动筛选参数无效'})
 
+        if available is not None:
+            normalized_available = str(available).strip().lower()
+            if normalized_available in ('1', 'true'):
+                where_clause += """
+                    AND a.status = 1
+                    AND (a.deadline IS NULL OR a.deadline > NOW())
+                    AND COALESCE((
+                        SELECT SUM(ap_available.companion_count + 1)
+                        FROM activity_participants ap_available
+                        WHERE ap_available.activity_id = a.id AND ap_available.status = 1
+                    ), 0) < a.max_participants
+                    AND NOT EXISTS (
+                        SELECT 1 FROM activity_participants ap_mine
+                        WHERE ap_mine.activity_id = a.id
+                          AND ap_mine.user_openid = %s AND ap_mine.status = 1
+                    )
+                """
+                params.append(openid or '')
+            elif normalized_available not in ('', '0', 'false'):
+                return jsonify({'code': 400, 'msg': '可报名筛选参数无效'})
+
+        if activity_date:
+            try:
+                date_start = datetime.strptime(str(activity_date), '%Y-%m-%d')
+            except (TypeError, ValueError):
+                return jsonify({'code': 400, 'msg': '活动时间参数无效'})
+            where_clause += " AND a.activity_time >= %s AND a.activity_time < %s"
+            params.extend([date_start, date_start + timedelta(days=1)])
+
         if sort not in ('', 'end_time'):
             return jsonify({'code': 400, 'msg': '活动排序参数无效'})
 
         order_clause = 'a.created_at DESC'
         if sort == 'end_time':
             effective_end_time = 'COALESCE(a.end_time, DATE_ADD(a.activity_time, INTERVAL 12 HOUR))'
-            direction = 'DESC' if tab == 'ended' else 'ASC'
-            order_clause = f'{effective_end_time} {direction}, a.id {direction}'
+            if tab == 'ended':
+                order_clause = f'{effective_end_time} DESC, a.id DESC'
+            else:
+                registration_rank = """
+                    CASE
+                        WHEN a.status = 1
+                         AND (a.deadline IS NULL OR a.deadline > NOW())
+                         AND COALESCE(pc.participant_count, 0) < a.max_participants
+                         AND mine.id IS NULL THEN 0
+                        WHEN mine.id IS NOT NULL THEN 1
+                        ELSE 2
+                    END
+                """
+                order_clause = f'{registration_rank} ASC, {effective_end_time} ASC, a.id ASC'
 
         # 查询总数
         cursor.execute(f"SELECT COUNT(*) as total FROM activities a {where_clause}", params)

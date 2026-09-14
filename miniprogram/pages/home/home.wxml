@@ -56,6 +56,25 @@
         <text class="tab-count" wx:if="{{endedCount > 0}}">{{endedCount}}</text>
       </view>
     </view>
+
+    <scroll-view class="activity-filter-scroll" scroll-x enable-flex show-scrollbar="{{false}}">
+      <view class="activity-filters">
+        <view wx:if="{{currentTab === 'ongoing'}}" class="activity-filter {{filterAvailable ? 'active' : ''}}" bindtap="onToggleAvailable">可报名</view>
+        <picker mode="selector" range="{{difficultyOptions}}" range-key="label" value="{{filterDifficultyIndex}}" bindchange="onDifficultyChange">
+          <view class="activity-filter {{filterDifficulty !== '' ? 'active' : ''}}">
+            <text>{{difficultyOptions[filterDifficultyIndex].label}}</text>
+            <van-icon name="arrow-down" size="10px" />
+          </view>
+        </picker>
+        <picker mode="date" value="{{filterActivityDate}}" bindchange="onActivityDateChange">
+          <view class="activity-filter {{filterActivityDate ? 'active' : ''}}">
+            <text>{{filterActivityDateLabel || '活动时间'}}</text>
+            <van-icon name="arrow-down" size="10px" />
+          </view>
+        </picker>
+        <view class="activity-filter reset" wx:if="{{filterAvailable || filterDifficulty !== '' || filterActivityDate}}" bindtap="onResetActivityFilters">重置</view>
+      </view>
+    </scroll-view>
   </view>
 
   <!-- 活动列表 -->
@@ -68,8 +87,8 @@
       <view class="empty-icon-wrap">
         <van-icon name="todo-list-o" size="48" color="#9bb8cc" />
       </view>
-      <text class="empty-title">{{filterOfficial ? '暂时没有官方活动' : (currentTab === 'ongoing' ? '近期还没有活动' : '暂时没有往期活动')}}</text>
-      <text class="empty-hint" wx:if="{{currentTab === 'ongoing' && !filterOfficial}}">不如发起一场新的出发</text>
+      <text class="empty-title">{{filterAvailable || filterDifficulty !== '' || filterActivityDate ? '没有符合筛选的活动' : (filterOfficial ? '暂时没有官方活动' : (currentTab === 'ongoing' ? '近期还没有活动' : '暂时没有往期活动'))}}</text>
+      <text class="empty-hint" wx:if="{{currentTab === 'ongoing' && !filterOfficial && !filterAvailable && filterDifficulty === '' && !filterActivityDate}}">不如发起一场新的出发</text>
     </view>
 
     <block wx:else>

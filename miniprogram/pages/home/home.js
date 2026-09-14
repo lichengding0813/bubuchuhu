@@ -12,9 +12,20 @@ Page({
     showScrollTop: false,
     userInfo: null,
     isLoading: false,
-    // 搜索筛选
+    // 活动筛选
+    filterAvailable: false,
     filterDifficulty: '',
-    filterTravel: '',
+    filterDifficultyIndex: 0,
+    difficultyOptions: [
+      { label: '难度不限', value: '' },
+      { label: '1星', value: 1 },
+      { label: '2星', value: 2 },
+      { label: '3星', value: 3 },
+      { label: '4星', value: 4 },
+      { label: '5星', value: 5 }
+    ],
+    filterActivityDate: '',
+    filterActivityDateLabel: '',
     filterOfficial: false,
     // 验证弹窗相关
     showVerifyDialog: false,
@@ -151,7 +162,9 @@ Page({
 
   // 获取活动列表（分页 + tab + 筛选）
   async getActivityList(reset = false) {
-    if (this.data.isLoading) return;
+    if (!reset && this.data.isLoading) return;
+    const requestId = (this.activityRequestId || 0) + 1;
+    this.activityRequestId = requestId;
     if (reset) {
       this.setData({ page: 1, hasMore: true, activityList: [], isLoading: true });
     } else {
@@ -159,10 +172,19 @@ Page({
     }
 
     try {
-      const { currentTab, page, pageSize, filterDifficulty, filterTravel, filterOfficial } = this.data;
+      const {
+        currentTab,
+        page,
+        pageSize,
+        filterAvailable,
+        filterDifficulty,
+        filterActivityDate,
+        filterOfficial
+      } = this.data;
       const params = { page, size: pageSize, tab: currentTab, sort: 'end_time' };
+      if (filterAvailable && currentTab === 'ongoing') params.available = 1;
       if (filterDifficulty !== '') params.difficulty = filterDifficulty;
-      if (filterTravel !== '') params.travel = filterTravel;
+      if (filterActivityDate) params.activity_date = filterActivityDate;
       if (filterOfficial) params.official = 1;
 
       let result;
@@ -170,6 +192,7 @@ Page({
       if (reset) {
         const pairedTab = currentTab === 'ongoing' ? 'ended' : 'ongoing';
         const pairedParams = { ...params, page: 1, size: 1, tab: pairedTab };
+        delete pairedParams.available;
         [result, pairedTabResult] = await Promise.all([
           get('/api/activity/list', params, { silent: true }),
           get('/api/activity/list', pairedParams, { silent: true }).catch((error) => {
@@ -181,6 +204,7 @@ Page({
         result = await get('/api/activity/list', params, { silent: true });
       }
 
+      if (requestId !== this.activityRequestId) return;
       if (result.code === 200) {
         const activities = result.data.list || [];
         const total = result.data.total || 0;
@@ -189,6 +213,8 @@ Page({
           const participantCount = Number(item.participant_count) || 0;
           const remainCount = Math.max(item.max_participants - participantCount, 0);
           const registrationClosed = Boolean(item.registration_closed) || this.isTimeReached(item.deadline);
+          const hasRegistered = Boolean(item.has_registered);
+          const status = Number(item.status);
           return {
             id: item.id,
             name: item.name,
@@ -198,18 +224,23 @@ Page({
             totalCount: item.max_participants,
             participantCount,
             difficulty: this.getDifficultyText(item.difficulty),
-            statusBadge: this.getStatusBadge(item.status, remainCount, item.has_registered, registrationClosed),
-            statusClass: Number(item.status) === 1
+            statusBadge: this.getStatusBadge(status, remainCount, hasRegistered, registrationClosed),
+            statusClass: status === 1
               ? (registrationClosed ? 'closed' : (remainCount <= 0 ? 'full' : 'ongoing'))
-              : this.getStatusClass(item.status),
+              : this.getStatusClass(status),
             coverUrl: item.cover_url,
-            has_registered: item.has_registered,
+            has_registered: hasRegistered,
             isOfficial: Number(item.is_official) === 1,
-            isEnded: Number(item.status) === 4
+            isEnded: status === 4,
+            _registrationRank: status === 1 && !hasRegistered && !registrationClosed && remainCount > 0
+              ? 0
+              : (hasRegistered ? 1 : 2),
+            _sortTime: this.getActivitySortTime(item)
           };
         });
 
-        const newList = reset ? formattedList : [...this.data.activityList, ...formattedList];
+        const mergedList = reset ? formattedList : [...this.data.activityList, ...formattedList];
+        const newList = this.sortActivityList(mergedList, currentTab);
         const countUpdates = {
           [currentTab === 'ongoing' ? 'ongoingCount' : 'endedCount']: total
         };
@@ -226,6 +257,7 @@ Page({
         this.setData({ isLoading: false });
       }
     } catch (error) {
+      if (requestId !== this.activityRequestId) return;
       console.error('获取活动列表失败:', error);
       this.setData({ isLoading: false });
     }
@@ -235,7 +267,10 @@ Page({
   switchTab(e) {
     const tab = e.currentTarget.dataset.tab;
     if (tab === this.data.currentTab) return;
-    this.setData({ currentTab: tab }, () => this.getActivityList(true));
+    this.setData({
+      currentTab: tab,
+      filterAvailable: tab === 'ongoing' ? this.data.filterAvailable : false
+    }, () => this.getActivityList(true));
   },
 
   // 下拉刷新
@@ -324,6 +359,25 @@ Page({
     const t = this.parseTimeStr(timeStr);
     if (!t) return false;
     return Date.now() >= new Date(t.year, t.month - 1, t.day, t.hour, t.minute, t.second || 0).getTime();
+  },
+
+  getActivitySortTime(activity) {
+    const source = activity.end_time || activity.activity_time;
+    const t = this.parseTimeStr(source);
+    if (!t) return 0;
+    const timestamp = new Date(t.year, t.month - 1, t.day, t.hour, t.minute, t.second || 0).getTime();
+    return activity.end_time ? timestamp : timestamp + 12 * 60 * 60 * 1000;
+  },
+
+  sortActivityList(list, tab) {
+    return [...list].sort((left, right) => {
+      if (tab === 'ended') {
+        return right._sortTime - left._sortTime || Number(right.id) - Number(left.id);
+      }
+      return left._registrationRank - right._registrationRank
+        || left._sortTime - right._sortTime
+        || Number(left.id) - Number(right.id);
+    });
   },
 
   // 获取难度文本
@@ -520,14 +574,35 @@ Page({
   },
 
   // ====== 活动筛选 ======
-  onFilterDifficulty(e) {
-    const value = e.currentTarget.dataset.value;
-    this.setData({ filterDifficulty: value === '' ? '' : value }, () => this.getActivityList(true));
+  onToggleAvailable() {
+    this.setData({ filterAvailable: !this.data.filterAvailable }, () => this.getActivityList(true));
   },
 
-  onFilterTravel(e) {
-    const value = e.currentTarget.dataset.value;
-    this.setData({ filterTravel: value === '' ? '' : parseInt(value) }, () => this.getActivityList(true));
+  onDifficultyChange(e) {
+    const index = Number(e.detail.value) || 0;
+    const option = this.data.difficultyOptions[index] || this.data.difficultyOptions[0];
+    this.setData({
+      filterDifficultyIndex: index,
+      filterDifficulty: option.value
+    }, () => this.getActivityList(true));
+  },
+
+  onActivityDateChange(e) {
+    const value = e.detail.value || '';
+    this.setData({
+      filterActivityDate: value,
+      filterActivityDateLabel: value ? value.slice(5).replace('-', '/') : ''
+    }, () => this.getActivityList(true));
+  },
+
+  onResetActivityFilters() {
+    this.setData({
+      filterAvailable: false,
+      filterDifficulty: '',
+      filterDifficultyIndex: 0,
+      filterActivityDate: '',
+      filterActivityDateLabel: ''
+    }, () => this.getActivityList(true));
   },
 
   onToggleOfficial() {
