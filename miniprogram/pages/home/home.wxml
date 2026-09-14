@@ -40,10 +40,6 @@
   <view class="activity-explore">
     <view class="section-heading">
       <text class="section-title">发现活动</text>
-      <view class="official-filter {{filterOfficial ? 'active' : ''}}" bindtap="onToggleOfficial">
-        <image class="official-mascot official-mascot--tiny" src="cloud://prod-3gktwx67d1dd1e76.7072-prod-3gktwx67d1dd1e76-1392222183/official-badge.png" mode="aspectFit" />
-        <text>只看官方</text>
-      </view>
     </view>
 
     <view class="home-tabs">
@@ -60,6 +56,10 @@
     <scroll-view class="activity-filter-scroll" scroll-x enable-flex show-scrollbar="{{false}}">
       <view class="activity-filters">
         <view wx:if="{{currentTab === 'ongoing'}}" class="activity-filter {{filterAvailable ? 'active' : ''}}" bindtap="onToggleAvailable">可报名</view>
+        <view class="activity-filter {{filterOfficial ? 'active' : ''}}" bindtap="onToggleOfficial">
+          <image class="official-mascot official-mascot--tiny" src="cloud://prod-3gktwx67d1dd1e76.7072-prod-3gktwx67d1dd1e76-1392222183/official-badge.png" mode="aspectFit" />
+          <text>只看官方</text>
+        </view>
         <picker mode="selector" range="{{difficultyOptions}}" range-key="label" value="{{filterDifficultyIndex}}" bindchange="onDifficultyChange">
           <view class="activity-filter {{filterDifficulty !== '' ? 'active' : ''}}">
             <text>{{difficultyOptions[filterDifficultyIndex].label}}</text>
@@ -72,7 +72,7 @@
             <van-icon name="arrow-down" size="10px" />
           </view>
         </picker>
-        <view class="activity-filter reset" wx:if="{{filterAvailable || filterDifficulty !== '' || filterActivityDate}}" bindtap="onResetActivityFilters">重置</view>
+        <view class="activity-filter reset" wx:if="{{filterAvailable || filterOfficial || filterDifficulty !== '' || filterActivityDate}}" bindtap="onResetActivityFilters">重置</view>
       </view>
     </scroll-view>
   </view>

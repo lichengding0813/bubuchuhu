@@ -598,6 +598,7 @@ Page({
   onResetActivityFilters() {
     this.setData({
       filterAvailable: false,
+      filterOfficial: false,
       filterDifficulty: '',
       filterDifficultyIndex: 0,
       filterActivityDate: '',
