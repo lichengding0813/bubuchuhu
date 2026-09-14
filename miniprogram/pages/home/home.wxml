@@ -53,12 +53,12 @@
       </view>
     </view>
 
-    <scroll-view class="activity-filter-scroll" scroll-x enable-flex show-scrollbar="{{false}}">
+    <view class="activity-filter-row">
       <view class="activity-filters">
         <view wx:if="{{currentTab === 'ongoing'}}" class="activity-filter {{filterAvailable ? 'active' : ''}}" bindtap="onToggleAvailable">可报名</view>
         <view class="activity-filter {{filterOfficial ? 'active' : ''}}" bindtap="onToggleOfficial">
           <image class="official-mascot official-mascot--tiny" src="cloud://prod-3gktwx67d1dd1e76.7072-prod-3gktwx67d1dd1e76-1392222183/official-badge.png" mode="aspectFit" />
-          <text>只看官方</text>
+          <text>官方</text>
         </view>
         <picker mode="selector" range="{{difficultyOptions}}" range-key="label" value="{{filterDifficultyIndex}}" bindchange="onDifficultyChange">
           <view class="activity-filter {{filterDifficulty !== '' ? 'active' : ''}}">
@@ -66,15 +66,15 @@
             <van-icon name="arrow-down" size="10px" />
           </view>
         </picker>
-        <picker mode="date" value="{{filterActivityDate}}" bindchange="onActivityDateChange">
-          <view class="activity-filter {{filterActivityDate ? 'active' : ''}}">
-            <text>{{filterActivityDateLabel || '活动时间'}}</text>
+        <picker mode="date" fields="month" value="{{filterActivityMonth}}" bindchange="onActivityMonthChange">
+          <view class="activity-filter {{filterActivityMonth ? 'active' : ''}}">
+            <text>{{filterActivityMonthLabel || '月份'}}</text>
             <van-icon name="arrow-down" size="10px" />
           </view>
         </picker>
-        <view class="activity-filter reset" wx:if="{{filterAvailable || filterOfficial || filterDifficulty !== '' || filterActivityDate}}" bindtap="onResetActivityFilters">重置</view>
+        <view class="activity-filter reset" wx:if="{{filterAvailable || filterOfficial || filterDifficulty !== '' || filterActivityMonth}}" bindtap="onResetActivityFilters">重置</view>
       </view>
-    </scroll-view>
+    </view>
   </view>
 
   <!-- 活动列表 -->
@@ -87,8 +87,8 @@
       <view class="empty-icon-wrap">
         <van-icon name="todo-list-o" size="48" color="#9bb8cc" />
       </view>
-      <text class="empty-title">{{filterAvailable || filterDifficulty !== '' || filterActivityDate ? '没有符合筛选的活动' : (filterOfficial ? '暂时没有官方活动' : (currentTab === 'ongoing' ? '近期还没有活动' : '暂时没有往期活动'))}}</text>
-      <text class="empty-hint" wx:if="{{currentTab === 'ongoing' && !filterOfficial && !filterAvailable && filterDifficulty === '' && !filterActivityDate}}">不如发起一场新的出发</text>
+      <text class="empty-title">{{filterAvailable || filterDifficulty !== '' || filterActivityMonth ? '没有符合筛选的活动' : (filterOfficial ? '暂时没有官方活动' : (currentTab === 'ongoing' ? '近期还没有活动' : '暂时没有往期活动'))}}</text>
+      <text class="empty-hint" wx:if="{{currentTab === 'ongoing' && !filterOfficial && !filterAvailable && filterDifficulty === '' && !filterActivityMonth}}">不如发起一场新的出发</text>
     </view>
 
     <block wx:else>

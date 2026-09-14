@@ -532,6 +532,7 @@ def get_activity_list():
     official = request.args.get('official')
     available = request.args.get('available')
     activity_date = request.args.get('activity_date')
+    activity_month = request.args.get('activity_month')
     sort = request.args.get('sort', '')
     openid = request.headers.get('X-Wx-OpenId')
 
@@ -616,6 +617,18 @@ def get_activity_list():
                 return jsonify({'code': 400, 'msg': '活动时间参数无效'})
             where_clause += " AND a.activity_time >= %s AND a.activity_time < %s"
             params.extend([date_start, date_start + timedelta(days=1)])
+
+        if activity_month:
+            try:
+                month_start = datetime.strptime(str(activity_month), '%Y-%m')
+            except (TypeError, ValueError):
+                return jsonify({'code': 400, 'msg': '活动月份参数无效'})
+            if month_start.month == 12:
+                month_end = month_start.replace(year=month_start.year + 1, month=1)
+            else:
+                month_end = month_start.replace(month=month_start.month + 1)
+            where_clause += " AND a.activity_time >= %s AND a.activity_time < %s"
+            params.extend([month_start, month_end])
 
         if sort not in ('', 'end_time'):
             return jsonify({'code': 400, 'msg': '活动排序参数无效'})

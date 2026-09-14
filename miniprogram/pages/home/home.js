@@ -17,15 +17,15 @@ Page({
     filterDifficulty: '',
     filterDifficultyIndex: 0,
     difficultyOptions: [
-      { label: '难度不限', value: '' },
-      { label: '1星', value: 1 },
-      { label: '2星', value: 2 },
-      { label: '3星', value: 3 },
-      { label: '4星', value: 4 },
-      { label: '5星', value: 5 }
+      { label: '⭐', value: '' },
+      { label: '1⭐', value: 1 },
+      { label: '2⭐', value: 2 },
+      { label: '3⭐', value: 3 },
+      { label: '4⭐', value: 4 },
+      { label: '5⭐', value: 5 }
     ],
-    filterActivityDate: '',
-    filterActivityDateLabel: '',
+    filterActivityMonth: '',
+    filterActivityMonthLabel: '',
     filterOfficial: false,
     // 验证弹窗相关
     showVerifyDialog: false,
@@ -178,13 +178,13 @@ Page({
         pageSize,
         filterAvailable,
         filterDifficulty,
-        filterActivityDate,
+        filterActivityMonth,
         filterOfficial
       } = this.data;
       const params = { page, size: pageSize, tab: currentTab, sort: 'end_time' };
       if (filterAvailable && currentTab === 'ongoing') params.available = 1;
       if (filterDifficulty !== '') params.difficulty = filterDifficulty;
-      if (filterActivityDate) params.activity_date = filterActivityDate;
+      if (filterActivityMonth) params.activity_month = filterActivityMonth;
       if (filterOfficial) params.official = 1;
 
       let result;
@@ -587,11 +587,11 @@ Page({
     }, () => this.getActivityList(true));
   },
 
-  onActivityDateChange(e) {
+  onActivityMonthChange(e) {
     const value = e.detail.value || '';
     this.setData({
-      filterActivityDate: value,
-      filterActivityDateLabel: value ? value.slice(5).replace('-', '/') : ''
+      filterActivityMonth: value,
+      filterActivityMonthLabel: value ? value.slice(2).replace('-', '/') : ''
     }, () => this.getActivityList(true));
   },
 
@@ -601,8 +601,8 @@ Page({
       filterOfficial: false,
       filterDifficulty: '',
       filterDifficultyIndex: 0,
-      filterActivityDate: '',
-      filterActivityDateLabel: ''
+      filterActivityMonth: '',
+      filterActivityMonthLabel: ''
     }, () => this.getActivityList(true));
   },
 

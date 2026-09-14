@@ -185,26 +185,28 @@ page {
   background: #67adde;
 }
 
-.activity-filter-scroll {
+.activity-filter-row {
   width: 100%;
   padding-bottom: 16px;
-  white-space: nowrap;
 }
 
 .activity-filters {
-  display: inline-flex;
+  display: flex;
+  width: 100%;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   padding: 0 16px;
+  box-sizing: border-box;
 }
 
 .activity-filter {
   display: inline-flex;
+  flex-shrink: 0;
   height: 30px;
   align-items: center;
   justify-content: center;
   gap: 4px;
-  padding: 0 12px;
+  padding: 0 10px;
   border: 1px solid #dbe8f1;
   border-radius: 16px;
   box-sizing: border-box;
@@ -226,6 +228,8 @@ page {
 }
 
 .activity-filter.reset {
+  margin-left: auto;
+  padding: 0 2px;
   border-color: transparent;
   color: #7d94a4;
   background: transparent;
