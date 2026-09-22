@@ -24,11 +24,9 @@ def _flag(value, default=1):
 
 
 def valid_asset_url(value):
-    """Only app-bundled assets and WeChat cloud files may be rendered."""
+    """Ribbon-wall assets must live in WeChat cloud storage."""
     value = str(value or '').strip()
-    return bool(value) and len(value) <= 500 and (
-        value.startswith('/images/') or value.startswith('cloud://')
-    )
+    return bool(value) and len(value) <= 500 and value.startswith('cloud://')
 
 
 def normalize_charms(values):

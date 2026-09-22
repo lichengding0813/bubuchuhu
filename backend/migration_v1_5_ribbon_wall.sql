@@ -71,14 +71,14 @@ CREATE TABLE IF NOT EXISTS `user_ribbons` (
 INSERT IGNORE INTO `ribbons`
   (`id`, `name`, `description`, `image_url`, `sort_order`, `is_active`)
 VALUES
-  (1, '步步出沪｜走过当时心愿', '生如浮萍般卑微\n爱却苍穹般壮烈', '/images/ribbons/ribbon-01.webp', 1, 1),
-  (2, '步步出沪｜上海WMLS集合', '总要有一首我的歌\n大声唱过\n再看天地辽阔', '/images/ribbons/ribbon-02.webp', 2, 1),
-  (3, '圣诞限定｜爱的奇迹', '原来世上真的有圣诞老人\n会把爱的奇迹给勇敢的人', '/images/ribbons/ribbon-03.webp', 3, 1),
-  (4, 'OAOA｜去疯去爱去浪费', 'OAOA～\nOAOA～', '/images/ribbons/ribbon-04.webp', 4, 1),
-  (5, 'OAOA｜别想别怕别后退', '我相信摇滚\n就能万岁🎸', '/images/ribbons/ribbon-05.webp', 5, 1),
-  (6, '夏日溯溪｜知足的快乐', '怎么去拥有一道彩虹🌈\n怎么去拥抱一夏天的风🍉', '/images/ribbons/ribbon-06.webp', 6, 1),
-  (7, '泼水大赛｜拥抱一夏天的风', '彩蛋🥚\n步步出沪第一届泼鸡大赛\n圆满落幕🐤', '/images/ribbons/ribbon-07.webp', 7, 1),
-  (8, '顽固｜走不到脚抽筋', '我身在\n当时你\n幻想的\n未来里', '/images/ribbons/ribbon-08.webp', 8, 1);
+  (1, '步步出沪｜走过当时心愿', '生如浮萍般卑微\n爱却苍穹般壮烈', 'cloud://prod-3gktwx67d1dd1e76.7072-prod-3gktwx67d1dd1e76-1392222183/ribbon-wall/ribbons/ribbon-01.webp', 1, 1),
+  (2, '步步出沪｜上海WMLS集合', '总要有一首我的歌\n大声唱过\n再看天地辽阔', 'cloud://prod-3gktwx67d1dd1e76.7072-prod-3gktwx67d1dd1e76-1392222183/ribbon-wall/ribbons/ribbon-02.webp', 2, 1),
+  (3, '圣诞限定｜爱的奇迹', '原来世上真的有圣诞老人\n会把爱的奇迹给勇敢的人', 'cloud://prod-3gktwx67d1dd1e76.7072-prod-3gktwx67d1dd1e76-1392222183/ribbon-wall/ribbons/ribbon-03.webp', 3, 1),
+  (4, 'OAOA｜去疯去爱去浪费', 'OAOA～\nOAOA～', 'cloud://prod-3gktwx67d1dd1e76.7072-prod-3gktwx67d1dd1e76-1392222183/ribbon-wall/ribbons/ribbon-04.webp', 4, 1),
+  (5, 'OAOA｜别想别怕别后退', '我相信摇滚\n就能万岁🎸', 'cloud://prod-3gktwx67d1dd1e76.7072-prod-3gktwx67d1dd1e76-1392222183/ribbon-wall/ribbons/ribbon-05.webp', 5, 1),
+  (6, '夏日溯溪｜知足的快乐', '怎么去拥有一道彩虹🌈\n怎么去拥抱一夏天的风🍉', 'cloud://prod-3gktwx67d1dd1e76.7072-prod-3gktwx67d1dd1e76-1392222183/ribbon-wall/ribbons/ribbon-06.webp', 6, 1),
+  (7, '泼水大赛｜拥抱一夏天的风', '彩蛋🥚\n步步出沪第一届泼鸡大赛\n圆满落幕🐤', 'cloud://prod-3gktwx67d1dd1e76.7072-prod-3gktwx67d1dd1e76-1392222183/ribbon-wall/ribbons/ribbon-07.webp', 7, 1),
+  (8, '顽固｜走不到脚抽筋', '我身在\n当时你\n幻想的\n未来里', 'cloud://prod-3gktwx67d1dd1e76.7072-prod-3gktwx67d1dd1e76-1392222183/ribbon-wall/ribbons/ribbon-08.webp', 8, 1);
 
 INSERT IGNORE INTO `ribbon_walls`
   (`id`, `title`, `subtitle`, `sort_order`, `is_active`)
@@ -93,12 +93,27 @@ VALUES
 
 INSERT IGNORE INTO `ribbon_wall_charms` (`wall_id`, `slot_index`, `image_url`)
 VALUES
-  (1, 1, '/images/ribbon-charms/ball-pink.png'),
-  (1, 2, '/images/ribbon-charms/carrot-friend.png'),
-  (1, 3, '/images/ribbon-charms/ball-red.png'),
-  (2, 1, '/images/ribbon-charms/ball-blue.png'),
-  (2, 2, '/images/ribbon-charms/ball-green.png'),
-  (2, 3, '/images/ribbon-charms/ball-yellow.png');
+  (1, 1, 'cloud://prod-3gktwx67d1dd1e76.7072-prod-3gktwx67d1dd1e76-1392222183/ribbon-wall/charms/ball-pink.png'),
+  (1, 2, 'cloud://prod-3gktwx67d1dd1e76.7072-prod-3gktwx67d1dd1e76-1392222183/ribbon-wall/charms/carrot-friend.png'),
+  (1, 3, 'cloud://prod-3gktwx67d1dd1e76.7072-prod-3gktwx67d1dd1e76-1392222183/ribbon-wall/charms/ball-red.png'),
+  (2, 1, 'cloud://prod-3gktwx67d1dd1e76.7072-prod-3gktwx67d1dd1e76-1392222183/ribbon-wall/charms/ball-blue.png'),
+  (2, 2, 'cloud://prod-3gktwx67d1dd1e76.7072-prod-3gktwx67d1dd1e76-1392222183/ribbon-wall/charms/ball-green.png'),
+  (2, 3, 'cloud://prod-3gktwx67d1dd1e76.7072-prod-3gktwx67d1dd1e76-1392222183/ribbon-wall/charms/ball-yellow.png');
+
+-- 兼容已执行过早期脚本的数据库：仅替换旧的小程序内置资源地址。
+UPDATE `ribbons`
+SET `image_url` = CONCAT(
+  'cloud://prod-3gktwx67d1dd1e76.7072-prod-3gktwx67d1dd1e76-1392222183/ribbon-wall/ribbons/',
+  SUBSTRING_INDEX(`image_url`, '/', -1)
+)
+WHERE `image_url` LIKE '/images/ribbons/ribbon-%';
+
+UPDATE `ribbon_wall_charms`
+SET `image_url` = CONCAT(
+  'cloud://prod-3gktwx67d1dd1e76.7072-prod-3gktwx67d1dd1e76-1392222183/ribbon-wall/charms/',
+  SUBSTRING_INDEX(`image_url`, '/', -1)
+)
+WHERE `image_url` LIKE '/images/ribbon-charms/%';
 
 SELECT `TABLE_NAME`
 FROM `INFORMATION_SCHEMA`.`TABLES`

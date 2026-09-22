@@ -19,7 +19,7 @@ class RibbonDomainTests(unittest.TestCase):
         payload = normalize_wall_payload({
             'title': '飘带墙 03',
             'subtitle': '新的一面墙',
-            'charm_urls': ['/images/a.png', '', 'cloud://env/b.png'],
+            'charm_urls': ['cloud://env/a.png', '', 'cloud://env/b.png'],
         })
         self.assertEqual(payload['title'], '飘带墙 03')
         self.assertEqual(len(payload['charm_urls']), 3)
@@ -39,15 +39,18 @@ class RibbonDomainTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, '不能重复'):
             normalize_ribbon_ids([1, 1])
 
-    def test_only_bundled_or_cloud_assets_are_accepted(self):
-        self.assertTrue(valid_asset_url('/images/ribbons/one.webp'))
+    def test_only_cloud_assets_are_accepted(self):
         self.assertTrue(valid_asset_url('cloud://prod/ribbons/one.webp'))
+        self.assertFalse(valid_asset_url('/images/ribbons/one.webp'))
         self.assertFalse(valid_asset_url('https://untrusted.example/one.webp'))
         with self.assertRaisesRegex(ValueError, '有效的飘带图片'):
             normalize_ribbon_payload({'name': '测试', 'image_url': 'https://example.com/a.png'})
 
     def test_missing_charm_slots_are_padded(self):
-        self.assertEqual(normalize_charms(['/images/a.png']), ['/images/a.png', '', ''])
+        self.assertEqual(
+            normalize_charms(['cloud://env/a.png']),
+            ['cloud://env/a.png', '', ''],
+        )
 
 
 if __name__ == '__main__':

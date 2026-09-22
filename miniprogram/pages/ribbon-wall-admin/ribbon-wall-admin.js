@@ -1,13 +1,16 @@
 const { get, post, put } = require('../../utils/api');
+const { CLOUD_ASSET_PREFIX } = require('../../utils/config');
+
+const RIBBON_CLOUD_ROOT = `${CLOUD_ASSET_PREFIX}/ribbon-wall`;
 
 const CHARM_OPTIONS = [
   { label: '无挂件', value: '' },
-  { label: '粉色球', value: '/images/ribbon-charms/ball-pink.png' },
-  { label: '萝卜朋友', value: '/images/ribbon-charms/carrot-friend.png' },
-  { label: '红色球', value: '/images/ribbon-charms/ball-red.png' },
-  { label: '蓝色球', value: '/images/ribbon-charms/ball-blue.png' },
-  { label: '绿色球', value: '/images/ribbon-charms/ball-green.png' },
-  { label: '黄色球', value: '/images/ribbon-charms/ball-yellow.png' }
+  { label: '粉色球', value: `${RIBBON_CLOUD_ROOT}/charms/ball-pink.png` },
+  { label: '萝卜朋友', value: `${RIBBON_CLOUD_ROOT}/charms/carrot-friend.png` },
+  { label: '红色球', value: `${RIBBON_CLOUD_ROOT}/charms/ball-red.png` },
+  { label: '蓝色球', value: `${RIBBON_CLOUD_ROOT}/charms/ball-blue.png` },
+  { label: '绿色球', value: `${RIBBON_CLOUD_ROOT}/charms/ball-green.png` },
+  { label: '黄色球', value: `${RIBBON_CLOUD_ROOT}/charms/ball-yellow.png` }
 ];
 
 const emptyWallForm = () => ({
@@ -313,7 +316,7 @@ Page({
         : 'jpg';
       const userInfo = wx.getStorageSync('userInfo');
       const upload = await wx.cloud.uploadFile({
-        cloudPath: `ribbons/${userInfo.openId || 'admin'}_${Date.now()}.${extension}`,
+        cloudPath: `ribbon-wall/ribbons/${userInfo.openId || 'admin'}_${Date.now()}.${extension}`,
         filePath
       });
       fileID = upload.fileID;
