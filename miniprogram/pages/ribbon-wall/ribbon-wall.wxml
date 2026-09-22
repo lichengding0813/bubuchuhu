@@ -1,0 +1,107 @@
+<view class="page">
+  <view wx:if="{{isLoading}}" class="state-panel">
+    <van-loading size="34px" vertical>加载中</van-loading>
+  </view>
+
+  <view wx:elif="{{loadError}}" class="state-panel">
+    <text class="state-title">暂时无法加载</text>
+    <text class="state-copy">{{loadError}}</text>
+    <view class="state-action" bindtap="onRetry">重新加载</view>
+  </view>
+
+  <block wx:else>
+    <view class="progress-card">
+      <view class="progress-top">
+        <text>我的收集</text>
+        <view><text class="progress-number">{{litCount}}</text><text class="progress-total">/{{total}}</text></view>
+      </view>
+      <view class="progress-track"><view class="progress-fill" style="width: {{progressWidth}}%;"></view></view>
+      <text class="progress-hint">{{progressHint}}</text>
+    </view>
+
+    <view class="filter-row">
+      <view class="filter-item {{filter === 'all' ? 'active' : ''}}" data-filter="all" bindtap="onFilterTap">全部 {{total}}</view>
+      <view class="filter-item {{filter === 'lit' ? 'active' : ''}}" data-filter="lit" bindtap="onFilterTap">已点亮 {{litCount}}</view>
+      <view class="filter-item {{filter === 'unlit' ? 'active' : ''}}" data-filter="unlit" bindtap="onFilterTap">未点亮 {{total - litCount}}</view>
+    </view>
+
+    <view wx:if="{{walls.length === 0}}" class="state-panel compact">
+      <text class="state-title">还没有发布墙面</text>
+      <view wx:if="{{isAdmin}}" class="state-action" bindtap="openWallAdmin">去配置</view>
+    </view>
+
+    <block wx:else>
+      <swiper class="wall-swiper" current="{{currentWall}}" bindchange="onSwiperChange" circular="{{false}}">
+        <swiper-item wx:for="{{walls}}" wx:key="id" wx:for-item="wall">
+          <view class="wall-card">
+            <view class="wall-heading">
+              <text class="wall-title">{{wall.title}}</text>
+              <view wx:if="{{isAdmin}}" class="wall-gear" data-id="{{wall.id}}" catchtap="openWallAdmin" aria-role="button" aria-label="配置这面飘带墙">
+                <van-icon name="setting-o" size="20px" color="#2f7fa8" />
+              </view>
+            </view>
+            <text class="wall-subtitle">{{wall.subtitle}}</text>
+            <view class="wood-rod"></view>
+
+            <view class="charm-layer">
+              <view wx:for="{{wall.charms}}" wx:key="slot_index" wx:for-item="charm" class="charm" style="left: {{charm.left}}%;">
+                <view class="charm-string"></view>
+                <image class="charm-image" src="{{charm.image_url}}" mode="aspectFit" />
+              </view>
+            </view>
+
+            <view class="ribbon-layer">
+              <view wx:for="{{wall.ribbons}}" wx:key="id" wx:for-item="ribbon" wx:if="{{ribbon.visible}}" class="ribbon-touch {{ribbon.owned_status ? 'lit' : 'unlit'}}" style="left: {{ribbon.left}}%;" data-id="{{ribbon.id}}" bindtap="openDetail" aria-role="button" aria-label="{{ribbon.name}}，{{ribbon.owned_status ? '已点亮' : '未点亮'}}">
+                <view class="ribbon-loop"></view>
+                <image wx:if="{{!ribbon.image_failed}}" class="ribbon-image" src="{{ribbon.image_url}}" mode="scaleToFill" data-id="{{ribbon.id}}" binderror="onRibbonImageError" />
+                <view wx:else class="ribbon-placeholder">{{ribbon.number}}</view>
+                <text wx:if="{{!ribbon.owned_status}}" class="unlit-label">未点亮</text>
+                <text class="ribbon-number">{{ribbon.number}}</text>
+              </view>
+            </view>
+
+            <view wx:if="{{wall.visibleCount === 0}}" class="wall-empty">这一面暂时没有符合筛选条件的飘带</view>
+          </view>
+        </swiper-item>
+      </swiper>
+
+      <view class="wall-dots">
+        <view wx:for="{{walls}}" wx:key="id" class="wall-dot {{index === currentWall ? 'active' : ''}}" data-index="{{index}}" bindtap="onDotTap"></view>
+      </view>
+      <text class="wall-tip" wx:if="{{walls.length > 1}}">左右滑动查看其他墙面</text>
+    </block>
+  </block>
+</view>
+
+<view wx:if="{{detailVisible}}" class="overlay" bindtap="onDetailMaskTap" catchtouchmove="stopPropagation">
+  <view class="detail-sheet" catchtap="stopPropagation">
+    <view class="sheet-handle"></view>
+    <view class="sheet-close" bindtap="closeDetail">×</view>
+    <view class="detail-content">
+      <view class="detail-image-wrap {{selectedRibbon.owned_status ? '' : 'unlit'}}">
+        <image wx:if="{{!selectedRibbon.image_failed}}" class="detail-image" src="{{selectedRibbon.image_url}}" mode="scaleToFill" data-id="{{selectedRibbon.id}}" binderror="onRibbonImageError" />
+        <view wx:else class="detail-placeholder">{{selectedRibbon.number}}</view>
+      </view>
+      <view class="detail-copy">
+        <text class="detail-number">RIBBON {{selectedRibbon.number}}</text>
+        <text class="detail-name">{{selectedRibbon.name}}</text>
+        <text class="detail-status {{selectedRibbon.owned_status ? 'lit' : ''}}">{{selectedRibbon.owned_status ? '已点亮' : '尚未点亮'}}</text>
+        <text class="detail-description">{{selectedRibbon.description}}</text>
+      </view>
+    </view>
+    <view class="detail-action {{selectedRibbon.owned_status ? 'danger' : ''}} {{isSubmitting ? 'disabled' : ''}}" bindtap="onChangeOwned">
+      {{isSubmitting ? '保存中…' : (selectedRibbon.owned_status ? '取消点亮' : '我有这款，立即点亮')}}
+    </view>
+  </view>
+</view>
+
+<view wx:if="{{successVisible}}" class="success-layer" catchtouchmove="stopPropagation">
+  <text class="success-kicker">点亮成功</text>
+  <view class="success-ribbon-wrap">
+    <view class="success-rod"></view>
+    <image class="success-ribbon" src="{{successRibbon.image_url}}" mode="scaleToFill" />
+  </view>
+  <text class="success-name">{{successRibbon.name}}</text>
+  <text class="success-count">这是你点亮的第 {{litCount}}/{{total}} 款飘带</text>
+  <view class="success-action" bindtap="closeSuccess">挂回我的飘带墙</view>
+</view>

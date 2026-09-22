@@ -243,6 +243,12 @@ page {
   margin: 0 24rpx;
 }
 
+.menu-right-text {
+  color: #7d9bad;
+  font-size: 22rpx;
+  white-space: nowrap;
+}
+
 .version-section {
   margin-bottom: 40rpx;
 }

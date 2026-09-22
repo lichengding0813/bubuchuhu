@@ -167,6 +167,11 @@
 - **参与人员查看**：查看活动报名人员列表
 - **官方账号管理**：按昵称、微信号或用户标识搜索用户，可加入或移出白名单；移出后仅撤销官方活动管理权限，历史官方活动保持不变
 
+### 飘带墙
+- **用户收藏**：用户可按墙面浏览飘带、筛选点亮状态、查看详情并手动点亮或取消点亮，状态按账号保存。
+- **动态配置**：墙面、飘带槽位、挂件和上线状态均由数据库配置；每面已发布墙固定展示 4 条飘带。
+- **超级管理员配置**：仅 `isAdmin=1` 的超级管理员可从墙面右上角齿轮进入配置页，新建或下线墙面、调整飘带顺序、维护飘带素材和挂件。
+
 ## 数据库设计
 
 主要数据表：
@@ -185,8 +190,10 @@
 | `lottery_redemptions` / `lottery_chance_grants` | 奖品核销、120 秒动态二维码与管理员追加机会记录 | redeem_code, qr_token, qr_expires_at, status, quantity |
 | `notification_subscriptions` / `notification_jobs` | 订阅授权额度与去重发送任务 | template_id, available_count, dedupe_key, status |
 | `notification_send_logs` | 微信订阅消息发送结果 | job_id, errcode, errmsg |
+| `ribbons` / `ribbon_walls` / `ribbon_wall_items` | 飘带素材、墙面及槽位配置 | name, image_url, sort_order, is_active, slot_index |
+| `ribbon_wall_charms` / `user_ribbons` | 墙面挂件与用户收藏状态 | wall_id, slot_index, user_openid, owned_status |
 
-> 建表语句详见 `database/`。部署订阅消息与角色拆分前执行 `database/migration_v1_4_5.sql`；抽奖口令和核销状态调整需继续执行 `database/migration_v1_4_6.sql`；已有数据库启用报名人员管理需执行 `backend/migration_v1_4_7.sql`，启用动态核销二维码需继续执行 `backend/migration_v1_4_8.sql`。应先核对现有结构和迁移内容，不要批量重跑全部 SQL。
+> 建表语句详见 `database/`。部署订阅消息与角色拆分前执行 `database/migration_v1_4_5.sql`；抽奖口令和核销状态调整需继续执行 `database/migration_v1_4_6.sql`；已有数据库启用报名人员管理需执行 `backend/migration_v1_4_7.sql`，启用动态核销二维码需继续执行 `backend/migration_v1_4_8.sql`，启用飘带墙需执行 `backend/migration_v1_5_ribbon_wall.sql`。应先核对现有结构和迁移内容，不要批量重跑全部 SQL。
 
 ## 部署信息
 
@@ -247,6 +254,12 @@ python app.py
 | POST | `/verify` | 验证问题校验 |
 | POST | `/update_profile` | 更新用户资料 |
 | GET | `/user/stats` | 获取用户徒步统计 |
+| GET | `/api/ribbon-wall` | 获取已发布墙面及当前用户点亮状态 |
+| PUT | `/api/ribbon-wall/ribbons/<id>/owned` | 点亮或取消点亮飘带 |
+| GET | `/api/ribbon-wall/admin/config` | 超级管理员获取完整墙面配置 |
+| POST | `/api/ribbon-wall/admin/walls/save` | 超级管理员原子保存墙面、挂件和飘带顺序 |
+| POST | `/api/ribbon-wall/admin/ribbons` | 超级管理员新建飘带 |
+| PUT | `/api/ribbon-wall/admin/ribbons/<id>` | 超级管理员编辑或停用飘带 |
 | GET | `/api/weather` | 获取活动地点天气预报 |
 | GET | `/api/activity/list` | 获取活动列表 |
 | GET | `/api/activity/detail` | 获取活动详情 |

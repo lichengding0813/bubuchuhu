@@ -1,0 +1,140 @@
+<view class="admin-page">
+  <view wx:if="{{isLoading}}" class="state-panel">
+    <van-loading size="34px" vertical>加载中</van-loading>
+  </view>
+
+  <view wx:elif="{{loadError}}" class="state-panel">
+    <text class="state-title">暂时无法加载配置</text>
+    <text class="state-copy">{{loadError}}</text>
+    <view class="primary compact" bindtap="onRetry">重新加载</view>
+  </view>
+
+  <block wx:elif="{{editorMode === 'wall'}}">
+    <view class="editor-header">
+      <view class="back-link" bindtap="onCloseEditor">取消</view>
+      <text>{{wallForm.id ? '编辑墙面' : '新建墙面'}}</text>
+    </view>
+
+    <view class="form-card">
+      <text class="form-label">墙面名称</text>
+      <input class="form-input" maxlength="60" value="{{wallForm.title}}" placeholder="例如：步步出沪 · 飘带墙 03" bindinput="onWallTitleInput" />
+      <text class="form-label">墙面文案</text>
+      <input class="form-input" maxlength="120" value="{{wallForm.subtitle}}" placeholder="选填" bindinput="onWallSubtitleInput" />
+      <view class="switch-line">
+        <text>发布这面墙</text>
+        <switch checked="{{wallForm.is_active === 1}}" color="#4baadd" bindchange="onWallActiveChange" />
+      </view>
+    </view>
+
+    <view class="form-card">
+      <view class="section-title-row">
+        <text class="section-title">墙面飘带</text>
+        <text class="section-count">{{selectedRibbonIds.length}}/4</text>
+      </view>
+      <view wx:if="{{selectedRibbonList.length}}" class="selected-list">
+        <view wx:for="{{selectedRibbonList}}" wx:key="id" class="selected-row">
+          <text class="selected-order">{{index + 1}}</text>
+          <image class="selected-thumb" src="{{item.image_url}}" mode="aspectFill" />
+          <text class="selected-name">{{item.name}}</text>
+          <view class="order-actions">
+            <text class="order-btn {{index === 0 ? 'disabled' : ''}}" data-index="{{index}}" data-direction="-1" bindtap="onMoveSelectedRibbon">上移</text>
+            <text class="order-btn {{index === selectedRibbonList.length - 1 ? 'disabled' : ''}}" data-index="{{index}}" data-direction="1" bindtap="onMoveSelectedRibbon">下移</text>
+          </view>
+        </view>
+      </view>
+      <text wx:else class="empty-hint">从下方飘带库选择，最多 4 条</text>
+
+      <view class="ribbon-picker-grid">
+        <view wx:for="{{selectableRibbons}}" wx:key="id" class="picker-ribbon {{item.selected ? 'selected' : ''}} {{item.is_active ? '' : 'disabled'}}" data-id="{{item.id}}" bindtap="onToggleWallRibbon">
+          <image src="{{item.image_url}}" mode="aspectFill" />
+          <text>{{item.name}}</text>
+          <text wx:if="{{item.assignedWallTitle}}" class="assigned-wall">{{item.assignedWallTitle}}</text>
+          <view wx:if="{{item.selected}}" class="selected-mark">✓</view>
+        </view>
+      </view>
+    </view>
+
+    <view class="form-card">
+      <text class="section-title">挂件</text>
+      <view wx:for="{{charmPickerIndexes}}" wx:key="index" class="picker-line">
+        <text>位置 {{index + 1}}</text>
+        <picker mode="selector" range="{{charmOptions}}" range-key="label" value="{{item}}" data-slot="{{index}}" bindchange="onCharmChange">
+          <view class="picker-value">{{charmOptions[item].label}} <van-icon name="arrow" /></view>
+        </picker>
+      </view>
+    </view>
+
+    <view class="bottom-save">
+      <view class="primary {{isSaving ? 'disabled' : ''}}" bindtap="onSaveWall">{{isSaving ? '保存中…' : '保存墙面'}}</view>
+    </view>
+  </block>
+
+  <block wx:elif="{{editorMode === 'ribbon'}}">
+    <view class="editor-header">
+      <view class="back-link" bindtap="onCloseEditor">取消</view>
+      <text>{{ribbonForm.id ? '编辑飘带' : '新增飘带'}}</text>
+    </view>
+
+    <view class="form-card ribbon-form-card">
+      <view class="upload-box" bindtap="onChooseRibbonImage">
+        <image wx:if="{{ribbonForm.image_url}}" src="{{ribbonForm.image_url}}" mode="scaleToFill" />
+        <view wx:else class="upload-placeholder">
+          <van-icon name="photograph" size="28px" color="#5e9fc4" />
+          <text>上传 1:10 图片</text>
+        </view>
+        <text wx:if="{{isUploading}}" class="uploading">上传中…</text>
+      </view>
+
+      <text class="form-label">飘带名称</text>
+      <input class="form-input" maxlength="100" value="{{ribbonForm.name}}" placeholder="系列｜款名" bindinput="onRibbonNameInput" />
+      <text class="form-label">说明</text>
+      <textarea class="form-textarea" maxlength="500" value="{{ribbonForm.description}}" placeholder="选填，支持换行" bindinput="onRibbonDescriptionInput"></textarea>
+      <view class="switch-line">
+        <text>启用这条飘带</text>
+        <switch checked="{{ribbonForm.is_active === 1}}" color="#4baadd" bindchange="onRibbonActiveChange" />
+      </view>
+    </view>
+
+    <view class="bottom-save">
+      <view class="primary {{isSaving || isUploading ? 'disabled' : ''}}" bindtap="onSaveRibbon">{{isSaving ? '保存中…' : '保存飘带'}}</view>
+    </view>
+  </block>
+
+  <block wx:else>
+    <view class="top-actions">
+      <view class="primary" bindtap="onAddWall"><van-icon name="plus" /> 新建墙面</view>
+      <view class="secondary" bindtap="onAddRibbon"><van-icon name="plus" /> 新增飘带</view>
+    </view>
+
+    <view class="section-head"><text>墙面</text><text>{{walls.length}}</text></view>
+    <view wx:if="{{walls.length === 0}}" class="empty-card">暂无墙面</view>
+    <view wx:for="{{walls}}" wx:key="id" wx:for-item="wall" class="wall-list-card {{wall.is_active ? '' : 'inactive'}}">
+      <view class="wall-list-top">
+        <view class="wall-list-copy">
+          <text class="wall-list-title">{{wall.title}}</text>
+          <text class="wall-list-subtitle">{{wall.subtitle || '未填写墙面文案'}}</text>
+        </view>
+        <text class="status-tag {{wall.is_active ? 'on' : ''}}">{{wall.is_active ? '已发布' : '未发布'}}</text>
+      </view>
+      <view class="mini-ribbons">
+        <image wx:for="{{wall.ribbons}}" wx:key="id" wx:for-item="ribbon" src="{{ribbon.image_url}}" mode="scaleToFill" />
+        <text wx:if="{{wall.ribbonCount === 0}}">还没有放入飘带</text>
+      </view>
+      <view class="card-footer">
+        <text>{{wall.ribbonCount}}/4 条</text>
+        <view class="edit-link" data-id="{{wall.id}}" bindtap="onEditWall"><van-icon name="setting-o" /> 配置</view>
+      </view>
+    </view>
+
+    <view class="section-head ribbon-head"><text>飘带库</text><text>{{ribbons.length}}</text></view>
+    <view wx:if="{{ribbons.length === 0}}" class="empty-card">暂无飘带</view>
+    <view wx:for="{{ribbons}}" wx:key="id" class="library-row {{item.is_active ? '' : 'inactive'}}" data-id="{{item.id}}" bindtap="onEditRibbon">
+      <image src="{{item.image_url}}" mode="aspectFill" />
+      <view class="library-copy">
+        <text>{{item.name}}</text>
+        <text>{{item.is_active ? '已启用' : '已停用'}}</text>
+      </view>
+      <van-icon name="arrow" color="#87a2b2" />
+    </view>
+  </block>
+</view>

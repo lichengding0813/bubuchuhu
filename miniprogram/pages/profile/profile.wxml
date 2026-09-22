@@ -71,6 +71,7 @@
           <text>{{item.text}}</text>
         </view>
         <view class="menu-right">
+          <text class="menu-right-text" wx:if="{{item.rightText}}">{{item.rightText}}</text>
           <view class="menu-badge" wx:if="{{item.showRedDot}}">{{item.badgeCount}}</view>
           <van-icon name="arrow" class="menu-arrow" />
         </view>

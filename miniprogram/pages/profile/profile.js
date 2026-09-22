@@ -1,4 +1,5 @@
 const { subscribeAdminReminders } = require('../../utils/notifications');
+const { get } = require('../../utils/api');
 
 Page({
   data: {
@@ -39,6 +40,8 @@ Page({
     openId: '',
     isLoading: false,
     pendingCount: 0,
+    ribbonLitCount: 0,
+    ribbonTotal: 0,
     menuList: [{
         icon: 'setting',
         text: '个人信息设置',
@@ -61,6 +64,7 @@ Page({
     this.initUserData();
     this.loadUserStats();
     this.loadHikeStats();
+    this.loadRibbonSummary();
   },
 
   onShow() {
@@ -69,6 +73,7 @@ Page({
       this.loadUserStats();
       this.loadHikeStats();
       this.loadPendingCount();
+      this.loadRibbonSummary();
     }
   },
 
@@ -157,6 +162,15 @@ Page({
       url: '/pages/my-prizes/my-prizes'
     });
 
+    menuList.push({
+      icon: 'bookmark-o',
+      text: '我的飘带墙',
+      url: '/pages/ribbon-wall/ribbon-wall',
+      rightText: this.data.ribbonTotal
+        ? `${this.data.ribbonLitCount}/${this.data.ribbonTotal} 已点亮`
+        : ''
+    });
+
     if (isStaff) {
       menuList.push({ isDivider: true });
       menuList.push({
@@ -207,6 +221,24 @@ Page({
 
     console.log('当前用户 isAdmin:', isAdmin);
     this.setData({ menuList });
+  },
+
+  async loadRibbonSummary() {
+    const userInfo = wx.getStorageSync('userInfo');
+    const isStaff = Number(userInfo?.isAdmin) === 1 || Number(userInfo?.isOfficial) === 1;
+    if (!userInfo?.openId || (!isStaff && (Number(userInfo.needVerify) === 1 || Number(userInfo.isBlacklist) === 1))) {
+      this.setData({ ribbonLitCount: 0, ribbonTotal: 0 });
+      return;
+    }
+    try {
+      const result = await get('/api/ribbon-wall', {}, { silent: true });
+      this.setData({
+        ribbonLitCount: Number(result.data?.lit_count || 0),
+        ribbonTotal: Number(result.data?.total || 0)
+      }, () => this.buildMenuList());
+    } catch (error) {
+      console.error('加载飘带收藏数量失败', error);
+    }
   },
 
   // 加载待审核活动数量（管理员）

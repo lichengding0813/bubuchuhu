@@ -6,6 +6,8 @@
     "pages/my-prizes/my-prizes",
     "pages/review/review",
     "pages/profile/profile",
+    "pages/ribbon-wall/ribbon-wall",
+    "pages/ribbon-wall-admin/ribbon-wall-admin",
     "pages/publish/publish",
     "pages/details/details",
     "pages/about/about",
