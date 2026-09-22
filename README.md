@@ -169,8 +169,8 @@
 
 ### 飘带墙
 - **用户收藏**：用户可按墙面浏览飘带、筛选点亮状态、查看详情并手动点亮或取消点亮，状态按账号保存。
-- **动态配置**：墙面、飘带槽位、挂件和上线状态均由数据库配置；每面已发布墙固定展示 4 条飘带，初始素材和后台新增素材统一存放在云存储 `ribbon-wall/` 目录。
-- **超级管理员配置**：仅 `isAdmin=1` 的超级管理员可从墙面右上角齿轮进入配置页，新建或下线墙面、调整飘带顺序、维护飘带素材和挂件。
+- **动态配置**：墙面、飘带、挂件和混合展示顺序均由数据库配置；每面墙固定展示 4 条飘带，并可搭配最多 3 个挂件，素材统一存放在云存储 `ribbon-wall/` 目录。
+- **超级管理员配置**：仅 `isAdmin=1` 的超级管理员可从页面右下角齿轮进入配置页，新建墙面，选择、上传及编辑飘带和挂件，最后统一调整预览顺序。
 
 ## 数据库设计
 
@@ -190,8 +190,9 @@
 | `lottery_redemptions` / `lottery_chance_grants` | 奖品核销、120 秒动态二维码与管理员追加机会记录 | redeem_code, qr_token, qr_expires_at, status, quantity |
 | `notification_subscriptions` / `notification_jobs` | 订阅授权额度与去重发送任务 | template_id, available_count, dedupe_key, status |
 | `notification_send_logs` | 微信订阅消息发送结果 | job_id, errcode, errmsg |
-| `ribbons` / `ribbon_walls` / `ribbon_wall_items` | 飘带素材、墙面及槽位配置 | name, image_url, sort_order, is_active, slot_index |
-| `ribbon_wall_charms` / `user_ribbons` | 墙面挂件与用户收藏状态 | wall_id, slot_index, user_openid, owned_status |
+| `ribbons` / `ribbon_charms` | 飘带与挂件素材库 | name, description, image_url, sort_order, is_active |
+| `ribbon_walls` / `ribbon_wall_items` / `ribbon_wall_charms` | 墙面及飘带、挂件混合顺序 | wall_id, ribbon_id, charm_id, slot_index |
+| `user_ribbons` | 用户飘带收藏状态 | user_openid, ribbon_id, owned_status |
 
 > 建表语句详见 `database/`。部署订阅消息与角色拆分前执行 `database/migration_v1_4_5.sql`；抽奖口令和核销状态调整需继续执行 `database/migration_v1_4_6.sql`；已有数据库启用报名人员管理需执行 `backend/migration_v1_4_7.sql`，启用动态核销二维码需继续执行 `backend/migration_v1_4_8.sql`，启用飘带墙需执行 `backend/migration_v1_5_ribbon_wall.sql`。应先核对现有结构和迁移内容，不要批量重跑全部 SQL。
 
@@ -260,6 +261,8 @@ python app.py
 | POST | `/api/ribbon-wall/admin/walls/save` | 超级管理员原子保存墙面、挂件和飘带顺序 |
 | POST | `/api/ribbon-wall/admin/ribbons` | 超级管理员新建飘带 |
 | PUT | `/api/ribbon-wall/admin/ribbons/<id>` | 超级管理员编辑或停用飘带 |
+| POST | `/api/ribbon-wall/admin/charms` | 超级管理员新建挂件 |
+| PUT | `/api/ribbon-wall/admin/charms/<id>` | 超级管理员编辑或停用挂件 |
 | GET | `/api/weather` | 获取活动地点天气预报 |
 | GET | `/api/activity/list` | 获取活动列表 |
 | GET | `/api/activity/detail` | 获取活动详情 |

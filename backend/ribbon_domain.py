@@ -2,6 +2,7 @@
 
 MAX_WALL_RIBBONS = 4
 MAX_WALL_CHARMS = 3
+MAX_WALL_ITEMS = MAX_WALL_RIBBONS + MAX_WALL_CHARMS
 
 
 def _text(value, field_name, max_length, required=False):
@@ -63,23 +64,31 @@ def normalize_wall_payload(data, partial=False):
     return result
 
 
-def normalize_ribbon_payload(data, partial=False):
+def _normalize_asset_payload(data, label, partial=False):
     data = data if isinstance(data, dict) else {}
     result = {}
     if not partial or 'name' in data:
-        result['name'] = _text(data.get('name'), '飘带名称', 100, required=True)
+        result['name'] = _text(data.get('name'), f'{label}名称', 100, required=True)
     if not partial or 'description' in data:
-        result['description'] = _text(data.get('description'), '飘带说明', 500)
+        result['description'] = _text(data.get('description'), f'{label}说明', 500)
     if not partial or 'image_url' in data:
         image_url = str(data.get('image_url') or '').strip()
         if not valid_asset_url(image_url):
-            raise ValueError('请上传有效的飘带图片')
+            raise ValueError(f'请上传有效的{label}图片')
         result['image_url'] = image_url
     if not partial or 'is_active' in data:
         result['is_active'] = _flag(data.get('is_active'), default=1)
     if partial and not result:
-        raise ValueError('没有可更新的飘带信息')
+        raise ValueError(f'没有可更新的{label}信息')
     return result
+
+
+def normalize_ribbon_payload(data, partial=False):
+    return _normalize_asset_payload(data, '飘带', partial=partial)
+
+
+def normalize_charm_payload(data, partial=False):
+    return _normalize_asset_payload(data, '挂件', partial=partial)
 
 
 def normalize_ribbon_ids(values):
@@ -99,3 +108,42 @@ def normalize_ribbon_ids(values):
             raise ValueError('同一面墙不能重复放置飘带')
         normalized.append(ribbon_id)
     return normalized
+
+
+def normalize_ordered_items(values):
+    """Validate the combined display order of ribbons and charms."""
+    if not isinstance(values, list):
+        raise ValueError('预览顺序格式无效')
+    if len(values) > MAX_WALL_ITEMS:
+        raise ValueError(f'每面墙最多配置{MAX_WALL_ITEMS}个展示项')
+
+    normalized = []
+    ribbon_ids = []
+    charm_ids = []
+    seen = set()
+    for value in values:
+        if not isinstance(value, dict) or value.get('type') not in ('ribbon', 'charm'):
+            raise ValueError('预览顺序包含无效项目')
+        item_type = value['type']
+        try:
+            item_id = int(value.get('id'))
+        except (TypeError, ValueError):
+            raise ValueError('预览项目编号无效')
+        if item_id <= 0 or (item_type, item_id) in seen:
+            raise ValueError('预览顺序包含重复或无效项目')
+        seen.add((item_type, item_id))
+        normalized.append({'type': item_type, 'id': item_id})
+        if item_type == 'ribbon':
+            ribbon_ids.append(item_id)
+        else:
+            charm_ids.append(item_id)
+
+    if len(ribbon_ids) > MAX_WALL_RIBBONS:
+        raise ValueError(f'每面墙最多放置{MAX_WALL_RIBBONS}条飘带')
+    if len(charm_ids) > MAX_WALL_CHARMS:
+        raise ValueError(f'每面墙最多放置{MAX_WALL_CHARMS}个挂件')
+    return {
+        'items': normalized,
+        'ribbon_ids': ribbon_ids,
+        'charm_ids': charm_ids,
+    }

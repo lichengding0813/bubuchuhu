@@ -9,8 +9,8 @@
 | 层级 | 当前实现 |
 |---|---|
 | 小程序 | 微信原生 WXML/WXSS/JavaScript，Vant Weapp；25 个注册页面、4 个自定义组件 |
-| 后端 | Flask，6 个业务蓝图；共 82 处路由声明，包含健康检查 |
-| 数据库 | MySQL/CynosDB，PyMySQL、DBUtils 连接池；建表和迁移涉及 25 张业务表 |
+| 后端 | Flask，6 个业务蓝图；共 84 处路由声明，包含健康检查 |
+| 数据库 | MySQL/CynosDB，PyMySQL、DBUtils 连接池；建表和迁移涉及 26 张业务表 |
 | 部署 | Docker、Gunicorn、微信云托管；前端通过 `wx.cloud.callContainer` 调用后端 |
 | 图片 | 微信云存储上传、图片预览、封面、头像、微信群二维码和回顾照片墙 |
 
@@ -30,7 +30,7 @@
 | 奖品核销 | 中奖生成长期核销码和仅包含随机令牌的动态二维码；二维码每 120 秒自动刷新，旧码随即失效；我的奖品可重新出示二维码；有权限的账号可唤醒相机扫码核销，也可手动输入核销码；抽奖结束后已有奖品仍可核销 | `routes/lottery_routes.py`；`pages/my-prizes`、`pages/lottery-admin`、`components/lottery-popup` |
 | 活动回顾 | 回顾列表、分享、富文本总结、三类封面和照片墙；超级管理员从尚无回顾的官方活动导入基础信息，防重复创建；可编辑，后端支持软删除 | `routes/review_bp.py`；`pages/review`、`pages/review-detail`、`pages/review_add` |
 | 个人中心 | 我发起的、我报名的、草稿箱、我的奖品；统计有效参与且已结束活动的累计次数、里程、爬升；按身份显示管理入口 | `backend/app.py`；`pages/profile` 及对应列表页面 |
-| 飘带墙 | 动态墙面浏览、状态筛选、详情、手动点亮与取消；超级管理员可从墙内齿轮新建/下线墙面、配置 4 个飘带槽位、挂件和素材库 | `routes/ribbon_routes.py`、`ribbon_domain.py`；`pages/ribbon-wall`、`pages/ribbon-wall-admin` |
+| 飘带墙 | 动态墙面浏览、状态筛选、详情、手动点亮与取消；超级管理员从统一悬浮齿轮进入后台，新建墙面，上传和编辑飘带/挂件素材，并对两类素材统一排序 | `routes/ribbon_routes.py`、`ribbon_domain.py`；`pages/ribbon-wall`、`pages/ribbon-wall-admin` |
 | 业务管理 | 审核普通活动、手动拉黑/解封、记录黑名单来源、查看答题记录、验证题增删改查及启停、全员重新验证 | `routes/admin_routes.py`；`pages/blacklist`、`pages/verify-management`、`pages/admin-review` |
 | 官方账号管理 | 超级管理员搜索已注册用户，加入/移出官方白名单；名单为空时可初始化当前管理员；移出不改变历史官方活动 | `routes/admin_routes.py`；`pages/official-accounts` |
 | 订阅消息 | 用户主动授权后发送活动开始前 24 小时内的行前提醒、抽奖开始前 5 分钟内的提醒；向已订阅业务管理员发送待审核和答题超限拉黑提醒；管理手动拉黑不发送该提醒 | `backend/notification_service.py`、`routes/notification_routes.py`；`utils/notifications.js` |

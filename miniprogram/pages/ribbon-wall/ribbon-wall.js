@@ -45,6 +45,14 @@ Page({
 
   decorateWalls(walls, filter = this.data.filter) {
     return (walls || []).map((wall, wallIndex) => {
+      const orderedItems = [
+        ...(wall.ribbons || []).map(item => ({ type: 'ribbon', id: item.id, slot: Number(item.slot_index || 0) })),
+        ...(wall.charms || []).map(item => ({ type: 'charm', id: item.id, slot: Number(item.slot_index || 0) }))
+      ].sort((a, b) => a.slot - b.slot);
+      const positions = {};
+      orderedItems.forEach((item, index) => {
+        positions[`${item.type}-${item.id}`] = (index + 1) * 100 / (orderedItems.length + 1);
+      });
       const ribbons = (wall.ribbons || []).map(ribbon => {
         const owned = Boolean(ribbon.owned_status);
         const visible = filter === 'all'
@@ -55,13 +63,13 @@ Page({
           owned_status: owned,
           visible,
           number: String(ribbon.id).padStart(2, '0'),
-          left: 12.5 + (Number(ribbon.slot_index || 1) - 1) * 25,
+          left: positions[`ribbon-${ribbon.id}`] || 50,
           image_failed: Boolean(ribbon.image_failed)
         };
       });
       const charms = (wall.charms || []).map(charm => ({
         ...charm,
-        left: Number(charm.slot_index || 1) * 25
+        left: positions[`charm-${charm.id}`] || 50
       }));
       return {
         ...wall,
@@ -209,12 +217,9 @@ Page({
     this.setData({ successVisible: false, successRibbon: null });
   },
 
-  openWallAdmin(e) {
+  openWallAdmin() {
     if (!this.data.isAdmin) return;
-    const wallId = Number(e.currentTarget.dataset.id || 0);
-    wx.navigateTo({
-      url: `/pages/ribbon-wall-admin/ribbon-wall-admin${wallId ? `?wallId=${wallId}` : ''}`
-    });
+    wx.navigateTo({ url: '/pages/ribbon-wall-admin/ribbon-wall-admin' });
   },
 
   onRibbonImageError(e) {

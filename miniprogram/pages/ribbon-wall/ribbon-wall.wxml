@@ -27,7 +27,6 @@
 
     <view wx:if="{{walls.length === 0}}" class="state-panel compact">
       <text class="state-title">还没有发布墙面</text>
-      <view wx:if="{{isAdmin}}" class="state-action" bindtap="openWallAdmin">去配置</view>
     </view>
 
     <block wx:else>
@@ -36,9 +35,6 @@
           <view class="wall-card">
             <view class="wall-heading">
               <text class="wall-title">{{wall.title}}</text>
-              <view wx:if="{{isAdmin}}" class="wall-gear" data-id="{{wall.id}}" catchtap="openWallAdmin" aria-role="button" aria-label="配置这面飘带墙">
-                <van-icon name="setting-o" size="20px" color="#2f7fa8" />
-              </view>
             </view>
             <text class="wall-subtitle">{{wall.subtitle}}</text>
             <view class="wood-rod"></view>
@@ -73,6 +69,10 @@
   </block>
 </view>
 
+<view wx:if="{{isAdmin && !detailVisible && !successVisible}}" class="admin-gear-fab" bindtap="openWallAdmin" aria-role="button" aria-label="进入飘带墙管理">
+  <van-icon name="setting-o" size="30px" color="#fff" />
+</view>
+
 <view wx:if="{{detailVisible}}" class="overlay" bindtap="onDetailMaskTap" catchtouchmove="stopPropagation">
   <view class="detail-sheet" catchtap="stopPropagation">
     <view class="sheet-handle"></view>
@@ -83,7 +83,6 @@
         <view wx:else class="detail-placeholder">{{selectedRibbon.number}}</view>
       </view>
       <view class="detail-copy">
-        <text class="detail-number">RIBBON {{selectedRibbon.number}}</text>
         <text class="detail-name">{{selectedRibbon.name}}</text>
         <text class="detail-status {{selectedRibbon.owned_status ? 'lit' : ''}}">{{selectedRibbon.owned_status ? '已点亮' : '尚未点亮'}}</text>
         <text class="detail-description">{{selectedRibbon.description}}</text>

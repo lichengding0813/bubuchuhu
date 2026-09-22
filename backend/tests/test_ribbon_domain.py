@@ -6,7 +6,9 @@ import unittest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from ribbon_domain import (
+    normalize_charm_payload,
     normalize_charms,
+    normalize_ordered_items,
     normalize_ribbon_ids,
     normalize_ribbon_payload,
     normalize_wall_payload,
@@ -51,6 +53,34 @@ class RibbonDomainTests(unittest.TestCase):
             normalize_charms(['cloud://env/a.png']),
             ['cloud://env/a.png', '', ''],
         )
+
+    def test_charm_uses_cloud_asset_validation(self):
+        payload = normalize_charm_payload({
+            'name': '新挂件',
+            'image_url': 'cloud://prod/ribbon-wall/charms/new.png',
+        })
+        self.assertEqual(payload['name'], '新挂件')
+
+    def test_combined_preview_order_supports_ribbons_and_charms(self):
+        layout = normalize_ordered_items([
+            {'type': 'ribbon', 'id': 1},
+            {'type': 'charm', 'id': 2},
+            {'type': 'ribbon', 'id': 3},
+        ])
+        self.assertEqual(layout['ribbon_ids'], [1, 3])
+        self.assertEqual(layout['charm_ids'], [2])
+
+    def test_combined_preview_order_rejects_duplicates_and_limits(self):
+        with self.assertRaisesRegex(ValueError, '重复'):
+            normalize_ordered_items([
+                {'type': 'charm', 'id': 1},
+                {'type': 'charm', 'id': 1},
+            ])
+        with self.assertRaisesRegex(ValueError, '最多放置4条飘带'):
+            normalize_ordered_items([
+                {'type': 'ribbon', 'id': value}
+                for value in range(1, 6)
+            ])
 
 
 if __name__ == '__main__':

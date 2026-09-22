@@ -166,6 +166,7 @@ Page({
       icon: 'bookmark-o',
       text: '我的飘带墙',
       url: '/pages/ribbon-wall/ribbon-wall',
+      isRibbonWall: true,
       rightText: this.data.ribbonTotal
         ? `${this.data.ribbonLitCount}/${this.data.ribbonTotal} 已点亮`
         : ''

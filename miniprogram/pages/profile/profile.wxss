@@ -249,6 +249,72 @@ page {
   white-space: nowrap;
 }
 
+.menu-item.ribbon-wall-entry {
+  position: relative;
+  background: linear-gradient(90deg, rgba(237, 248, 255, .82), #fff 42%);
+}
+
+.ribbon-wall-entry .menu-left > text {
+  color: #205681;
+  font-weight: 700;
+}
+
+.ribbon-entry-icon {
+  position: relative;
+  width: 42rpx;
+  height: 48rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ribbon-entry-new {
+  position: absolute;
+  left: 24rpx;
+  top: -13rpx;
+  padding: 1rpx 7rpx;
+  border-radius: 8rpx;
+  background: #ff8265;
+  color: #fff !important;
+  font-size: 12rpx !important;
+  font-weight: 800 !important;
+  line-height: 20rpx;
+}
+
+.ribbon-entry-body {
+  position: relative;
+  width: 26rpx;
+  height: 38rpx;
+  border: 4rpx solid #5eb3e7;
+  border-radius: 5rpx 5rpx 3rpx 3rpx;
+  box-sizing: border-box;
+}
+
+.ribbon-entry-body::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -6rpx;
+  width: 14rpx;
+  height: 14rpx;
+  border-right: 4rpx solid #5eb3e7;
+  border-bottom: 4rpx solid #5eb3e7;
+  background: #fff;
+  transform: translateX(-50%) rotate(45deg);
+}
+
+.ribbon-entry-mark {
+  position: absolute;
+  z-index: 2;
+  left: 50%;
+  top: 8rpx;
+  width: 7rpx;
+  height: 7rpx;
+  border-radius: 50%;
+  background: #5eb3e7;
+  transform: translateX(-50%);
+}
+
 .version-section {
   margin-bottom: 40rpx;
 }

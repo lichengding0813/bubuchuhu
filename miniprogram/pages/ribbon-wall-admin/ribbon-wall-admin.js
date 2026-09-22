@@ -1,27 +1,7 @@
 const { get, post, put } = require('../../utils/api');
-const { CLOUD_ASSET_PREFIX } = require('../../utils/config');
 
-const RIBBON_CLOUD_ROOT = `${CLOUD_ASSET_PREFIX}/ribbon-wall`;
-
-const CHARM_OPTIONS = [
-  { label: '无挂件', value: '' },
-  { label: '粉色球', value: `${RIBBON_CLOUD_ROOT}/charms/ball-pink.png` },
-  { label: '萝卜朋友', value: `${RIBBON_CLOUD_ROOT}/charms/carrot-friend.png` },
-  { label: '红色球', value: `${RIBBON_CLOUD_ROOT}/charms/ball-red.png` },
-  { label: '蓝色球', value: `${RIBBON_CLOUD_ROOT}/charms/ball-blue.png` },
-  { label: '绿色球', value: `${RIBBON_CLOUD_ROOT}/charms/ball-green.png` },
-  { label: '黄色球', value: `${RIBBON_CLOUD_ROOT}/charms/ball-yellow.png` }
-];
-
-const emptyWallForm = () => ({
-  id: null,
-  title: '',
-  subtitle: '',
-  is_active: 0,
-  charm_urls: ['', '', '']
-});
-
-const emptyRibbonForm = () => ({
+const emptyWallForm = () => ({ id: null, title: '', subtitle: '' });
+const emptyAssetForm = () => ({
   id: null,
   name: '',
   description: '',
@@ -33,18 +13,21 @@ Page({
   data: {
     walls: [],
     ribbons: [],
+    charms: [],
     isLoading: true,
     isSaving: false,
+    isUploading: false,
     loadError: '',
     editorMode: '',
+    assetEditorReturn: '',
     wallForm: emptyWallForm(),
-    ribbonForm: emptyRibbonForm(),
+    ribbonForm: emptyAssetForm(),
+    charmForm: emptyAssetForm(),
     selectedRibbonIds: [],
-    selectedRibbonList: [],
+    selectedCharmIds: [],
     selectableRibbons: [],
-    charmOptions: CHARM_OPTIONS,
-    charmPickerIndexes: [0, 0, 0],
-    isUploading: false
+    selectableCharms: [],
+    previewItems: []
   },
 
   onLoad(options) {
@@ -63,24 +46,38 @@ Page({
 
   onShow() {
     const userInfo = wx.getStorageSync('userInfo');
-    if (Number(userInfo?.isAdmin) === 1) this.loadConfig();
+    if (Number(userInfo?.isAdmin) === 1 && !this.hasLoaded) this.loadConfig();
   },
 
-  async loadConfig() {
-    this.setData({ isLoading: true, loadError: '' });
+  async loadConfig(options = {}) {
+    if (!options.silent) this.setData({ isLoading: true, loadError: '' });
     try {
       const result = await get('/api/ribbon-wall/admin/config', {}, { silent: true });
       const data = result.data || {};
-      const walls = (data.walls || []).map(wall => ({
-        ...wall,
-        is_active: Number(wall.is_active || 0),
-        ribbonCount: (wall.ribbons || []).length,
-        ribbons: (wall.ribbons || []).slice().sort((a, b) => a.slot_index - b.slot_index)
-      }));
+      const walls = (data.walls || []).map(wall => {
+        const ribbons = (wall.ribbons || []).slice().sort((a, b) => a.slot_index - b.slot_index);
+        const charms = (wall.charms || []).slice().sort((a, b) => a.slot_index - b.slot_index);
+        return {
+          ...wall,
+          is_active: Number(wall.is_active || 0),
+          ribbonCount: ribbons.length,
+          charmCount: charms.length,
+          ribbons,
+          charms,
+          layoutItems: [
+            ...ribbons.map(item => ({ type: 'ribbon', id: item.id, slot_index: item.slot_index })),
+            ...charms.map(item => ({ type: 'charm', id: item.id, slot_index: item.slot_index }))
+          ].sort((a, b) => a.slot_index - b.slot_index)
+        };
+      });
       const assignments = {};
       walls.forEach(wall => {
         wall.ribbons.forEach(ribbon => {
-          assignments[ribbon.id] = { wallId: wall.id, wallTitle: wall.title, wallActive: wall.is_active };
+          assignments[ribbon.id] = {
+            wallId: wall.id,
+            wallTitle: wall.title,
+            wallActive: wall.is_active
+          };
         });
       });
       const ribbons = (data.ribbons || []).map(ribbon => ({
@@ -90,18 +87,25 @@ Page({
         assignedWallTitle: assignments[ribbon.id]?.wallTitle || '',
         assignedWallActive: assignments[ribbon.id]?.wallActive || 0
       }));
-      this.setData({ walls, ribbons, isLoading: false });
+      const charms = (data.charms || []).map(charm => ({
+        ...charm,
+        is_active: Number(charm.is_active || 0)
+      }));
+      this.hasLoaded = true;
+      this.setData({ walls, ribbons, charms, isLoading: false, loadError: '' });
       if (this.pendingWallId) {
         const wall = walls.find(item => item.id === this.pendingWallId);
         this.pendingWallId = 0;
         if (wall) this.startWallEditor(wall);
       }
+      return { walls, ribbons, charms };
     } catch (error) {
       console.error('加载飘带墙配置失败', error);
       this.setData({
         isLoading: false,
         loadError: error.response?.msg || '配置加载失败，请稍后重试'
       });
+      throw error;
     }
   },
 
@@ -120,30 +124,76 @@ Page({
   },
 
   startWallEditor(wall) {
-    const charmUrls = ['', '', ''];
-    (wall?.charms || []).forEach(charm => {
-      const index = Number(charm.slot_index) - 1;
-      if (index >= 0 && index < 3) charmUrls[index] = charm.image_url || '';
-    });
     const wallForm = wall ? {
       id: wall.id,
       title: wall.title || '',
-      subtitle: wall.subtitle || '',
-      is_active: Number(wall.is_active || 0),
-      charm_urls: charmUrls
+      subtitle: wall.subtitle || ''
     } : emptyWallForm();
-    const selectedRibbonIds = wall
-      ? (wall.ribbons || []).map(item => item.id)
-      : [];
-    this.setData({
-      editorMode: 'wall',
-      wallForm,
-      charmPickerIndexes: wallForm.charm_urls.map(url => {
-        const index = CHARM_OPTIONS.findIndex(option => option.value === url);
-        return index >= 0 ? index : 0;
-      })
+    const ribbonIds = wall ? wall.ribbons.map(item => Number(item.id)) : [];
+    const charmIds = wall ? wall.charms.map(item => Number(item.id)).filter(Boolean) : [];
+    const previewItems = wall ? wall.layoutItems : [];
+    this.setData({ editorMode: 'wall', wallForm, assetEditorReturn: '' });
+    this.syncWallSelection(ribbonIds, charmIds, previewItems);
+  },
+
+  syncWallSelection(ribbonIds, charmIds, previewItems = []) {
+    const selectedRibbonIds = ribbonIds
+      .map(Number)
+      .filter(id => this.data.ribbons.some(item => item.id === id));
+    const selectedCharmIds = charmIds
+      .map(Number)
+      .filter(id => this.data.charms.some(item => item.id === id));
+    const selectedKeys = new Set([
+      ...selectedRibbonIds.map(id => `ribbon-${id}`),
+      ...selectedCharmIds.map(id => `charm-${id}`)
+    ]);
+    const seen = new Set();
+    const orderedRefs = (previewItems || []).filter(item => {
+      const key = `${item.type}-${Number(item.id)}`;
+      if (!selectedKeys.has(key) || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    }).map(item => ({ type: item.type, id: Number(item.id) }));
+    selectedRibbonIds.forEach(id => {
+      const key = `ribbon-${id}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        orderedRefs.push({ type: 'ribbon', id });
+      }
     });
-    this.syncWallRibbonSelection(selectedRibbonIds);
+    selectedCharmIds.forEach(id => {
+      const key = `charm-${id}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        orderedRefs.push({ type: 'charm', id });
+      }
+    });
+    const decoratedPreview = orderedRefs.map((ref, index) => {
+      const source = ref.type === 'ribbon'
+        ? this.data.ribbons.find(item => item.id === ref.id)
+        : this.data.charms.find(item => item.id === ref.id);
+      return {
+        ...ref,
+        key: `${ref.type}-${ref.id}`,
+        order: index + 1,
+        name: source?.name || '',
+        image_url: source?.image_url || '',
+        typeLabel: ref.type === 'ribbon' ? '飘带' : '挂件'
+      };
+    });
+    this.setData({
+      selectedRibbonIds,
+      selectedCharmIds,
+      selectableRibbons: this.data.ribbons.map(item => ({
+        ...item,
+        selected: selectedRibbonIds.includes(item.id)
+      })),
+      selectableCharms: this.data.charms.map(item => ({
+        ...item,
+        selected: selectedCharmIds.includes(item.id)
+      })),
+      previewItems: decoratedPreview
+    });
   },
 
   onWallTitleInput(e) {
@@ -154,94 +204,89 @@ Page({
     this.setData({ 'wallForm.subtitle': e.detail.value });
   },
 
-  onWallActiveChange(e) {
-    this.setData({ 'wallForm.is_active': e.detail.value ? 1 : 0 });
-  },
-
-  onCharmChange(e) {
-    const slot = Number(e.currentTarget.dataset.slot);
-    const optionIndex = Number(e.detail.value || 0);
-    const pickerIndexes = [...this.data.charmPickerIndexes];
-    const charmUrls = [...this.data.wallForm.charm_urls];
-    pickerIndexes[slot] = optionIndex;
-    charmUrls[slot] = CHARM_OPTIONS[optionIndex]?.value || '';
-    this.setData({ charmPickerIndexes: pickerIndexes, 'wallForm.charm_urls': charmUrls });
-  },
-
-  syncWallRibbonSelection(ids) {
-    const selectedRibbonIds = ids.map(Number);
-    const selectedRibbonList = selectedRibbonIds
-      .map(id => this.data.ribbons.find(item => item.id === id))
-      .filter(Boolean);
-    const selectableRibbons = this.data.ribbons.map(item => ({
-      ...item,
-      selected: selectedRibbonIds.includes(item.id)
-    }));
-    this.setData({ selectedRibbonIds, selectedRibbonList, selectableRibbons });
-  },
-
   onToggleWallRibbon(e) {
     const ribbonId = Number(e.currentTarget.dataset.id);
     const ribbon = this.data.ribbons.find(item => item.id === ribbonId);
     if (!ribbon) return;
-    const ids = [...this.data.selectedRibbonIds];
-    const index = ids.indexOf(ribbonId);
+    const ribbonIds = [...this.data.selectedRibbonIds];
+    const index = ribbonIds.indexOf(ribbonId);
     if (index >= 0) {
-      ids.splice(index, 1);
+      ribbonIds.splice(index, 1);
     } else {
       if (ribbon.assignedWallActive && ribbon.assignedWallId !== this.data.wallForm.id) {
-        wx.showToast({ title: '请先下线该飘带所在墙面', icon: 'none' });
+        wx.showToast({ title: '这条飘带已在其他墙面使用', icon: 'none' });
         return;
       }
       if (!ribbon.is_active) {
         wx.showToast({ title: '请先启用这条飘带', icon: 'none' });
         return;
       }
-      if (ids.length >= 4) {
-        wx.showToast({ title: '每面墙最多放 4 条飘带', icon: 'none' });
+      if (ribbonIds.length >= 4) {
+        wx.showToast({ title: '每面墙固定选择 4 条飘带', icon: 'none' });
         return;
       }
-      ids.push(ribbonId);
+      ribbonIds.push(ribbonId);
     }
-    this.syncWallRibbonSelection(ids);
+    this.syncWallSelection(ribbonIds, this.data.selectedCharmIds, this.data.previewItems);
   },
 
-  onMoveSelectedRibbon(e) {
+  onToggleWallCharm(e) {
+    const charmId = Number(e.currentTarget.dataset.id);
+    const charm = this.data.charms.find(item => item.id === charmId);
+    if (!charm) return;
+    const charmIds = [...this.data.selectedCharmIds];
+    const index = charmIds.indexOf(charmId);
+    if (index >= 0) {
+      charmIds.splice(index, 1);
+    } else {
+      if (!charm.is_active) {
+        wx.showToast({ title: '请先启用这个挂件', icon: 'none' });
+        return;
+      }
+      if (charmIds.length >= 3) {
+        wx.showToast({ title: '每面墙最多选择 3 个挂件', icon: 'none' });
+        return;
+      }
+      charmIds.push(charmId);
+    }
+    this.syncWallSelection(this.data.selectedRibbonIds, charmIds, this.data.previewItems);
+  },
+
+  onMovePreviewItem(e) {
     const index = Number(e.currentTarget.dataset.index);
     const direction = Number(e.currentTarget.dataset.direction);
     const target = index + direction;
-    const ids = [...this.data.selectedRibbonIds];
-    if (target < 0 || target >= ids.length) return;
-    [ids[index], ids[target]] = [ids[target], ids[index]];
-    this.syncWallRibbonSelection(ids);
+    const previewItems = [...this.data.previewItems];
+    if (target < 0 || target >= previewItems.length) return;
+    [previewItems[index], previewItems[target]] = [previewItems[target], previewItems[index]];
+    this.setData({
+      previewItems: previewItems.map((item, itemIndex) => ({ ...item, order: itemIndex + 1 }))
+    });
   },
 
   async onSaveWall() {
     if (this.data.isSaving) return;
-    const wallForm = this.data.wallForm;
-    const title = (wallForm.title || '').trim();
+    const title = (this.data.wallForm.title || '').trim();
     if (!title) {
       wx.showToast({ title: '请填写墙面名称', icon: 'none' });
       return;
     }
-    if (wallForm.is_active && this.data.selectedRibbonIds.length !== 4) {
-      wx.showToast({ title: '发布墙面需要配置 4 条飘带', icon: 'none' });
+    if (this.data.selectedRibbonIds.length !== 4) {
+      wx.showToast({ title: '每面墙需要选择 4 条飘带', icon: 'none' });
       return;
     }
     this.setData({ isSaving: true });
     try {
-      const payload = {
-        id: wallForm.id || 0,
+      await post('/api/ribbon-wall/admin/walls/save', {
+        id: this.data.wallForm.id || 0,
         title,
-        subtitle: (wallForm.subtitle || '').trim(),
-        is_active: wallForm.is_active,
-        charm_urls: wallForm.charm_urls,
-        ribbon_ids: this.data.selectedRibbonIds
-      };
-      await post('/api/ribbon-wall/admin/walls/save', payload, { silent: true });
+        subtitle: (this.data.wallForm.subtitle || '').trim(),
+        is_active: 1,
+        ordered_items: this.data.previewItems.map(item => ({ type: item.type, id: item.id }))
+      }, { silent: true });
       wx.showToast({ title: '墙面已保存', icon: 'success' });
-      this.setData({ editorMode: '', isSaving: false });
-      await this.loadConfig();
+      this.setData({ editorMode: '', isSaving: false, wallForm: emptyWallForm() });
+      await this.loadConfig({ silent: true });
     } catch (error) {
       console.error('保存墙面失败', error);
       this.setData({ isSaving: false });
@@ -249,45 +294,58 @@ Page({
     }
   },
 
-  onAddRibbon() {
-    this.setData({ editorMode: 'ribbon', ribbonForm: emptyRibbonForm() });
-  },
-
-  onEditRibbon(e) {
-    const ribbonId = Number(e.currentTarget.dataset.id);
-    const ribbon = this.data.ribbons.find(item => item.id === ribbonId);
-    if (!ribbon) return;
+  openAssetEditor(type, asset = null, returnToWall = false) {
+    const formKey = type === 'ribbon' ? 'ribbonForm' : 'charmForm';
     this.setData({
-      editorMode: 'ribbon',
-      ribbonForm: {
-        id: ribbon.id,
-        name: ribbon.name || '',
-        description: ribbon.description || '',
-        image_url: ribbon.image_url || '',
-        is_active: Number(ribbon.is_active || 0)
-      }
+      editorMode: type,
+      assetEditorReturn: returnToWall ? 'wall' : '',
+      [formKey]: asset ? {
+        id: asset.id,
+        name: asset.name || '',
+        description: asset.description || '',
+        image_url: asset.image_url || '',
+        is_active: Number(asset.is_active || 0)
+      } : emptyAssetForm()
     });
   },
 
-  onRibbonNameInput(e) {
-    this.setData({ 'ribbonForm.name': e.detail.value });
+  onAddRibbon() { this.openAssetEditor('ribbon'); },
+  onAddRibbonFromWall() { this.openAssetEditor('ribbon', null, true); },
+  onEditRibbon(e) {
+    const asset = this.data.ribbons.find(item => item.id === Number(e.currentTarget.dataset.id));
+    if (asset) this.openAssetEditor('ribbon', asset);
+  },
+  onEditRibbonFromWall(e) {
+    const asset = this.data.ribbons.find(item => item.id === Number(e.currentTarget.dataset.id));
+    if (asset) this.openAssetEditor('ribbon', asset, true);
+  },
+  onAddCharm() { this.openAssetEditor('charm'); },
+  onAddCharmFromWall() { this.openAssetEditor('charm', null, true); },
+  onEditCharm(e) {
+    const asset = this.data.charms.find(item => item.id === Number(e.currentTarget.dataset.id));
+    if (asset) this.openAssetEditor('charm', asset);
+  },
+  onEditCharmFromWall(e) {
+    const asset = this.data.charms.find(item => item.id === Number(e.currentTarget.dataset.id));
+    if (asset) this.openAssetEditor('charm', asset, true);
   },
 
-  onRibbonDescriptionInput(e) {
-    this.setData({ 'ribbonForm.description': e.detail.value });
-  },
+  onRibbonNameInput(e) { this.setData({ 'ribbonForm.name': e.detail.value }); },
+  onRibbonDescriptionInput(e) { this.setData({ 'ribbonForm.description': e.detail.value }); },
+  onRibbonActiveChange(e) { this.setData({ 'ribbonForm.is_active': e.detail.value ? 1 : 0 }); },
+  onCharmNameInput(e) { this.setData({ 'charmForm.name': e.detail.value }); },
+  onCharmDescriptionInput(e) { this.setData({ 'charmForm.description': e.detail.value }); },
+  onCharmActiveChange(e) { this.setData({ 'charmForm.is_active': e.detail.value ? 1 : 0 }); },
+  onChooseRibbonImage() { this.chooseAssetImage('ribbon'); },
+  onChooseCharmImage() { this.chooseAssetImage('charm'); },
 
-  onRibbonActiveChange(e) {
-    this.setData({ 'ribbonForm.is_active': e.detail.value ? 1 : 0 });
-  },
-
-  onChooseRibbonImage() {
+  chooseAssetImage(type) {
     if (this.data.isUploading) return;
     wx.chooseImage({
       count: 1,
       sizeType: ['original'],
       sourceType: ['album', 'camera'],
-      success: result => this.uploadRibbonImage(result.tempFilePaths[0])
+      success: result => this.uploadAssetImage(type, result.tempFilePaths[0])
     });
   },
 
@@ -295,28 +353,32 @@ Page({
     return new Promise((resolve, reject) => wx.getImageInfo({ src, success: resolve, fail: reject }));
   },
 
-  async uploadRibbonImage(filePath) {
+  async uploadAssetImage(type, filePath) {
     this.setData({ isUploading: true });
     let fileID = '';
     try {
       const info = await this.getImageInfo(filePath);
       const ratio = info.width / Math.max(1, info.height);
-      if (ratio < 0.075 || ratio > 0.125) {
+      const invalid = type === 'ribbon'
+        ? ratio < 0.075 || ratio > 0.125
+        : ratio < 0.65 || ratio > 1.35;
+      if (invalid) {
         wx.showModal({
           title: '图片比例不符',
-          content: '飘带图片需要接近 1:10 的竖长比例，请裁切后重新上传。',
+          content: type === 'ribbon'
+            ? '飘带图片需要接近 1:10 的竖长比例。'
+            : '挂件图片需要接近正方形，建议使用透明背景 PNG。',
           showCancel: false
         });
         return;
       }
-      const extensionMatch = filePath.toLowerCase().match(/\.([a-z0-9]+)$/);
-      const candidateExtension = extensionMatch ? extensionMatch[1] : '';
-      const extension = ['jpg', 'jpeg', 'png', 'webp'].includes(candidateExtension)
-        ? candidateExtension
-        : 'jpg';
+      const match = filePath.toLowerCase().match(/\.([a-z0-9]+)$/);
+      const candidate = match ? match[1] : '';
+      const extension = ['jpg', 'jpeg', 'png', 'webp'].includes(candidate) ? candidate : 'jpg';
+      const folder = type === 'ribbon' ? 'ribbons' : 'charms';
       const userInfo = wx.getStorageSync('userInfo');
       const upload = await wx.cloud.uploadFile({
-        cloudPath: `ribbon-wall/ribbons/${userInfo.openId || 'admin'}_${Date.now()}.${extension}`,
+        cloudPath: `ribbon-wall/${folder}/${userInfo.openId || 'admin'}_${Date.now()}.${extension}`,
         filePath
       });
       fileID = upload.fileID;
@@ -324,10 +386,10 @@ Page({
       const httpUrl = tempResult.fileList?.[0]?.tempFileURL;
       if (!httpUrl) throw new Error('无法读取上传图片');
       await post('/check-image-url', { url: httpUrl }, { silent: true });
-      this.setData({ 'ribbonForm.image_url': fileID });
+      this.setData({ [`${type}Form.image_url`]: fileID });
       wx.showToast({ title: '图片已上传', icon: 'success' });
     } catch (error) {
-      console.error('上传飘带图片失败', error);
+      console.error('上传素材图片失败', error);
       if (fileID) {
         try { await wx.cloud.deleteFile({ fileList: [fileID] }); } catch (_) {}
       }
@@ -337,43 +399,75 @@ Page({
     }
   },
 
-  async onSaveRibbon() {
+  async saveAsset(type) {
     if (this.data.isSaving || this.data.isUploading) return;
-    const form = this.data.ribbonForm;
+    const isRibbon = type === 'ribbon';
+    const form = isRibbon ? this.data.ribbonForm : this.data.charmForm;
+    const label = isRibbon ? '飘带' : '挂件';
     const name = (form.name || '').trim();
-    if (!name) {
-      wx.showToast({ title: '请填写飘带名称', icon: 'none' });
+    if (!name || !form.image_url) {
+      wx.showToast({ title: !name ? `请填写${label}名称` : `请上传${label}图片`, icon: 'none' });
       return;
     }
-    if (!form.image_url) {
-      wx.showToast({ title: '请上传飘带图片', icon: 'none' });
-      return;
-    }
-    const payload = {
-      name,
-      description: (form.description || '').trim(),
-      image_url: form.image_url,
-      is_active: form.is_active
-    };
+    const wasNew = !form.id;
+    const returnToWall = this.data.assetEditorReturn === 'wall';
+    const selectedRibbonIds = [...this.data.selectedRibbonIds];
+    const selectedCharmIds = [...this.data.selectedCharmIds];
+    const previewItems = this.data.previewItems.map(item => ({ type: item.type, id: item.id }));
+    const endpoint = isRibbon ? 'ribbons' : 'charms';
     this.setData({ isSaving: true });
     try {
-      if (form.id) {
-        await put(`/api/ribbon-wall/admin/ribbons/${form.id}`, payload, { silent: true });
+      const payload = {
+        name,
+        description: (form.description || '').trim(),
+        image_url: form.image_url,
+        is_active: form.is_active
+      };
+      const result = form.id
+        ? await put(`/api/ribbon-wall/admin/${endpoint}/${form.id}`, payload, { silent: true })
+        : await post(`/api/ribbon-wall/admin/${endpoint}`, payload, { silent: true });
+      const savedId = Number(form.id || result.data?.id || 0);
+      await this.loadConfig({ silent: true });
+      if (returnToWall) {
+        if (wasNew && savedId) {
+          if (isRibbon && selectedRibbonIds.length < 4) selectedRibbonIds.push(savedId);
+          if (!isRibbon && selectedCharmIds.length < 3) selectedCharmIds.push(savedId);
+          previewItems.push({ type, id: savedId });
+        }
+        this.setData({ editorMode: 'wall', assetEditorReturn: '', isSaving: false });
+        this.syncWallSelection(selectedRibbonIds, selectedCharmIds, previewItems);
       } else {
-        await post('/api/ribbon-wall/admin/ribbons', payload, { silent: true });
+        this.setData({ editorMode: '', assetEditorReturn: '', isSaving: false });
       }
-      wx.showToast({ title: '飘带已保存', icon: 'success' });
-      this.setData({ editorMode: '', isSaving: false });
-      await this.loadConfig();
+      wx.showToast({ title: `${label}已保存`, icon: 'success' });
     } catch (error) {
-      console.error('保存飘带失败', error);
+      console.error(`保存${label}失败`, error);
       this.setData({ isSaving: false });
       wx.showToast({ title: error.response?.msg || '保存失败，请重试', icon: 'none' });
     }
   },
 
+  onSaveRibbon() { this.saveAsset('ribbon'); },
+  onSaveCharm() { this.saveAsset('charm'); },
+
   onCloseEditor() {
     if (this.data.isSaving || this.data.isUploading) return;
-    this.setData({ editorMode: '', wallForm: emptyWallForm(), ribbonForm: emptyRibbonForm() });
+    if ((this.data.editorMode === 'ribbon' || this.data.editorMode === 'charm')
+        && this.data.assetEditorReturn === 'wall') {
+      this.setData({
+        editorMode: 'wall',
+        assetEditorReturn: '',
+        ribbonForm: emptyAssetForm(),
+        charmForm: emptyAssetForm()
+      });
+      return;
+    }
+    this.setData({
+      editorMode: '',
+      assetEditorReturn: '',
+      wallForm: emptyWallForm(),
+      ribbonForm: emptyAssetForm(),
+      charmForm: emptyAssetForm()
+    });
   }
 });

@@ -65,9 +65,13 @@
   <view class="menu-list">
     <block wx:for="{{menuList}}" wx:key="index">
       <view wx:if="{{item.isDivider}}" class="menu-divider"></view>
-      <view wx:else class="menu-item" data-index="{{index}}" bindtap="onMenuClick">
+      <view wx:else class="menu-item {{item.isRibbonWall ? 'ribbon-wall-entry' : ''}}" data-index="{{index}}" bindtap="onMenuClick">
         <view class="menu-left">
-          <van-icon name="{{item.icon}}" class="menu-icon" />
+          <view wx:if="{{item.isRibbonWall}}" class="menu-icon ribbon-entry-icon">
+            <view class="ribbon-entry-body"><view class="ribbon-entry-mark"></view></view>
+            <text class="ribbon-entry-new">NEW</text>
+          </view>
+          <van-icon wx:else name="{{item.icon}}" class="menu-icon" />
           <text>{{item.text}}</text>
         </view>
         <view class="menu-right">

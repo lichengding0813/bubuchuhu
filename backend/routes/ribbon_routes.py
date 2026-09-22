@@ -5,6 +5,8 @@ from flask import Blueprint, g, jsonify, request
 from db_utils import get_db
 from middleware import check_admin, check_verified_and_blacklist
 from ribbon_domain import (
+    normalize_charm_payload,
+    normalize_ordered_items,
     normalize_ribbon_ids,
     normalize_ribbon_payload,
     normalize_wall_payload,
@@ -46,11 +48,17 @@ def _wall_config(cursor, include_inactive=False):
     """, tuple(wall_ids))
     items = cursor.fetchall()
 
+    charm_active = '' if include_inactive else 'AND COALESCE(c.is_active, 1) = 1'
     cursor.execute(f"""
-        SELECT wall_id, slot_index, image_url
-        FROM ribbon_wall_charms
-        WHERE wall_id IN ({placeholders})
-        ORDER BY wall_id ASC, slot_index ASC
+        SELECT wc.wall_id, wc.slot_index, COALESCE(wc.charm_id, -wc.id) AS id,
+               COALESCE(c.name, '挂件') AS name,
+               COALESCE(c.description, '') AS description,
+               COALESCE(c.image_url, wc.image_url) AS image_url,
+               COALESCE(c.is_active, 1) AS is_active
+        FROM ribbon_wall_charms wc
+        LEFT JOIN ribbon_charms c ON c.id = wc.charm_id
+        WHERE wc.wall_id IN ({placeholders}) {charm_active}
+        ORDER BY wc.wall_id ASC, wc.slot_index ASC
     """, tuple(wall_ids))
     charms = cursor.fetchall()
 
@@ -60,6 +68,7 @@ def _wall_config(cursor, include_inactive=False):
         by_wall[item['wall_id']].append(item)
     charms_by_wall = {wall_id: [] for wall_id in wall_ids}
     for charm in charms:
+        charm['is_active'] = int(charm.get('is_active') or 0)
         charms_by_wall[charm['wall_id']].append(charm)
 
     result = []
@@ -170,7 +179,19 @@ def get_admin_config():
         ribbons = cursor.fetchall()
         for ribbon in ribbons:
             ribbon['is_active'] = int(ribbon.get('is_active') or 0)
-        return jsonify({'code': 200, 'data': {'walls': walls, 'ribbons': ribbons}})
+        cursor.execute("""
+            SELECT id, name, description, image_url, sort_order, is_active,
+                   created_at, updated_at
+            FROM ribbon_charms
+            ORDER BY sort_order ASC, id ASC
+        """)
+        charms = cursor.fetchall()
+        for charm in charms:
+            charm['is_active'] = int(charm.get('is_active') or 0)
+        return jsonify({
+            'code': 200,
+            'data': {'walls': walls, 'ribbons': ribbons, 'charms': charms},
+        })
     except Exception:
         logging.exception('获取飘带墙管理配置失败')
         return jsonify({'code': 500, 'msg': '配置加载失败，请稍后重试'})
@@ -226,19 +247,21 @@ def create_wall():
 @check_verified_and_blacklist
 @check_admin
 def save_wall_configuration():
-    """Atomically save wall metadata, charms, and its ordered ribbon slots."""
+    """Atomically save the wall and its combined ribbon/charm display order."""
     data = request.get_json(silent=True) or {}
     try:
         payload = normalize_wall_payload(data)
-        ribbon_ids = normalize_ribbon_ids(data.get('ribbon_ids'))
+        layout = normalize_ordered_items(data.get('ordered_items'))
+        ribbon_ids = layout['ribbon_ids']
+        charm_ids = layout['charm_ids']
         wall_id = int(data.get('id') or 0)
         if wall_id < 0:
             raise ValueError('墙面编号无效')
     except (TypeError, ValueError) as exc:
         return jsonify({'code': 400, 'msg': str(exc) or '墙面配置无效'})
 
-    if payload['is_active'] == 1 and len(ribbon_ids) != 4:
-        return jsonify({'code': 400, 'msg': '发布墙面前需要配置 4 条已启用飘带'})
+    if len(ribbon_ids) != 4:
+        return jsonify({'code': 400, 'msg': '保存墙面前需要选择 4 条已启用飘带'})
 
     conn = get_db()
     cursor = None
@@ -288,29 +311,41 @@ def save_wall_configuration():
                 tuple(ribbon_ids),
             )
 
+        charm_map = {}
+        if charm_ids:
+            placeholders = ','.join(['%s'] * len(charm_ids))
+            cursor.execute(
+                f'SELECT id, image_url FROM ribbon_charms '
+                f'WHERE id IN ({placeholders}) AND is_active = 1',
+                tuple(charm_ids),
+            )
+            charm_map = {row['id']: row['image_url'] for row in cursor.fetchall()}
+            if set(charm_map) != set(charm_ids):
+                return _rollback_response(conn, 400, '所选挂件不存在或已停用')
+
         cursor.execute('DELETE FROM ribbon_wall_items WHERE wall_id = %s', (wall_id,))
-        for slot_index, ribbon_id in enumerate(ribbon_ids, start=1):
-            cursor.execute("""
-                INSERT INTO ribbon_wall_items (wall_id, ribbon_id, slot_index)
-                VALUES (%s, %s, %s)
-            """, (wall_id, ribbon_id, slot_index))
+        cursor.execute('DELETE FROM ribbon_wall_charms WHERE wall_id = %s', (wall_id,))
+        for slot_index, item in enumerate(layout['items'], start=1):
+            if item['type'] == 'ribbon':
+                cursor.execute("""
+                    INSERT INTO ribbon_wall_items (wall_id, ribbon_id, slot_index)
+                    VALUES (%s, %s, %s)
+                """, (wall_id, item['id'], slot_index))
+            else:
+                cursor.execute("""
+                    INSERT INTO ribbon_wall_charms
+                        (wall_id, charm_id, slot_index, image_url)
+                    VALUES (%s, %s, %s, %s)
+                """, (wall_id, item['id'], slot_index, charm_map[item['id']]))
 
         cursor.execute("""
             UPDATE ribbon_walls
             SET title = %s, subtitle = %s, is_active = %s, updated_by = %s
             WHERE id = %s
         """, (
-            payload['title'], payload['subtitle'], payload['is_active'],
+            payload['title'], payload['subtitle'], 1,
             g.openid, wall_id,
         ))
-
-        cursor.execute('DELETE FROM ribbon_wall_charms WHERE wall_id = %s', (wall_id,))
-        for index, image_url in enumerate(payload.get('charm_urls') or [], start=1):
-            if image_url:
-                cursor.execute("""
-                    INSERT INTO ribbon_wall_charms (wall_id, slot_index, image_url)
-                    VALUES (%s, %s, %s)
-                """, (wall_id, index, image_url))
 
         conn.commit()
         return jsonify({'code': 200, 'msg': '墙面已保存', 'data': {'id': wall_id}})
@@ -534,6 +569,96 @@ def update_ribbon(ribbon_id):
         conn.rollback()
         logging.exception('更新飘带失败')
         return jsonify({'code': 500, 'msg': '飘带保存失败，请稍后重试'})
+    finally:
+        if cursor:
+            cursor.close()
+
+
+@ribbon_bp.route('/admin/charms', methods=['POST'])
+@check_verified_and_blacklist
+@check_admin
+def create_charm():
+    try:
+        payload = normalize_charm_payload(request.get_json(silent=True) or {})
+    except ValueError as exc:
+        return jsonify({'code': 400, 'msg': str(exc)})
+
+    conn = get_db()
+    cursor = None
+    try:
+        cursor = conn.cursor()
+        cursor.execute('SELECT COALESCE(MAX(sort_order), 0) AS max_order FROM ribbon_charms')
+        sort_order = int(cursor.fetchone()['max_order'] or 0) + 1
+        cursor.execute("""
+            INSERT INTO ribbon_charms
+                (name, description, image_url, sort_order, is_active, created_by, updated_by)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+        """, (
+            payload['name'], payload['description'], payload['image_url'],
+            sort_order, payload['is_active'], g.openid, g.openid,
+        ))
+        charm_id = cursor.lastrowid
+        conn.commit()
+        return jsonify({'code': 200, 'msg': '挂件已创建', 'data': {'id': charm_id}})
+    except Exception:
+        conn.rollback()
+        logging.exception('创建挂件失败')
+        return jsonify({'code': 500, 'msg': '挂件创建失败，请稍后重试'})
+    finally:
+        if cursor:
+            cursor.close()
+
+
+@ribbon_bp.route('/admin/charms/<int:charm_id>', methods=['PUT'])
+@check_verified_and_blacklist
+@check_admin
+def update_charm(charm_id):
+    try:
+        payload = normalize_charm_payload(request.get_json(silent=True) or {}, partial=True)
+    except ValueError as exc:
+        return jsonify({'code': 400, 'msg': str(exc)})
+
+    conn = get_db()
+    cursor = None
+    try:
+        cursor = conn.cursor()
+        cursor.execute('SELECT id FROM ribbon_charms WHERE id = %s FOR UPDATE', (charm_id,))
+        if not cursor.fetchone():
+            return _rollback_response(conn, 404, '挂件不存在')
+        if payload.get('is_active') == 0:
+            cursor.execute("""
+                SELECT w.id
+                FROM ribbon_wall_charms wc
+                JOIN ribbon_walls w ON w.id = wc.wall_id
+                WHERE wc.charm_id = %s AND w.is_active = 1
+                LIMIT 1
+            """, (charm_id,))
+            if cursor.fetchone():
+                return _rollback_response(conn, 400, '请先从墙面移除该挂件，再停用')
+
+        assignments = []
+        params = []
+        for field in ('name', 'description', 'image_url', 'is_active'):
+            if field in payload:
+                assignments.append(f'{field} = %s')
+                params.append(payload[field])
+        assignments.append('updated_by = %s')
+        params.extend([g.openid, charm_id])
+        cursor.execute(
+            f"UPDATE ribbon_charms SET {', '.join(assignments)} WHERE id = %s",
+            tuple(params),
+        )
+        if 'image_url' in payload:
+            cursor.execute(
+                'UPDATE ribbon_wall_charms SET image_url = %s WHERE charm_id = %s',
+                (payload['image_url'], charm_id),
+            )
+        conn.commit()
+        return jsonify({'code': 200, 'msg': '挂件已保存'})
+    except Exception:
+        conn.rollback()
+        logging.exception('更新挂件失败')
+        return jsonify({'code': 500, 'msg': '挂件保存失败，请稍后重试'})
     finally:
         if cursor:
             cursor.close()
