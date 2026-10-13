@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify, g
 from flask.json.provider import DefaultJSONProvider
 from achievement_service import count_valid_attendance
 from verification_domain import question_metadata, question_submission_changed
+from wechat_access_token import api_base_url, call_with_access_token
 import requests
 from datetime import datetime
 import os
@@ -150,57 +151,14 @@ def rate_limit(limit_string):
         return func
     return noop_dec
 
-# ==================== access_token 缓存 ====================
-_access_token_cache = {
-    'token': None,
-    'expires_at': 0
-}
-
-def get_access_token():
-    """获取微信接口调用凭据 access_token，带内存缓存"""
-    now = time.time()
-    if _access_token_cache['token'] and _access_token_cache['expires_at'] > now + 300:
-        return _access_token_cache['token']
-
-    try:
-        base_url = app.config.get('WX_API_BASE', 'https://api.weixin.qq.com')
-        url = f'{base_url}/cgi-bin/token'
-        params = {
-            'grant_type': 'client_credential',
-            'appid': app.config['WX_APPID'],
-            'secret': app.config['WX_SECRET']
-        }
-        res = requests.get(url, params=params, timeout=10)
-        data = res.json()
-
-        if 'access_token' not in data:
-            logging.error(f"获取access_token失败: {data}")
-            return None
-
-        _access_token_cache['token'] = data['access_token']
-        _access_token_cache['expires_at'] = now + data.get('expires_in', 7200)
-        return data['access_token']
-    except requests.RequestException as e:
-        logging.error("获取access_token网络异常: %s", type(e).__name__)
-        return None
-    except Exception:
-        logging.exception("获取access_token异常")
-        return None
-
-
 def check_text_security(content, openid, scene=1, title=''):
     """调用微信 security.msgSecCheck 检测文本内容是否合规"""
     if not content or not content.strip():
         return True, ''
 
-    access_token = get_access_token()
-    if not access_token:
-        logging.warning("access_token获取失败，跳过内容安全检测")
-        return True, ''
-
     try:
-        base_url = app.config.get('WX_API_BASE', 'https://api.weixin.qq.com')
-        url = f'{base_url}/wxa/msg_sec_check?access_token={access_token}'
+        base_url = api_base_url(app.config.get('WX_API_BASE', 'https://api.weixin.qq.com'))
+        url = f'{base_url}/wxa/msg_sec_check'
         body = {
             'content': content,
             'version': 2,
@@ -210,8 +168,10 @@ def check_text_security(content, openid, scene=1, title=''):
         if title:
             body['title'] = title
 
-        res = requests.post(url, json=body, timeout=10)
-        data = res.json()
+        data = call_with_access_token(
+            lambda token: requests.post(url, params={'access_token': token}, json=body, timeout=10).json(),
+            base_url, app.config['WX_APPID'], app.config['WX_SECRET'],
+        )
 
         if data.get('errcode') == 0:
             result = data.get('result', {})
@@ -223,24 +183,19 @@ def check_text_security(content, openid, scene=1, title=''):
         elif data.get('errcode') == 87014:
             return False, '内容含有违法违规内容，请修改后重新提交'
         else:
-            logging.warning(f"内容安全检测接口返回: {data}")
-            return True, ''
+            logging.warning("内容安全检测失败，错误码：%s", data.get('errcode'))
+            return False, '内容检测暂时不可用，请稍后重试'
     except requests.RequestException as e:
         logging.error("内容安全检测网络异常: %s", type(e).__name__)
-        return True, ''
+        return False, '内容检测暂时不可用，请稍后重试'
     except Exception:
         logging.exception("内容安全检测异常")
-        return True, ''
+        return False, '内容检测暂时不可用，请稍后重试'
 
 
 def check_image_security(image_data, openid):
     """调用微信 security.imgSecCheck 检测图片内容是否合规"""
     if not image_data:
-        return True, ''
-
-    access_token = get_access_token()
-    if not access_token:
-        logging.warning("access_token获取失败，跳过图片安全检测")
         return True, ''
 
     import tempfile
@@ -250,25 +205,28 @@ def check_image_security(image_data, openid):
             f.write(image_data)
             temp_path = f.name
 
-        base_url = app.config.get('WX_API_BASE', 'https://api.weixin.qq.com')
-        url = f'{base_url}/wxa/img_sec_check?access_token={access_token}'
-        with open(temp_path, 'rb') as f:
-            res = requests.post(url, files={'media': f}, timeout=30)
+        base_url = api_base_url(app.config.get('WX_API_BASE', 'https://api.weixin.qq.com'))
+        url = f'{base_url}/wxa/img_sec_check'
 
-        data = res.json()
+        def send_image(token):
+            # 重试时重新打开文件，避免第二次请求上传空图片。
+            with open(temp_path, 'rb') as f:
+                return requests.post(url, params={'access_token': token}, files={'media': f}, timeout=30).json()
+
+        data = call_with_access_token(send_image, base_url, app.config['WX_APPID'], app.config['WX_SECRET'])
         if data.get('errcode') == 0:
             return True, ''
         elif data.get('errcode') == 87014:
             return False, '图片包含违规内容，请更换图片后重新提交'
         else:
-            logging.warning(f"图片安全检测接口返回: {data}")
-            return True, ''
+            logging.warning("图片安全检测失败，错误码：%s", data.get('errcode'))
+            return False, '图片检测暂时不可用，请稍后重试'
     except requests.RequestException as e:
         logging.error("图片安全检测网络异常: %s", type(e).__name__)
-        return True, ''
+        return False, '图片检测暂时不可用，请稍后重试'
     except Exception:
         logging.exception("图片安全检测异常")
-        return True, ''
+        return False, '图片检测暂时不可用，请稍后重试'
     finally:
         if temp_path:
             try:

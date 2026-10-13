@@ -11,6 +11,7 @@ import requests
 
 from config import WX_API_BASE, WX_APPID, WX_SECRET
 from db_utils import get_db
+from wechat_access_token import api_base_url, call_with_access_token
 
 
 TEMPLATE_BLACKLIST = os.environ.get(
@@ -34,7 +35,6 @@ ADMIN_TEMPLATE_IDS = (TEMPLATE_PENDING_APPROVAL, TEMPLATE_BLACKLIST)
 USER_TEMPLATE_IDS = (TEMPLATE_ACTIVITY_REMINDER, TEMPLATE_LOTTERY_START)
 ALL_TEMPLATE_IDS = set(ADMIN_TEMPLATE_IDS + USER_TEMPLATE_IDS)
 
-_access_token_cache = {'token': None, 'expires_at': 0}
 _worker_started = False
 _worker_start_lock = threading.Lock()
 _WEATHER_CA_BUNDLE = '/etc/ssl/certs/ca-certificates.crt'
@@ -61,27 +61,6 @@ def _thing_with_suffix(value, suffix, limit=20):
 
 def _message_data(values):
     return {key: {'value': value} for key, value in values.items()}
-
-
-def get_access_token():
-    """获取发送订阅消息所需 access_token；沿用项目现有 WX_API_BASE。"""
-    now = time.time()
-    if _access_token_cache['token'] and _access_token_cache['expires_at'] > now + 300:
-        return _access_token_cache['token']
-
-    url = f"{WX_API_BASE.rstrip('/')}/cgi-bin/token"
-    response = requests.get(url, params={
-        'grant_type': 'client_credential',
-        'appid': WX_APPID,
-        'secret': WX_SECRET,
-    }, timeout=10)
-    result = response.json()
-    token = result.get('access_token')
-    if not token:
-        raise RuntimeError(f"获取access_token失败: {result.get('errcode')} {result.get('errmsg', '')}")
-    _access_token_cache['token'] = token
-    _access_token_cache['expires_at'] = now + int(result.get('expires_in') or 7200)
-    return token
 
 
 def record_subscription_results(openid, results):
@@ -367,17 +346,19 @@ def _discover_lottery_reminders(cursor):
 
 
 def _send_job(job):
-    token = get_access_token()
-    url = f"{WX_API_BASE.rstrip('/')}/cgi-bin/message/subscribe/send"
-    response = requests.post(url, params={'access_token': token}, json={
+    url = f"{api_base_url(WX_API_BASE)}/cgi-bin/message/subscribe/send"
+    body = {
         'touser': job['recipient_openid'],
         'template_id': job['template_id'],
         'page': job.get('page_path') or 'pages/home/home',
         'miniprogram_state': os.environ.get('WX_MINIPROGRAM_STATE', 'formal'),
         'lang': 'zh_CN',
         'data': json.loads(job['payload_json']),
-    }, timeout=10)
-    return response.json()
+    }
+    return call_with_access_token(
+        lambda token: requests.post(url, params={'access_token': token}, json=body, timeout=10).json(),
+        WX_API_BASE, WX_APPID, WX_SECRET,
+    )
 
 
 def process_notification_jobs(batch_size=50):

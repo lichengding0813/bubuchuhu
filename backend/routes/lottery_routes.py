@@ -912,7 +912,7 @@ def my_lottery_prizes():
             WHERE r.user_openid = %s
             ORDER BY r.drawn_at DESC, r.id DESC
         """, (g.openid,))
-        prizes = cursor.fetchall()
+        prizes = list(cursor.fetchall())
         for prize in prizes:
             prize['source_type'] = 'lottery'
             prize['source_id'] = prize['record_id']
