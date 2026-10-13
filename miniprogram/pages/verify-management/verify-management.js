@@ -1,23 +1,22 @@
-// 示例数据：后端暂无验证问题时兜底展示，保存后写入真实数据
-const SAMPLE_QUESTIONS = [
-  { id: 'sample-1', question: '玛莎的全名是？', answers_text: '蔡昇晏', is_active: 1 },
-];
+const { post } = require('../../utils/api');
+const { DEFAULT_VERIFY_IMAGE } = require('../../utils/config');
 
 Page({
   data: {
     questionList: [],
     isLoading: false,
-    isSampleData: false,
+    loadError: '',
+    saving: false,
+    uploading: false,
+    defaultImage: DEFAULT_VERIFY_IMAGE,
+    togglingId: null,
     // 编辑弹窗
     showEditPopup: false,
     editingId: null,
     editQuestion: '',
+    editImage: DEFAULT_VERIFY_IMAGE,
     editAnswerList: [],
     answerInput: ''
-  },
-
-  onLoad() {
-    this.loadQuestions();
   },
 
   onShow() {
@@ -25,7 +24,8 @@ Page({
   },
 
   async loadQuestions() {
-    this.setData({ isLoading: true });
+    if (this.data.isLoading) return;
+    this.setData({ isLoading: true, loadError: '' });
     try {
       const userInfo = wx.getStorageSync('userInfo');
       const result = await wx.cloud.callContainer({
@@ -42,17 +42,13 @@ Page({
       if (result.data && result.data.code === 200) {
         const list = result.data.data || [];
         // 正常返回：即使为空也按真实数据展示（空状态由页面提示，不展示示例数据）
-        this.setData({ questionList: list, isSampleData: false });
+        this.setData({ questionList: list.map(item => ({ ...item, is_active: Number(item.is_active) })) });
       } else {
-        // 加载失败：兜底展示示例数据
-        wx.showToast({ title: result.data?.msg || '加载失败', icon: 'none' });
-        this.setData({ questionList: SAMPLE_QUESTIONS, isSampleData: true });
+        this.setData({ loadError: result.data?.msg || '验证问题加载失败' });
       }
     } catch (error) {
-      // 请求异常：兜底展示示例数据
       console.error('加载验证问题失败:', error);
-      wx.showToast({ title: '网络错误', icon: 'error' });
-      this.setData({ questionList: SAMPLE_QUESTIONS, isSampleData: true });
+      this.setData({ loadError: '验证问题加载失败' });
     } finally {
       this.setData({ isLoading: false });
     }
@@ -61,21 +57,26 @@ Page({
   // ==================== 新增/编辑 ====================
 
   onAddQuestion() {
+    if (this.data.saving || this.data.uploading) return;
     this.setData({
       showEditPopup: true,
       editingId: null,
       editQuestion: '',
+      editImage: DEFAULT_VERIFY_IMAGE,
       editAnswerList: [],
       answerInput: ''
     });
   },
 
   onEditQuestion(e) {
+    if (this.data.saving || this.data.uploading) return;
     const { id, question, answers } = e.currentTarget.dataset;
+    const item = this.data.questionList.find(item => Number(item.id) === Number(id));
     this.setData({
       showEditPopup: true,
       editingId: id,
       editQuestion: question,
+      editImage: item?.image_url || DEFAULT_VERIFY_IMAGE,
       editAnswerList: answers ? answers.split(',').map(s => s.trim()).filter(s => s) : [],
       answerInput: ''
     });
@@ -110,10 +111,12 @@ Page({
   },
 
   onEditPopupClose() {
+    if (this.data.saving || this.data.uploading) return;
     this.setData({ showEditPopup: false });
   },
 
   async onSaveQuestion() {
+    if (this.data.saving || this.data.uploading) return;
     const { editQuestion, editAnswerList, editingId } = this.data;
     if (!editQuestion.trim()) {
       wx.showToast({ title: '请输入问题', icon: 'none' });
@@ -124,6 +127,7 @@ Page({
       return;
     }
 
+    this.setData({ saving: true });
     const answersStr = editAnswerList.join(',');
     wx.showLoading({ title: '保存中...' });
     try {
@@ -144,7 +148,8 @@ Page({
         },
         data: {
           question: editQuestion.trim(),
-          answers: answersStr
+          answers: answersStr,
+          image_url: this.data.editImage
         }
       });
 
@@ -160,21 +165,63 @@ Page({
       wx.hideLoading();
       console.error('保存验证问题失败:', error);
       wx.showToast({ title: '网络错误', icon: 'error' });
-    }
+    } finally { this.setData({ saving: false }); }
   },
 
   // ==================== 启用/禁用 ====================
 
+  onChooseImage() {
+    if (this.data.saving || this.data.uploading) return;
+    wx.chooseImage({
+      count: 1, sizeType: ['compressed'], sourceType: ['album', 'camera'],
+      success: result => this.uploadImage(result.tempFilePaths[0])
+    });
+  },
+
+  async uploadImage(filePath) {
+    if (!filePath || this.data.saving || this.data.uploading) return;
+    this.setData({ uploading: true });
+    let fileID = '';
+    try {
+      const extension = filePath.match(/\.(png|jpg|jpeg|webp)$/i)?.[1]?.toLowerCase() || 'jpg';
+      const result = await wx.cloud.uploadFile({
+        cloudPath: `verification/questions/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${extension}`,
+        filePath
+      });
+      fileID = result.fileID;
+      const temp = await wx.cloud.getTempFileURL({ fileList: [fileID] });
+      const url = temp.fileList?.[0]?.tempFileURL;
+      if (!url) throw new Error('无法读取上传图片');
+      await post('/check-image-url', { url }, { silent: true });
+      this.setData({ editImage: fileID });
+      wx.showToast({ title: '图片已上传', icon: 'success' });
+    } catch (error) {
+      if (fileID) {
+        try { await wx.cloud.deleteFile({ fileList: [fileID] }); } catch (_) {}
+      }
+      wx.showToast({ title: error.response?.msg || error.message || '上传失败', icon: 'none' });
+    } finally {
+      this.setData({ uploading: false });
+    }
+  },
+
+  onResetImage() {
+    if (!this.data.saving && !this.data.uploading) this.setData({ editImage: DEFAULT_VERIFY_IMAGE });
+  },
+
   async onToggleActive(e) {
-    const { id, active } = e.currentTarget.dataset;
-    const newActive = active ? 0 : 1;
+    const { id } = e.currentTarget.dataset;
+    if (this.data.togglingId || this.data.saving || this.data.uploading) return;
+    const q = this.data.questionList.find(item => Number(item.id) === Number(id));
+    if (!q) return;
+    const newActive = e.detail.value ? 1 : 0;
+    const previousActive = q.is_active;
+    this.setData({ togglingId: id, questionList: this.data.questionList.map(item => Number(item.id) === Number(id) ? { ...item, is_active: newActive } : item) });
 
     wx.showLoading({ title: '操作中...' });
     try {
       const userInfo = wx.getStorageSync('userInfo');
       // 找到当前问题，获取 question 和 answers
-      const q = this.data.questionList.find(item => item.id === id);
-      if (!q) return;
 
       const result = await wx.cloud.callContainer({
         config: { env: "prod-3gktwx67d1dd1e76" },
@@ -197,12 +244,14 @@ Page({
         wx.showToast({ title: newActive ? '已启用' : '已禁用', icon: 'success' });
         this.loadQuestions();
       } else {
+        this.setData({ questionList: this.data.questionList.map(item => Number(item.id) === Number(id) ? { ...item, is_active: previousActive } : item) });
         wx.showToast({ title: result.data?.msg || '操作失败', icon: 'none' });
       }
     } catch (error) {
+      this.setData({ questionList: this.data.questionList.map(item => Number(item.id) === Number(id) ? { ...item, is_active: previousActive } : item) });
       wx.hideLoading();
       wx.showToast({ title: '网络错误', icon: 'error' });
-    }
+    } finally { this.setData({ togglingId: null }); }
   },
 
   // ==================== 删除 ====================

@@ -1,0 +1,60 @@
+<view class="achievement-page">
+  <ui-state loading="{{loading}}" error="{{loadError}}" bind:retry="onRetry" />
+
+  <block wx:if="{{!loading && !loadError}}">
+    <view class="summary-card">
+      <view class="summary-main">
+        <view><text class="summary-number">{{attendanceCount}}</text><text class="summary-unit">次</text></view>
+        <text class="summary-label">有效官方活动</text>
+      </view>
+      <view class="summary-progress">
+        <view class="summary-row"><text>累计徽章</text><text>{{milestoneUnlocked}} / {{milestoneTotal}}</text></view>
+        <view class="progress-track"><view class="progress-value" style="width:{{nextMilestone ? nextMilestone.progress.percent : 100}}%"></view></view>
+        <text class="next-copy">{{nextMilestone ? '下一枚 · ' + nextMilestone.name + '（' + nextMilestone.threshold_count + '次）' : '累计徽章已全部点亮'}}</text>
+      </view>
+    </view>
+
+    <view class="section-title"><text>累计徽章</text><text>{{milestoneUnlocked}} / {{milestoneTotal}}</text></view>
+    <view class="badge-grid">
+      <view wx:for="{{milestones}}" wx:key="id" class="badge-card {{item.unlocked ? 'unlocked' : 'locked'}}" data-id="{{item.id}}" data-type="milestone" bindtap="onBadgeTap">
+        <view class="badge-image-wrap">
+          <image class="badge-image" src="{{item.image_url}}" mode="aspectFit" />
+          <view wx:if="{{!item.unlocked}}" class="lock-mark"><van-icon name="lock" size="16px" /></view>
+          <text wx:if="{{item.is_physical}}" class="physical-tag">实物</text>
+        </view>
+        <text class="badge-name">{{item.name}}</text>
+        <text class="badge-description">{{item.description}}</text>
+        <view class="badge-progress" wx:if="{{!item.unlocked}}"><view style="width:{{item.progress.percent}}%"></view></view>
+        <text class="badge-status">{{item.statusText}}</text>
+      </view>
+    </view>
+
+    <block wx:if="{{eventBadges.length}}">
+      <view class="section-title event-title"><text>彩蛋徽章</text><text>{{eventUnlocked}}</text></view>
+      <view class="badge-grid">
+        <view wx:for="{{eventBadges}}" wx:key="id" class="badge-card unlocked event" data-id="{{item.id}}" data-type="event" bindtap="onBadgeTap">
+          <view class="badge-image-wrap"><image class="badge-image" src="{{item.image_url}}" mode="aspectFit" /></view>
+          <text class="badge-name">{{item.name}}</text>
+          <text class="badge-description">{{item.description}}</text>
+          <text class="badge-status">已点亮</text>
+        </view>
+      </view>
+    </block>
+
+  </block>
+
+  <view wx:if="{{canManage && !loading && !selectedBadge}}" class="admin-gear-fab ui-fab" bindtap="goToAdmin" aria-role="button" aria-label="进入成就管理"><van-icon name="setting-o" size="30px" color="#fff" /></view>
+</view>
+
+<view wx:if="{{selectedBadge}}" class="detail-mask" catchtouchmove="preventTouchMove" bindtap="closeBadgeDetail"></view>
+<view wx:if="{{selectedBadge}}" class="detail-sheet" catchtouchmove="preventTouchMove">
+  <view class="detail-close" bindtap="closeBadgeDetail"><van-icon name="cross" size="18px" /></view>
+  <image class="detail-image {{selectedBadge.unlocked ? '' : 'locked'}}" src="{{selectedBadge.image_url}}" mode="aspectFit" />
+  <text class="detail-name">{{selectedBadge.name}}</text>
+  <text class="detail-description">{{selectedBadge.description}}</text>
+  <text class="detail-line" wx:if="{{selectedBadge.unlocked && selectedBadge.obtained_at}}">点亮时间：{{selectedBadge.obtained_at}}</text>
+  <text class="detail-line" wx:if="{{selectedBadge.unlocked && selectedBadge.source_activity_name}}">来源活动：{{selectedBadge.source_activity_name}}</text>
+  <text class="detail-line strong" wx:if="{{selectedBadge.is_physical && selectedBadge.unlocked}}">{{selectedBadge.rewardText}}</text>
+  <text class="detail-line strong" wx:elif="{{!selectedBadge.unlocked}}">{{selectedBadge.statusText}}</text>
+  <view wx:if="{{selectedBadge.is_physical && selectedBadge.unlocked && selectedBadge.reward_id}}" class="detail-action" bindtap="goToMyPrizes">查看我的奖品</view>
+</view>

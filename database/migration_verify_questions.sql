@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS `verify_questions` (
     `id` int(11) NOT NULL AUTO_INCREMENT,
     `question` varchar(500) NOT NULL COMMENT '问题文本',
     `answers` text NOT NULL COMMENT '可接受的答案，逗号分隔',
+    `image_url` varchar(500) NOT NULL DEFAULT 'cloud://prod-3gktwx67d1dd1e76.7072-prod-3gktwx67d1dd1e76-1392222183/verify.png' COMMENT '验证题云存储图片',
     `sort_order` int(11) DEFAULT 0 COMMENT '排序权重',
     `is_active` tinyint(1) DEFAULT 1 COMMENT '是否启用（0=禁用，1=启用）',
     `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,

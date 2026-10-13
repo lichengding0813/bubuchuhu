@@ -3,6 +3,7 @@ Page({
     currentTab: 'pending',
     activityList: [],
     isLoading: false,
+    loadError: '',
     page: 1,
     pageSize: 10,
     hasMore: true,
@@ -26,14 +27,14 @@ Page({
     }
   },
 
-  onPullDownRefresh() {
-    this.loadActivities(true);
-    setTimeout(() => wx.stopPullDownRefresh(), 1000);
+  async onPullDownRefresh() {
+    try { await this.loadActivities(true); } finally { wx.stopPullDownRefresh(); }
   },
+
+  onRetry() { return this.loadActivities(this.data.activityList.length === 0); },
 
   onReachBottom() {
     if (this.data.hasMore && !this.data.isLoading) {
-      this.setData({ page: this.data.page + 1 });
       this.loadActivities(false);
     }
   },
@@ -62,13 +63,15 @@ Page({
       this.showVerifyDialog();
     } else if (userInfo.isBlacklist === 1) {
       this.setData({ showLockedDialog: true });
-    } else if (userInfo.verified === 1) {
-      this.loadActivities(true);
     }
   },
 
   // 获取活动列表
   async loadActivities(reset = false) {
+    if (!reset && this.data.isLoading) return;
+    const requestId = (this.listRequestId || 0) + 1;
+    this.listRequestId = requestId;
+    this.setData({ isLoading: true, loadError: '' });
     if (reset) {
       this.setData({
         page: 1,
@@ -80,7 +83,8 @@ Page({
 
     try {
       const userInfo = this.data.userInfo || wx.getStorageSync('userInfo');
-      const { currentTab, page, pageSize } = this.data;
+      const { currentTab, pageSize } = this.data;
+      const page = reset ? 1 : this.data.page + 1;
 
       // 根据tab选择不同的接口
       let path = '';
@@ -112,6 +116,7 @@ Page({
         }
       });
 
+      if (requestId !== this.listRequestId) return;
       console.log('=== 接口返回 ===');
       console.log('result.data:', result.data);
 
@@ -150,7 +155,7 @@ Page({
             description: item.description,
             max_participants: item.max_participants,
             participant_count: item.participant_count || 0,
-            status: item.status,
+            status: Number(item.status),
             creator_name: item.creator_name || item.nickName || item.creator_nickname || '未知',
             reject_reason: item.reject_reason,
             difficulty: this.getDifficultyText(item.difficulty),
@@ -163,12 +168,14 @@ Page({
         if (reset) {
           this.setData({
             activityList: formattedList,
+            page,
             hasMore: formattedList.length === pageSize && (page * pageSize < total),
             isLoading: false
           });
         } else {
           this.setData({
             activityList: [...this.data.activityList, ...formattedList],
+            page,
             hasMore: formattedList.length === pageSize && (page * pageSize < total),
             isLoading: false
           });
@@ -194,18 +201,14 @@ Page({
       }
     } catch (error) {
       console.error('获取活动列表失败:', error);
-      wx.showToast({
-        title: '加载活动失败',
-        icon: 'none'
-      });
-      this.setData({ isLoading: false });
+      if (requestId !== this.listRequestId) return;
+      this.setData({ isLoading: false, loadError: '活动加载失败' });
     }
   },
 
   // 加载更多
   loadMore() {
     if (this.data.hasMore && !this.data.isLoading) {
-      this.setData({ page: this.data.page + 1 });
       this.loadActivities(false);
     }
   },
@@ -299,8 +302,7 @@ Page({
           this.setData({ showVerifyDialog: false });
           wx.showToast({ title: '验证通过', icon: 'success' });
           // 验证通过后加载数据
-          this.loadTotalCount();
-          this.loadActivities(true);
+            this.loadActivities(true);
         } else {
           const attempts = userData.verifyAttempts || 0;
           const left = 3 - attempts;

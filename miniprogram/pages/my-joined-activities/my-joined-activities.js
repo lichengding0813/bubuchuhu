@@ -1,18 +1,59 @@
+const { get } = require('../../utils/api');
+
 Page({
   data: {
     ongoingCount: 0,
     endedCount: 0,
     currentTab: 'ongoing', // ongoing, ended
     currentList: [],
-    isLoading: false
-  },
-
-  onLoad() {
-    this.loadData();
+    isLoading: false,
+    loadError: '',
+    hikeStats: { total_activities: 0, total_distance: 0, total_climb: 0 },
+    statsReady: false,
+    statsLoading: false,
+    statsError: ''
   },
 
   onShow() {
     this.loadData();
+    this.loadHikeStats();
+  },
+
+  async onPullDownRefresh() {
+    try {
+      await Promise.all([this.loadData(), this.loadHikeStats()]);
+    } finally {
+      wx.stopPullDownRefresh();
+    }
+  },
+
+  async loadHikeStats() {
+    if (!wx.getStorageSync('userInfo')?.openId) {
+      this.setData({ statsError: '请先登录' });
+      return;
+    }
+    if (this.data.statsLoading) return this.statsRequest;
+    this.setData({ statsLoading: true, statsError: '' });
+    this.statsRequest = (async () => {
+      try {
+        const result = await get('/user/stats', {}, { silent: true });
+        const data = result.data || {};
+        this.setData({
+          hikeStats: {
+            total_activities: Number(data.total_activities || 0),
+            total_distance: Number(data.total_distance || 0),
+            total_climb: Number(data.total_climb || 0)
+          },
+          statsReady: true
+        });
+      } catch (error) {
+        console.error('加载徒步统计失败:', error);
+        this.setData({ statsError: '统计加载失败' });
+      } finally {
+        this.setData({ statsLoading: false });
+      }
+    })();
+    return this.statsRequest;
   },
 
   switchTab(e) {
@@ -23,61 +64,65 @@ Page({
   },
 
   async loadData() {
+    if (this.data.isLoading) return this.listRequest;
     const userInfo = wx.getStorageSync('userInfo');
     if (!userInfo?.openId) {
-      wx.showToast({ title: '请先登录', icon: 'none' });
+      this.setData({ loadError: '请先登录' });
       return;
     }
 
-    this.setData({ isLoading: true });
-
-    try {
-      const result = await wx.cloud.callContainer({
-        config: { env: "prod-3gktwx67d1dd1e76" },
-        path: "/api/activity/my-participations-grouped",
-        header: {
-          "X-WX-SERVICE": "flask-mysql-login",
-          "X-Wx-OpenId": userInfo.openId,
-          "content-type": "application/json"
-        },
-        method: "GET"
-      });
-
-      if (result.data && result.data.code === 200) {
-        let { ongoing = [], ended = [] } = result.data.data;
-
-        // 前端过滤：排除已取消的报名记录（activity_participants.status=0 表示已取消）
-        const filterCancelled = (list) => list.filter(item => item.status !== 0);
-        ongoing = filterCancelled(ongoing);
-        ended = filterCancelled(ended);
-
-        // 格式化时间
-        const formatList = (list) => list.map(item => ({
-          ...item,
-          activity_time_formatted: this.formatDateTime(item.activity_time),
-          is_force_insurance: Number(item.is_force_insurance) === 1 ? 1 : 0
-        }));
-
-        const ongoingFormatted = formatList(ongoing);
-        const endedFormatted = formatList(ended);
-
-        this.setData({
-          ongoingCount: ongoingFormatted.length,
-          endedCount: endedFormatted.length,
-          ongoingList: ongoingFormatted,
-          endedList: endedFormatted
+    this.setData({ isLoading: true, loadError: '' });
+    this.listRequest = (async () => {
+      try {
+        const result = await wx.cloud.callContainer({
+          config: { env: "prod-3gktwx67d1dd1e76" },
+          path: "/api/activity/my-participations-grouped",
+          header: {
+            "X-WX-SERVICE": "flask-mysql-login",
+            "X-Wx-OpenId": userInfo.openId,
+            "content-type": "application/json"
+          },
+          method: "GET"
         });
 
-        this.updateCurrentList();
-      } else {
-        wx.showToast({ title: result.data?.msg || '加载失败', icon: 'none' });
+        if (result.data && result.data.code === 200) {
+          let { ongoing = [], ended = [] } = result.data.data;
+
+          // 前端过滤：排除已取消的报名记录（activity_participants.status=0 表示已取消）
+          const filterCancelled = (list) => list.filter(item => Number(item.status) !== 0);
+          ongoing = filterCancelled(ongoing);
+          ended = filterCancelled(ended);
+
+          // 格式化时间
+          const formatList = (list) => list.map(item => ({
+            ...item,
+            activity_status: Number(item.activity_status),
+            activity_time_formatted: this.formatDateTime(item.activity_time),
+            is_force_insurance: Number(item.is_force_insurance) === 1 ? 1 : 0
+          }));
+
+          const ongoingFormatted = formatList(ongoing);
+          const endedFormatted = formatList(ended);
+
+          this.setData({
+            ongoingCount: ongoingFormatted.length,
+            endedCount: endedFormatted.length,
+            ongoingList: ongoingFormatted,
+            endedList: endedFormatted
+          });
+
+          this.updateCurrentList();
+        } else {
+          this.setData({ loadError: result.data?.msg || '活动加载失败' });
+        }
+      } catch (error) {
+        console.error('加载报名活动失败:', error);
+        this.setData({ loadError: '活动加载失败' });
+      } finally {
+        this.setData({ isLoading: false });
       }
-    } catch (error) {
-      console.error('加载报名活动失败:', error);
-      wx.showToast({ title: '网络错误', icon: 'error' });
-    } finally {
-      this.setData({ isLoading: false });
-    }
+    })();
+    return this.listRequest;
   },
 
   updateCurrentList() {

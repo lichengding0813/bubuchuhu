@@ -25,8 +25,9 @@ page { background: #f4f8fb; color: #173f5c; }
 .activity-link { justify-content: space-between; padding: 10px 0; margin-top: 10px; border-top: 1px solid #edf3f7; border-bottom: 1px solid #edf3f7; color: #3c83b1; font-size: 11px; }
 .claim-info { padding: 9px 1px 2px; color: #748c9e; font-size: 10px; line-height: 1.65; }
 .code-card { justify-content: space-between; padding: 11px 13px; margin-top: 9px; border: 1px dashed #8fc5e6; border-radius: 14px; background: #f2faff; }
+.code-card > view { min-width: 0; flex: 1; margin-right: 10px; }
 .code-label { color: #8298a9; font-size: 9px; }
-.code-value { margin-top: 2px; color: #2878ac; font-size: 15px; font-weight: 900; letter-spacing: .8px; }
+.code-value { margin-top: 2px; color: #2878ac; font-size: 15px; font-weight: 900; letter-spacing: .8px; word-break: break-all; }
 .copy { padding: 5px 10px; border-radius: 12px; color: #fff; background: #4d9fd7; font-size: 9px; }
 .qr-entry { display: flex; height: 38px; align-items: center; justify-content: center; margin-top: 8px; border-radius: 19px; color: #fff; background: #4d9fd7; font-size: 11px; font-weight: 700; }
 .qr-panel { display: flex; align-items: center; flex-direction: column; padding: 23px 20px 20px; background: #fff; }

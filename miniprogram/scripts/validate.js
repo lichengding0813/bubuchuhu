@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
+const { createRequire } = require('module');
 
 const root = path.resolve(__dirname, '..');
 const skipped = new Set(['node_modules', 'miniprogram_npm']);
@@ -15,6 +16,22 @@ function walk(directory, callback) {
 }
 
 const errors = [];
+const { APP_VERSION } = require(path.join(root, 'utils/config'));
+const packageInfo = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
+const packageLock = JSON.parse(fs.readFileSync(path.join(root, 'package-lock.json'), 'utf8'));
+let updateList = [];
+const updatePath = path.join(root, 'pages/update-log/update-log.js');
+vm.runInNewContext(fs.readFileSync(updatePath, 'utf8'), {
+  Page(page) { updateList = page.data.updateList; },
+  require: createRequire(updatePath)
+}, { filename: updatePath });
+if (!/^\d+\.\d+\.\d+$/.test(APP_VERSION) ||
+    [packageInfo.version, packageLock.version, packageLock.packages[''].version, updateList[0]?.version].some(version => version !== APP_VERSION)) {
+  errors.push('运行配置、包配置和最新更新记录的版本号不一致');
+}
+if (!fs.readFileSync(path.join(root, 'pages/profile/profile.wxml'), 'utf8').includes('当前版本 v{{appVersion}}')) {
+  errors.push('个人页应读取统一配置中的版本号');
+}
 walk(root, (filePath) => {
   try {
     if (filePath.endsWith('.js')) {

@@ -42,12 +42,12 @@
       <text class="section-title">发现活动</text>
     </view>
 
-    <view class="home-tabs">
-      <view class="home-tab {{currentTab === 'ongoing' ? 'active' : ''}}" bindtap="switchTab" data-tab="ongoing">
+    <view class="home-tabs ui-tabs">
+      <view class="home-tab ui-tab {{currentTab === 'ongoing' ? 'active' : ''}}" bindtap="switchTab" data-tab="ongoing">
         <text>近期活动</text>
         <text class="tab-count" wx:if="{{ongoingCount > 0}}">{{ongoingCount}}</text>
       </view>
-      <view class="home-tab {{currentTab === 'ended' ? 'active' : ''}}" bindtap="switchTab" data-tab="ended">
+      <view class="home-tab ui-tab {{currentTab === 'ended' ? 'active' : ''}}" bindtap="switchTab" data-tab="ended">
         <text>往期活动</text>
         <text class="tab-count" wx:if="{{endedCount > 0}}">{{endedCount}}</text>
       </view>
@@ -79,19 +79,8 @@
 
   <!-- 活动列表 -->
   <view class="list-section">
-    <view wx:if="{{isLoading && activityList.length === 0}}" class="loading-container">
-      <van-loading size="40px" vertical>正在寻找好去处...</van-loading>
-    </view>
-
-    <view wx:elif="{{activityList.length === 0}}" class="empty-container">
-      <view class="empty-icon-wrap">
-        <van-icon name="todo-list-o" size="48" color="#9bb8cc" />
-      </view>
-      <text class="empty-title">{{filterAvailable || filterDifficulty !== '' || filterActivityMonth ? '没有符合筛选的活动' : (filterOfficial ? '暂时没有官方活动' : (currentTab === 'ongoing' ? '近期还没有活动' : '暂时没有往期活动'))}}</text>
-      <text class="empty-hint" wx:if="{{currentTab === 'ongoing' && !filterOfficial && !filterAvailable && filterDifficulty === '' && !filterActivityMonth}}">不如发起一场新的出发</text>
-    </view>
-
-    <block wx:else>
+    <ui-state wx:if="{{activityList.length === 0}}" loading="{{isLoading}}" error="{{loadError}}" empty="{{!isLoading && !loadError}}" empty-text="{{filterAvailable || filterDifficulty !== '' || filterActivityMonth ? '没有符合筛选的活动' : (filterOfficial ? '暂无官方活动' : '暂无活动')}}" icon="todo-list-o" bind:retry="onRetry" />
+    <block wx:if="{{activityList.length}}">
       <view wx:for="{{activityList}}" wx:for-index="cardIndex" wx:key="id" class="activity-card {{cardIndex === 0 ? 'featured-card' : ''}} {{currentTab === 'ended' ? 'ended-card' : ''}}" data-id="{{item.id}}" bindtap="onActivityClick">
         <view class="card-left">
           <image class="cover-image" src="{{item.coverUrl}}" mode="aspectFill" wx:if="{{item.coverUrl}}" />
@@ -135,13 +124,11 @@
         </view>
       </view>
 
-      <view class="load-more" wx:if="{{!isLoading}}">
+      <view class="load-more" wx:if="{{!isLoading && !loadError}}">
         <text wx:if="{{hasMore}}" class="load-more-text">继续上滑，发现更多</text>
         <text wx:else class="load-more-text">— 已经看到最后啦 —</text>
       </view>
-      <view class="load-more" wx:if="{{isLoading && activityList.length > 0}}">
-        <van-loading size="24px">加载中...</van-loading>
-      </view>
+      <ui-state loading="{{isLoading}}" error="{{loadError}}" compact bind:retry="onRetry" />
     </block>
   </view>
 </view>
@@ -151,22 +138,8 @@
   <van-icon name="back-top" size="20" color="#5faee3" />
 </view>
 
-<!-- ========== 自定义验证弹窗 ========== -->
-<view class="custom-dialog" wx:if="{{showVerifyDialog}}">
-  <view class="dialog-mask" catchtouchmove="preventTouchMove"></view>
-  <view class="dialog-container">
-    <view class="dialog-title">验证问题</view>
-    <image class="dialog-image" src="cloud://prod-3gktwx67d1dd1e76.7072-prod-3gktwx67d1dd1e76-1392222183/verify.png" mode="widthFix" />
-    <view class="dialog-content">
-      <view class="question">{{verifyQuestion || '兽妈准备宵夜是？'}}</view>
-      <input class="dialog-input" type="text" placeholder="请输入答案" value="{{verifyAnswer}}" bindinput="onAnswerInput" focus="{{autoFocus}}" confirm-type="done" bindconfirm="onVerifyConfirm" />
-      <view class="error-tip" wx:if="{{verifyError}}">{{verifyError}}</view>
-    </view>
-    <view class="dialog-buttons">
-      <view class="dialog-btn dialog-btn-confirm" bindtap="onVerifyConfirm">确认</view>
-    </view>
-  </view>
-</view>
+<!-- ========== 验证题与提交确认 ========== -->
+<verify-dialog show="{{showVerifyDialog}}" question="{{verifyQuestion}}" question-idx="{{verifyQuestionIdx}}" question-image="{{verifyQuestionImage}}" user-openid="{{userInfo.openId}}" bind:result="onVerificationResult" />
 
 <!-- ========== 黑名单全屏遮罩 + 锁定弹窗 ========== -->
 <view class="blacklist-mask" wx:if="{{isBlacklisted}}" catchtouchmove="preventTouchMove" bindtap="onMaskTap"></view>

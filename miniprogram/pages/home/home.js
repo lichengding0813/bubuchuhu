@@ -12,6 +12,7 @@ Page({
     showScrollTop: false,
     userInfo: null,
     isLoading: false,
+    loadError: '',
     // 活动筛选
     filterAvailable: false,
     filterDifficulty: '',
@@ -33,6 +34,7 @@ Page({
     verifyError: '',
     verifyQuestion: '',
     verifyQuestionIdx: 0,
+    verifyQuestionImage: '',
     autoFocus: false,
     showLockedDialog: false,
     isBlacklisted: false,
@@ -73,7 +75,7 @@ Page({
 
   // 登录并获取用户信息
   async loginAndGetUser() {
-    this.setData({ isLoading: true });
+    this.setData({ isLoading: true, loadError: '' });
 
     // 优先检查是否有缓存的用户信息（其他页面已登录过）
     const cachedUserInfo = wx.getStorageSync('userInfo');
@@ -107,8 +109,7 @@ Page({
         this.getActivityList(true);
         return;
       }
-      wx.showToast({ title: '登录失败，请重试', icon: 'error' });
-      this.setData({ isLoading: false });
+      this.setData({ isLoading: false, loadError: '登录失败，请重试' });
     }
   },
 
@@ -123,6 +124,7 @@ Page({
     if (result.verifyQuestion) {
       userData.verifyQuestion = result.verifyQuestion;
       userData.verifyQuestionIdx = result.verifyQuestionIdx;
+      userData.verifyQuestionImage = result.verifyQuestionImage || '';
     }
     getApp().globalData.userInfo = userData;
     wx.setStorageSync('userInfo', userData);
@@ -153,7 +155,8 @@ Page({
       if (userData.verifyQuestion) {
         this.setData({
           verifyQuestion: userData.verifyQuestion,
-          verifyQuestionIdx: userData.verifyQuestionIdx
+          verifyQuestionIdx: userData.verifyQuestionIdx,
+          verifyQuestionImage: userData.verifyQuestionImage || ''
         });
       }
       this.showCustomVerifyDialog();
@@ -171,16 +174,18 @@ Page({
       this.setData({ isLoading: true });
     }
 
+    this.setData({ loadError: '' });
     try {
       const {
         currentTab,
-        page,
+        page: currentPage,
         pageSize,
         filterAvailable,
         filterDifficulty,
         filterActivityMonth,
         filterOfficial
       } = this.data;
+      const page = reset ? 1 : currentPage + 1;
       const params = { page, size: pageSize, tab: currentTab, sort: 'end_time' };
       if (filterAvailable && currentTab === 'ongoing') params.available = 1;
       if (filterDifficulty !== '') params.difficulty = filterDifficulty;
@@ -249,17 +254,18 @@ Page({
         }
         this.setData({
           activityList: newList,
+          page,
           hasMore: newList.length < total,
           isLoading: false,
           ...countUpdates
         });
       } else {
-        this.setData({ isLoading: false });
+        this.setData({ isLoading: false, loadError: result.msg || '活动加载失败' });
       }
     } catch (error) {
       if (requestId !== this.activityRequestId) return;
       console.error('获取活动列表失败:', error);
-      this.setData({ isLoading: false });
+      this.setData({ isLoading: false, loadError: '活动加载失败' });
     }
   },
 
@@ -274,15 +280,15 @@ Page({
   },
 
   // 下拉刷新
-  onPullDownRefresh() {
-    this.getActivityList(true);
-    setTimeout(() => wx.stopPullDownRefresh(), 1000);
+  onRetry() { return this.data.userInfo ? this.getActivityList(this.data.activityList.length === 0) : this.loginAndGetUser(); },
+
+  async onPullDownRefresh() {
+    try { await this.getActivityList(true); } finally { wx.stopPullDownRefresh(); }
   },
 
   // 触底加载更多
   onReachBottom() {
     if (this.data.hasMore && !this.data.isLoading) {
-      this.setData({ page: this.data.page + 1 });
       this.getActivityList(false);
     }
   },
@@ -452,72 +458,28 @@ Page({
   },
 
   // 点击确认按钮
-  async onVerifyConfirm() {
-    const answer = this.data.verifyAnswer.trim();
-    if (!answer) {
-      this.setData({
-        verifyError: '请输入答案'
-      });
-      return;
+  onVerificationResult(e) {
+    const result = e.detail.response;
+    const userData = { ...result.data };
+    if (result.verifyQuestion) {
+      userData.verifyQuestion = result.verifyQuestion;
+      userData.verifyQuestionIdx = result.verifyQuestionIdx;
+      userData.verifyQuestionImage = result.verifyQuestionImage || '';
     }
+    getApp().globalData.userInfo = userData;
+    wx.setStorageSync('userInfo', userData);
+    this.setData({ userInfo: userData });
 
-    wx.showLoading({
-      title: '验证中...'
-    });
-    try {
-      const result = await post('/verify', {
-        answer,
-        question_idx: this.data.verifyQuestionIdx
-      }, { silent: true });
-
-      wx.hideLoading();
-
-      if (result.code === 200) {
-        const userData = result.data;
-        // 更新验证问题信息到 userData
-        if (result.verifyQuestion) {
-          userData.verifyQuestion = result.verifyQuestion;
-          userData.verifyQuestionIdx = result.verifyQuestionIdx;
-        }
-        getApp().globalData.userInfo = userData;
-        wx.setStorageSync('userInfo', userData);
-        this.setData({
-          userInfo: userData
-        });
-
-        if (userData.isBlacklist === 1) {
-          this.setData({
-            showVerifyDialog: false,
-            showLockedDialog: true,
-            isBlacklisted: true
-          });
-        } else if (userData.needVerify === 0) {
-          this.setData({
-            showVerifyDialog: false
-          });
-          wx.showToast({
-            title: '验证通过',
-            icon: 'success'
-          });
-        } else {
-          // 验证失败，更新验证问题（后端可能返回新题）
-          const updateData = {
-            verifyError: `答案错误，还剩 ${3 - (userData.verifyAttempts || 0)} 次机会`,
-            verifyAnswer: '',
-            autoFocus: true
-          };
-          if (result.verifyQuestion) {
-            updateData.verifyQuestion = result.verifyQuestion;
-            updateData.verifyQuestionIdx = result.verifyQuestionIdx;
-          }
-          this.setData(updateData);
-        }
-      }
-    } catch (error) {
-      wx.hideLoading();
-      wx.showToast({
-        title: '网络错误',
-        icon: 'none'
+    if (userData.isBlacklist === 1) {
+      this.setData({ showVerifyDialog: false, showLockedDialog: true, isBlacklisted: true });
+    } else if (userData.needVerify === 0) {
+      this.setData({ showVerifyDialog: false });
+      wx.showToast({ title: '验证通过', icon: 'success' });
+    } else if (result.verifyQuestion) {
+      this.setData({
+        verifyQuestion: result.verifyQuestion,
+        verifyQuestionIdx: result.verifyQuestionIdx,
+        verifyQuestionImage: result.verifyQuestionImage || ''
       });
     }
   },

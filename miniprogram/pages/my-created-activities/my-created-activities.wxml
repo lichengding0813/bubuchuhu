@@ -18,38 +18,17 @@
 <view class="list-section">
   <view class="section-header">
     <text class="section-title">我的活动</text>
-    <view class="filter-tabs">
-      <text class="tab {{currentTab === 'approved' ? 'active' : ''}}" bindtap="switchTab" data-tab="approved">已通过</text>
-      <text class="tab {{currentTab === 'pending' ? 'active' : ''}}" bindtap="switchTab" data-tab="pending">待审核</text>
-      <text class="tab {{currentTab === 'draft' ? 'active' : ''}}" bindtap="switchTab" data-tab="draft">草稿箱</text>
+    <view class="filter-tabs ui-tabs">
+      <text class="tab ui-tab {{currentTab === 'approved' ? 'active' : ''}}" bindtap="switchTab" data-tab="approved">已通过</text>
+      <text class="tab ui-tab {{currentTab === 'pending' ? 'active' : ''}}" bindtap="switchTab" data-tab="pending">待审核</text>
+      <text class="tab ui-tab {{currentTab === 'draft' ? 'active' : ''}}" bindtap="switchTab" data-tab="draft">草稿箱</text>
     </view>
   </view>
 
-  <!-- 加载状态 -->
-  <view wx:if="{{isLoading}}" class="loading-container">
-    <van-loading size="40px" vertical>加载中...</van-loading>
-  </view>
-
-  <!-- 草稿箱空状态 -->
-  <view wx:elif="{{currentTab === 'draft' && draftList.length === 0}}" class="empty-container">
-    <van-icon name="description" size="80" color="#ccc" />
-    <text class="empty-text">暂无草稿</text>
-  </view>
-
-  <!-- 非草稿箱空状态 -->
-  <view wx:elif="{{currentTab !== 'draft' && activityList.length === 0}}" class="empty-container">
-    <van-icon name="todo-list-o" size="80" color="#ccc" />
-    <text class="empty-text">暂无活动</text>
-  </view>
-
+  <ui-state loading="{{currentTab === 'draft' ? draftLoading : isLoading}}" error="{{currentTab === 'draft' ? draftError : loadError}}" empty="{{currentTab === 'draft' ? draftList.length === 0 : activityList.length === 0}}" empty-text="{{currentTab === 'draft' ? '暂无草稿' : '暂无活动'}}" bind:retry="onRetry" />
+  <block wx:if="{{currentTab === 'draft' ? !draftLoading && !draftError : !isLoading && !loadError}}">
   <!-- 草稿箱列表 -->
   <block wx:if="{{currentTab === 'draft'}}">
-    <!-- 示例数据提示 -->
-    <view wx:if="{{isSampleData}}" class="sample-banner">
-      <van-icon name="info-o" size="14px" color="#d48806" />
-      <text>当前为示例数据，发布活动后草稿将在此展示</text>
-    </view>
-
     <view wx:for="{{draftList}}" wx:key="id" class="activity-card draft-card">
       <view class="card-header">
         <view class="activity-name activity-title-with-brand">
@@ -92,7 +71,7 @@
 
   <!-- 活动卡片 -->
   <block wx:else>
-    <view wx:for="{{activityList}}" wx:key="id" class="activity-card">
+    <view wx:for="{{activityList}}" wx:key="id" class="activity-card" bindtap="onActivityClick" data-id="{{item.id}}">
       <view class="card-header">
         <view class="activity-name activity-title-with-brand">
           <text class="activity-title-text">{{item.name}}</text>
@@ -103,7 +82,7 @@
             <text>官方</text>
           </view>
           <view class="status-badge {{item.status === 0 ? 'pending' : (item.status === 1 ? 'approved' : (item.status === 2 ? 'rejected' : (item.status === 3 ? 'ongoing' : 'ended')))}}">
-            {{item.status === 0 ? '待审核' : (item.status === 1 ? '已通过' : (item.status === 2 ? '已驳回' : (item.status === 3 ? '进行中' : '已结束')))}}
+            {{item.status === 0 ? '待审核' : (item.status === 1 ? '已通过' : (item.status === 2 ? '已驳回' : (item.status === 3 ? '进行中' : (item.status === 5 ? '已取消' : '已结束'))))}}
           </view>
         </view>
       </view>
@@ -149,7 +128,7 @@
         </block>
 
         <block wx:elif="{{item.status === 1 || item.status === 3}}">
-          <button class="detail-btn" data-id="{{item.id}}" catchtap="onActivityClick">查看详情</button>
+          <button class="delete-btn" data-id="{{item.id}}" catchtap="onCancelActivity" disabled="{{cancellingActivityId !== null}}" loading="{{cancellingActivityId === item.id}}">取消活动</button>
           <button class="edit-btn" data-id="{{item.id}}" catchtap="onEditActivity">编辑信息</button>
           <button class="participants-btn" data-id="{{item.id}}" catchtap="onViewParticipants">报名人员</button>
         </block>
@@ -159,5 +138,6 @@
         </block>
       </view>
     </view>
+  </block>
   </block>
 </view>

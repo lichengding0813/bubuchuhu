@@ -1,117 +1,130 @@
-/**
- * 验证弹窗组件
- * 
- * 自包含验证逻辑：组件内部调用 /verify 接口，外部只需监听事件
- * 
- * Properties:
- *   show: Boolean - 是否显示弹窗
- *   question: String - 验证问题 (默认从 globalData 读取)
- *   questionIdx: Number - 问题索引 (默认从 globalData 读取)
- * 
- * Events:
- *   verify-success: 验证通过 { userData }
- *   verify-failed: 验证失败 { msg }
- *   account-locked: 账户锁定 { userData }
- *   cancel: 用户取消
- */
-const { callApi } = require('../../utils/api.js');
+/** 验证题：先核对图片、题目和答案，再提交；父页面接收 result 更新登录状态。 */
+const { post } = require('../../utils/api');
+const { DEFAULT_VERIFY_IMAGE } = require('../../utils/config');
 
 Component({
   properties: {
-    show: {
-      type: Boolean,
-      value: false
-    },
-    question: {
-      type: String,
-      value: ''
-    },
-    questionIdx: {
-      type: Number,
-      value: 0
-    }
+    show: { type: Boolean, value: false },
+    question: { type: String, value: '' },
+    questionIdx: { type: Number, value: 0 },
+    questionImage: { type: String, value: '' },
+    userOpenid: { type: String, value: '' }
   },
 
   data: {
     answer: '',
     error: '',
     autoFocus: false,
-    loading: false
+    loading: false,
+    confirming: false,
+    snapshot: null,
+    currentQuestion: '',
+    currentQuestionIdx: 0,
+    currentImage: '',
+    defaultImage: DEFAULT_VERIFY_IMAGE
   },
 
   observers: {
-    'show': function(newVal) {
-      if (newVal) {
-        // 弹窗打开时聚焦输入框
-        this.setData({ answer: '', error: '', autoFocus: true, loading: false });
-        // 短暂延迟后取消 autoFocus，让输入框可重复聚焦
-        setTimeout(() => {
-          this.setData({ autoFocus: false });
-        }, 500);
-      }
+    show(value) {
+      if (value) this.setData({ answer: '', error: '', autoFocus: true, confirming: false, snapshot: null });
+    },
+    'question, questionIdx, questionImage'(question, questionIdx, questionImage) {
+      const changed = question !== this.data.currentQuestion || Number(questionIdx) !== this.data.currentQuestionIdx || questionImage !== this.data.currentImage;
+      const questionChanged = this.data.currentQuestion && (question !== this.data.currentQuestion || Number(questionIdx) !== this.data.currentQuestionIdx);
+      this.setData({
+        currentQuestion: question || '',
+        currentQuestionIdx: Number(questionIdx) || 0,
+        currentImage: questionImage || '',
+        ...(changed ? { answer: '', confirming: false, snapshot: null } : {}),
+        ...(questionChanged ? { error: this.data.error || '题目已更新，请重新查看并填写答案' } : {})
+      });
     }
   },
 
   methods: {
     onInput(e) {
-      this.setData({ answer: e.detail.value, error: '' });
+      if (!this.data.loading && !this.data.confirming) this.setData({ answer: e.detail.value, error: '' });
     },
 
-    async onConfirm() {
+    onImageError() {
+      this.setData({ currentImage: '', ...(this.data.snapshot ? { 'snapshot.image': '' } : {}) });
+    },
+
+    onConfirm() {
+      if (this.data.loading || this.data.confirming) return;
       const answer = this.data.answer.trim();
-      if (!answer) {
-        this.setData({ error: '请输入答案' });
+      if (!this.data.currentQuestion) { this.setData({ error: '题目加载中，请稍后再试' }); return; }
+      if (!answer) { this.setData({ error: '请输入答案' }); return; }
+      const user = wx.getStorageSync('userInfo');
+      this.setData({
+        confirming: true, autoFocus: false, error: '',
+        snapshot: {
+          question: this.data.currentQuestion,
+          questionIdx: this.data.currentQuestionIdx,
+          image: this.data.currentImage,
+          answer,
+          openid: this.data.userOpenid || user?.openId || ''
+        }
+      });
+    },
+
+    onBack() {
+      if (this.data.loading) return;
+      this.setData({ confirming: false, snapshot: null, autoFocus: true });
+    },
+
+    async onSubmit() {
+      if (this.data.loading || !this.data.confirming || !this.data.snapshot) return;
+      const snapshot = this.data.snapshot;
+      const user = wx.getStorageSync('userInfo');
+      if (snapshot.openid !== user?.openId || (this.data.userOpenid && snapshot.openid !== this.data.userOpenid)) {
+        this.setData({ confirming: false, snapshot: null, error: '登录状态已改变，请重新进入验证' });
         return;
       }
-
+      if (snapshot.question !== this.data.currentQuestion || snapshot.questionIdx !== this.data.currentQuestionIdx) {
+        this.setData({ confirming: false, snapshot: null, error: '题目已更新，请重新查看后提交' });
+        return;
+      }
       this.setData({ loading: true });
-
       try {
-        const res = await callApi('/verify', 'POST', {
-          answer: answer,
-          question_idx: this.data.questionIdx
-        });
-
-        const userData = res.data;
-        // 更新本地用户信息
-        const app = getApp();
-        if (app) app.globalData.userInfo = userData;
-        wx.setStorageSync('userInfo', userData);
-
-        if (userData.isBlacklist === 1) {
-          this.triggerEvent('account-locked', { userData });
-        } else if (userData.needVerify === 0) {
-          this.triggerEvent('verify-success', { userData });
+        const response = await post('/verify', {
+          answer: snapshot.answer,
+          question_idx: snapshot.questionIdx,
+          question_text: snapshot.question
+        }, { silent: true });
+        if (wx.getStorageSync('userInfo')?.openId !== snapshot.openid) return;
+        this.applyResult(response);
+      } catch (error) {
+        if (wx.getStorageSync('userInfo')?.openId !== snapshot.openid) return;
+        if (error.response?.code === 409 && error.response?.verifyQuestion) {
+          this.applyResult(error.response);
+        } else if (error.response?.data?.isBlacklist === 1) {
+          this.applyResult(error.response);
         } else {
-          // 答案错误，还有机会
-          const remain = 3 - (userData.verifyAttempts || 0);
-          this.setData({
-            error: `答案错误，还剩 ${remain} 次机会`,
-            answer: '',
-            autoFocus: true,
-            loading: false
-          });
-          this.triggerEvent('verify-failed', { msg: `答案错误` });
+          this.setData({ error: error.response?.msg || '提交失败，请重试' });
         }
-      } catch (err) {
+      } finally {
         this.setData({ loading: false });
-        if (err.message === 'ACCOUNT_LOCKED') {
-          const userInfo = wx.getStorageSync('userInfo') || {};
-          userInfo.isBlacklist = 1;
-          wx.setStorageSync('userInfo', userInfo);
-          this.triggerEvent('account-locked', { userData: userInfo });
-        } else {
-          wx.showToast({ title: '网络错误', icon: 'none' });
-        }
       }
     },
 
-    onCancel() {
-      this.triggerEvent('cancel');
+    applyResult(response) {
+      const user = response.data || {};
+      const changed = response.verifyQuestion && (response.verifyQuestion !== this.data.currentQuestion || Number(response.verifyQuestionIdx) !== this.data.currentQuestionIdx);
+      this.triggerEvent('result', { response });
+      if (user.needVerify === 1 && user.isBlacklist !== 1) {
+        this.setData({
+          confirming: false, snapshot: null, answer: '', autoFocus: true,
+          error: response.code === 409 ? response.msg : `答案错误，还剩 ${3 - (user.verifyAttempts || 0)} 次机会${changed ? '，题目已更新' : ''}`,
+          ...(response.verifyQuestion ? {
+            currentQuestion: response.verifyQuestion,
+            currentQuestionIdx: Number(response.verifyQuestionIdx) || 0,
+            currentImage: response.verifyQuestionImage || ''
+          } : {})
+        });
+      }
     },
 
-    preventTouchMove() {
-      return;
-    }
+    preventTouchMove() {}
   }
 });

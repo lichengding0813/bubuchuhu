@@ -99,6 +99,13 @@ page {
 }
 
 /* 表单项 */
+.privacy-notice {
+  margin-bottom: 20px;
+  color: #52677c;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
 .form-item {
   margin-bottom: 20px;
 }

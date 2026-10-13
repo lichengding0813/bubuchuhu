@@ -1,23 +1,22 @@
 <view class="page-container">
   <scroll-view class="filter-scroll" scroll-x enhanced show-scrollbar="{{false}}">
-    <view class="filter-list">
-      <view class="filter-item {{currentFilter === 'all' ? 'active' : ''}}" data-value="all" bindtap="onFilterTap">全部 {{counts.all}}</view>
-      <view class="filter-item {{currentFilter === 'pending' ? 'active' : ''}}" data-value="pending" bindtap="onFilterTap">待领取 {{counts.pending}}</view>
-      <view class="filter-item {{currentFilter === 'redeemed' ? 'active' : ''}}" data-value="redeemed" bindtap="onFilterTap">已领取 {{counts.redeemed}}</view>
+    <view class="filter-list ui-tabs">
+      <view class="filter-item ui-tab {{currentFilter === 'all' ? 'active' : ''}}" data-value="all" bindtap="onFilterTap">全部 {{counts.all}}</view>
+      <view class="filter-item ui-tab {{currentFilter === 'pending' ? 'active' : ''}}" data-value="pending" bindtap="onFilterTap">待领取 {{counts.pending}}</view>
+      <view class="filter-item ui-tab {{currentFilter === 'redeemed' ? 'active' : ''}}" data-value="redeemed" bindtap="onFilterTap">已领取 {{counts.redeemed}}</view>
     </view>
   </scroll-view>
 
-  <view class="loading" wx:if="{{loading}}"><van-loading size="25px">加载中...</van-loading></view>
-  <view class="empty" wx:elif="{{visiblePrizes.length === 0}}"><van-icon name="gift-o" size="54px" color="#bed2e1" /><text>这里还没有奖品</text></view>
-  <view wx:else>
-    <view class="prize-card status-{{item.redemption_status}}" wx:for="{{visiblePrizes}}" wx:key="record_id">
+  <ui-state loading="{{loading}}" error="{{loadError}}" empty="{{visiblePrizes.length === 0}}" empty-text="暂无奖品" icon="gift-o" bind:retry="loadPrizes" />
+  <view wx:if="{{!loading && !loadError}}">
+    <view class="prize-card status-{{item.redemption_status}}" wx:for="{{visiblePrizes}}" wx:key="prize_key">
       <view class="prize-header">
         <image class="prize-image" wx:if="{{item.prize_image_url}}" src="{{item.prize_image_url}}" mode="aspectFill" />
         <view class="prize-image placeholder" wx:else>🎁</view>
         <view class="prize-main"><text class="prize-name">{{item.prize_name}}</text><text class="lottery-name">{{item.lottery_name}}</text></view>
         <view class="status-tag">{{item.redemption_label}}</view>
       </view>
-      <view class="activity-link" data-id="{{item.activity_id}}" bindtap="goToActivity"><text>{{item.activity_name}}</text><van-icon name="arrow" size="12px" /></view>
+      <view class="activity-link" data-id="{{item.activity_id}}" bindtap="goToActivity"><text>{{item.activity_name}}</text><van-icon wx:if="{{item.activity_id}}" name="arrow" size="12px" /></view>
       <view class="claim-info">
         <text wx:if="{{item.claim_instructions}}">{{item.claim_instructions}}</text>
         <text wx:if="{{item.pickup_location}}">领奖地点：{{item.pickup_location}}</text>
@@ -27,7 +26,7 @@
         <view><text class="code-label">现场核销码</text><text class="code-value">{{item.redeem_code}}</text></view>
         <text class="copy">复制</text>
       </view>
-      <view class="qr-entry" wx:if="{{item.redemption_status === 0}}" data-record-id="{{item.record_id}}" data-prize-name="{{item.prize_name}}" catchtap="showQrCode">出示核销二维码</view>
+      <view class="qr-entry" wx:if="{{item.redemption_status === 0}}" data-source-id="{{item.source_id}}" data-source-type="{{item.source_type}}" data-prize-name="{{item.prize_name}}" catchtap="showQrCode">出示核销二维码</view>
     </view>
   </view>
 </view>

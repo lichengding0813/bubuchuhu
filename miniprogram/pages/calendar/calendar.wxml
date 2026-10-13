@@ -16,6 +16,7 @@
     <view class="legend-item"><view class="legend-dot"></view><text>有活动</text></view>
   </view>
 
+  <ui-state loading="{{calendarLoading}}" error="{{calendarError}}" compact bind:retry="loadCalendar" />
   <view class="week-header">
     <text wx:for="{{['日','一','二','三','四','五','六']}}" wx:key="*this" class="week-day">{{item}}</text>
   </view>
@@ -47,7 +48,7 @@
       </view>
     </view>
     <view class="weather-note" wx:elif="{{weatherMessage && dayActivities.length > 0}}">{{weatherMessage}}</view>
-    <view wx:if="{{dayActivities.length === 0}}" class="empty-text">当天暂无活动</view>
+    <ui-state loading="{{dayLoading}}" error="{{dayError}}" empty="{{dayActivities.length === 0}}" empty-text="当天暂无活动" compact bind:retry="retryDay" />
 
     <view wx:for="{{dayActivities}}" wx:for-index="cardIndex" wx:key="id" class="activity-card {{cardIndex === 0 ? 'featured-card' : ''}} {{item.isEnded ? 'ended-card' : ''}}" bindtap="onActivityClick" data-id="{{item.id}}">
       <view class="card-left">

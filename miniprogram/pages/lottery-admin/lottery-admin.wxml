@@ -9,12 +9,8 @@
     </view>
   </view>
 
-  <view wx:if="{{lotteryList.length === 0}}" class="empty">
-    <van-icon name="gift-o" size="56" color="#bed2e1" />
-    <text class="empty-title">还没有抽奖</text>
-    <text class="empty-text">从一场官方活动创建第一个幸运转盘</text>
-  </view>
-
+  <ui-state loading="{{loading}}" error="{{loadError}}" empty="{{lotteryList.length === 0}}" empty-text="暂无抽奖" icon="gift-o" bind:retry="loadLotteries" />
+  <block wx:if="{{!loading && !loadError}}">
   <view wx:for="{{lotteryList}}" wx:key="id" class="lottery-card">
     <view class="card-header">
       <view class="card-title-wrap">
@@ -49,10 +45,11 @@
       <view class="card-action danger" wx:if="{{item.status !== 2}}" bindtap="onEndLottery" data-id="{{item.id}}">结束</view>
     </view>
   </view>
+  </block>
 </view>
 
 <!-- 创建抽奖 -->
-<van-popup show="{{showForm}}" position="bottom" custom-style="border-radius:22px 22px 0 0;height:92vh;" bind:close="hideCreateForm">
+<van-popup show="{{showForm}}" close-on-click-overlay="{{!submitting && uploadingPrizeIndex < 0}}" position="bottom" custom-style="border-radius:22px 22px 0 0;height:92vh;" bind:close="hideCreateForm">
   <scroll-view class="form-scroll" scroll-y enhanced show-scrollbar="{{false}}">
     <view class="form-container">
       <view class="sheet-header">
@@ -63,17 +60,15 @@
       <view class="form-card">
         <view class="form-item">
           <text class="form-label">官方活动</text>
-          <picker mode="selector" range="{{activityOptions}}" range-key="name" bindchange="onActivityChange" value="{{activityIndex}}">
-            <view class="picker-value">{{activityOptions[activityIndex] ? activityOptions[activityIndex].name : '请选择官方活动'}}</view>
-          </picker>
+          <view class="ui-select-trigger" bindtap="openActivityPicker"><text>{{activityOptions[activityIndex] ? activityOptions[activityIndex].name : '请选择官方活动'}}</text><van-icon name="arrow-down" size="14px" /></view>
         </view>
         <view class="form-item">
           <text class="form-label">抽奖名称</text>
-          <input class="form-input" maxlength="100" adjust-position="{{false}}" cursor-spacing="20" value="{{formLotteryName}}" bindinput="onLotteryNameInput" placeholder="例如：龙王潭幸运转盘" />
+          <input disabled="{{submitting}}" class="form-input" maxlength="100" adjust-position="{{false}}" cursor-spacing="20" value="{{formLotteryName}}" bindinput="onLotteryNameInput" placeholder="例如：龙王潭幸运转盘" />
         </view>
         <view class="form-item">
           <text class="form-label">现场口令</text>
-          <input class="form-input" maxlength="-1" adjust-position="{{false}}" cursor-spacing="20" value="{{formPassword}}" bindinput="onPasswordInput" placeholder="现场告知参与者" />
+          <input disabled="{{submitting}}" class="form-input" maxlength="-1" adjust-position="{{false}}" cursor-spacing="20" value="{{formPassword}}" bindinput="onPasswordInput" placeholder="现场告知参与者" />
         </view>
         <view class="form-item">
           <text class="form-label">抽奖时间</text>
@@ -109,19 +104,19 @@
             </view>
           </view>
           <view class="prize-basic">
-            <input class="form-input" adjust-position="{{false}}" cursor-spacing="20" placeholder="奖项名称" value="{{item.tier_name}}" data-index="{{index}}" bindinput="onPrizeNameInput" />
+            <input disabled="{{submitting}}" class="form-input" adjust-position="{{false}}" cursor-spacing="20" placeholder="奖项名称" value="{{item.tier_name}}" data-index="{{index}}" bindinput="onPrizeNameInput" />
             <view class="two-fields">
-              <view class="inline-field"><input type="number" adjust-position="{{false}}" cursor-spacing="20" value="{{item.quantity}}" data-index="{{index}}" bindinput="onPrizeQtyInput" /><text>份</text></view>
-              <view class="inline-field"><input type="digit" adjust-position="{{false}}" cursor-spacing="20" value="{{item.probability}}" data-index="{{index}}" bindinput="onPrizeProbabilityInput" /><text>%</text></view>
+              <view class="inline-field"><input disabled="{{submitting}}" type="number" adjust-position="{{false}}" cursor-spacing="20" value="{{item.quantity}}" data-index="{{index}}" bindinput="onPrizeQtyInput" /><text>份</text></view>
+              <view class="inline-field"><input disabled="{{submitting}}" type="digit" adjust-position="{{false}}" cursor-spacing="20" value="{{item.probability}}" data-index="{{index}}" bindinput="onPrizeProbabilityInput" /><text>%</text></view>
             </view>
           </view>
         </view>
         <view class="remove-image" wx:if="{{item.image_url}}" bindtap="onRemovePrizeImage" data-index="{{index}}">移除图片</view>
-        <textarea class="form-textarea" maxlength="500" auto-height adjust-position="{{false}}" cursor-spacing="20" placeholder="领奖说明（必填），例如：向现场工作人员出示核销码" value="{{item.claim_instructions}}" data-index="{{index}}" bindinput="onClaimInput"></textarea>
-        <input class="form-input" maxlength="255" adjust-position="{{false}}" cursor-spacing="20" placeholder="领奖地点（选填）" value="{{item.pickup_location}}" data-index="{{index}}" bindinput="onPickupInput" />
+        <textarea disabled="{{submitting}}" class="form-textarea" maxlength="500" auto-height adjust-position="{{false}}" cursor-spacing="20" placeholder="领奖说明（必填），例如：向现场工作人员出示核销码" value="{{item.claim_instructions}}" data-index="{{index}}" bindinput="onClaimInput"></textarea>
+        <input disabled="{{submitting}}" class="form-input" maxlength="255" adjust-position="{{false}}" cursor-spacing="20" placeholder="领奖地点（选填）" value="{{item.pickup_location}}" data-index="{{index}}" bindinput="onPickupInput" />
       </view>
       <view class="add-prize-btn" bindtap="addPrize"><van-icon name="plus" size="14" /><text>添加奖项</text></view>
-      <button class="submit-button" loading="{{submitting}}" disabled="{{submitting}}" bindtap="onCreateLottery">确认发布</button>
+      <button class="submit-button" loading="{{submitting}}" disabled="{{submitting || uploadingPrizeIndex >= 0}}" bindtap="onCreateLottery">确认发布</button>
     </view>
   </scroll-view>
 </van-popup>
@@ -142,9 +137,8 @@
       <view class="filter-chip {{recordRedeemFilter === '0' ? 'active' : ''}}" data-value="0" bindtap="onRecordRedeemFilter">待核销</view>
       <view class="filter-chip {{recordRedeemFilter === '1' ? 'active' : ''}}" data-value="1" bindtap="onRecordRedeemFilter">已核销</view>
     </view>
-    <view class="records-loading" wx:if="{{recordsLoading}}"><van-loading size="24px">加载中...</van-loading></view>
-    <view class="records-empty" wx:elif="{{recordInfo.list.length === 0}}">暂无符合条件的记录</view>
-    <scroll-view class="records-list" scroll-y wx:else>
+    <ui-state loading="{{recordsLoading}}" error="{{recordsError}}" empty="{{recordInfo.list.length === 0}}" empty-text="暂无符合条件的记录" bind:retry="loadRecords" />
+    <scroll-view class="records-list" scroll-y wx:if="{{!recordsLoading && !recordsError}}">
       <view class="record-item" wx:for="{{recordInfo.list}}" wx:key="id">
         <image class="record-avatar" wx:if="{{item.avatar_url}}" src="{{item.avatar_url}}" mode="aspectFill" />
         <view class="record-avatar record-avatar-empty" wx:else><van-icon name="user-o" /></view>
@@ -169,9 +163,8 @@
   <view class="records-container">
     <view class="sheet-header"><view><text class="form-title">追加抽奖机会</text></view><van-icon name="cross" size="20px" color="#8299aa" bindtap="hideParticipants" /></view>
     <view class="search-row"><input adjust-position="{{false}}" cursor-spacing="20" placeholder="昵称、微信号或用户标识" value="{{participantKeyword}}" bindinput="onParticipantKeywordInput" confirm-type="search" bindconfirm="onParticipantSearch" /><view bindtap="onParticipantSearch">搜索</view></view>
-    <view class="records-loading" wx:if="{{participantsLoading}}"><van-loading size="24px">加载中...</van-loading></view>
-    <view class="records-empty" wx:elif="{{participantList.length === 0}}">没有找到报名用户</view>
-    <scroll-view class="records-list" scroll-y wx:else>
+    <ui-state loading="{{participantsLoading}}" error="{{participantsError}}" empty="{{participantList.length === 0}}" empty-text="没有找到报名用户" icon="user-o" bind:retry="loadParticipants" />
+    <scroll-view class="records-list" scroll-y wx:if="{{!participantsLoading && !participantsError}}">
       <view class="participant-item" wx:for="{{participantList}}" wx:key="openid">
         <image class="record-avatar" wx:if="{{item.avatar_url}}" src="{{item.avatar_url}}" mode="aspectFill" />
         <view class="record-avatar record-avatar-empty" wx:else><van-icon name="user-o" /></view>
@@ -203,3 +196,5 @@
     <button class="submit-button" loading="{{passwordSaving}}" disabled="{{passwordSaving || !editPassword}}" bindtap="savePassword">保存口令</button>
   </view>
 </van-popup>
+
+<official-activity-picker show="{{showActivityPicker}}" options="{{activityOptions}}" selected-id="{{activityOptions[activityIndex] ? activityOptions[activityIndex].id : 0}}" loading="{{activitiesLoading}}" error="{{activitiesError}}" bind:select="onActivityChange" bind:close="closeActivityPicker" bind:retry="loadActivities" />

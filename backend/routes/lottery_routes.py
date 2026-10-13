@@ -6,6 +6,7 @@ import secrets
 from flask import Blueprint, g, jsonify, request
 
 from db_utils import get_db
+from achievement_service import settle_achievements_after_draw
 from domain import (
     effective_lottery_status,
     lottery_activity_error,
@@ -495,18 +496,33 @@ def redeem_lottery_prize():
             WHERE {lookup_field} = %s FOR UPDATE
         """, (lookup_value,))
         redemption = cursor.fetchone()
+        redemption_source = 'lottery'
         if not redemption:
-            conn.rollback()
-            message = '核销二维码无效' if qr_token else '核销码不存在'
-            return jsonify({'code': 404, 'msg': message})
+            achievement_lookup = 'ar.qr_token' if qr_token else 'ar.redeem_code'
+            cursor.execute(f"""
+                SELECT ar.id, ar.status, ar.redeem_code, ar.qr_expires_at,
+                       ar.prize_name, COALESCE(a.name, '成就中心') AS activity_name,
+                       u.nickName AS nickname
+                FROM achievement_rewards ar
+                LEFT JOIN activities a ON a.id = ar.source_activity_id
+                LEFT JOIN users u ON u.openId = ar.user_openid
+                WHERE {achievement_lookup} = %s FOR UPDATE
+            """, (lookup_value,))
+            redemption = cursor.fetchone()
+            redemption_source = 'achievement'
+            if not redemption:
+                conn.rollback()
+                message = '核销二维码无效' if qr_token else '核销码不存在'
+                return jsonify({'code': 404, 'msg': message})
         if qr_token and is_redemption_qr_expired(redemption.get('qr_expires_at')):
             conn.rollback()
             return jsonify({'code': 410, 'msg': '二维码已过期，请让用户刷新后重试'})
         if int(redemption['status']) == 1:
             conn.rollback()
             return jsonify({'code': 400, 'msg': '该奖品已经核销'})
-        cursor.execute("""
-            UPDATE lottery_redemptions
+        table_name = 'lottery_redemptions' if redemption_source == 'lottery' else 'achievement_rewards'
+        cursor.execute(f"""
+            UPDATE {table_name}
             SET status = 1, redeemed_by = %s, redeemed_at = NOW(),
                 qr_token = NULL, qr_expires_at = NULL
             WHERE id = %s AND status = 0
@@ -571,6 +587,8 @@ def _activity_lottery_payload(cursor, lottery, user_openid):
     password_attempts = int(state['password_attempts'] or 0) if state.get('attempts_date') == date.today() else 0
     now = datetime.now()
     status = effective_lottery_status(lottery, now)
+    if int(lottery.get('activity_status') or 0) not in (1, 3, 4):
+        status = 2
     phase = 'ended' if status == 2 else ('not_started' if now < lottery['start_time'] else 'active')
     chances_remaining = max(0, int(state['chances_total']) - int(state['chances_used']))
     payload = {
@@ -609,7 +627,7 @@ def activity_lottery_status():
     try:
         cursor = get_db().cursor()
         cursor.execute("""
-            SELECT l.*, a.name AS activity_name
+            SELECT l.*, a.name AS activity_name, a.status AS activity_status
             FROM activity_lotteries l JOIN activities a ON l.activity_id = a.id
             WHERE l.activity_id = %s ORDER BY l.id DESC LIMIT 1
         """, (activity_id,))
@@ -632,9 +650,10 @@ def check_lottery():
     try:
         cursor = get_db().cursor()
         cursor.execute("""
-            SELECT l.*, a.name AS activity_name
+            SELECT l.*, a.name AS activity_name, a.status AS activity_status
             FROM activity_lotteries l JOIN activities a ON l.activity_id = a.id
             WHERE l.status <> 2 AND NOW() BETWEEN l.start_time AND l.end_time
+              AND a.is_official = 1 AND a.status IN (1, 3, 4)
               AND EXISTS (
                   SELECT 1 FROM activity_participants p
                   WHERE p.activity_id = l.activity_id AND p.user_openid = %s AND p.status = 1
@@ -658,9 +677,11 @@ def check_lottery():
 @check_verified_and_blacklist
 def create_redemption_qr():
     """为当前用户未核销的中奖记录签发 120 秒动态二维码。"""
+    data = request.get_json(silent=True) or {}
+    source_type = str(data.get('source_type') or 'lottery')
     try:
-        record_id = int((request.get_json(silent=True) or {}).get('record_id'))
-        if record_id <= 0:
+        source_id = int(data.get('reward_id') if source_type == 'achievement' else data.get('record_id'))
+        if source_id <= 0 or source_type not in ('lottery', 'achievement'):
             raise ValueError
     except (TypeError, ValueError):
         return jsonify({'code': 400, 'msg': '中奖记录无效'})
@@ -669,13 +690,21 @@ def create_redemption_qr():
     cursor = None
     try:
         cursor = conn.cursor()
-        cursor.execute("""
-            SELECT rd.id, rd.status
-            FROM lottery_redemptions rd
-            JOIN lottery_records r ON rd.record_id = r.id
-            WHERE r.id = %s AND r.user_openid = %s
-            FOR UPDATE
-        """, (record_id, g.openid))
+        if source_type == 'achievement':
+            cursor.execute("""
+                SELECT id, status
+                FROM achievement_rewards
+                WHERE id = %s AND user_openid = %s
+                FOR UPDATE
+            """, (source_id, g.openid))
+        else:
+            cursor.execute("""
+                SELECT rd.id, rd.status
+                FROM lottery_redemptions rd
+                JOIN lottery_records r ON rd.record_id = r.id
+                WHERE r.id = %s AND r.user_openid = %s
+                FOR UPDATE
+            """, (source_id, g.openid))
         redemption = cursor.fetchone()
         if not redemption:
             conn.rollback()
@@ -687,8 +716,9 @@ def create_redemption_qr():
         token = new_redemption_qr_token()
         matrix = redemption_qr_matrix(token)
         expires_at = datetime.now() + timedelta(seconds=REDEMPTION_QR_TTL_SECONDS)
-        cursor.execute("""
-            UPDATE lottery_redemptions
+        table_name = 'achievement_rewards' if source_type == 'achievement' else 'lottery_redemptions'
+        cursor.execute(f"""
+            UPDATE {table_name}
             SET qr_token = %s, qr_expires_at = %s
             WHERE id = %s AND status = 0
         """, (token, expires_at, redemption['id']))
@@ -722,9 +752,10 @@ def draw_lottery():
     try:
         cursor = conn.cursor()
         cursor.execute("""
-            SELECT l.*, a.name AS activity_name
+            SELECT l.*, a.name AS activity_name, a.status AS activity_status
             FROM activity_lotteries l JOIN activities a ON l.activity_id = a.id
             WHERE l.id = %s AND l.status <> 2 AND NOW() BETWEEN l.start_time AND l.end_time
+              AND a.is_official = 1 AND a.status IN (1, 3, 4)
             FOR UPDATE
         """, (lottery_id,))
         lottery = cursor.fetchone()
@@ -811,6 +842,12 @@ def draw_lottery():
         if won_prize:
             for _ in range(3):
                 redeem_code = _new_redeem_code()
+                cursor.execute(
+                    'SELECT 1 FROM achievement_rewards WHERE redeem_code = %s LIMIT 1',
+                    (redeem_code,),
+                )
+                if cursor.fetchone():
+                    continue
                 try:
                     cursor.execute("""
                         INSERT INTO lottery_redemptions (record_id, redeem_code)
@@ -823,6 +860,13 @@ def draw_lottery():
             else:
                 raise RuntimeError('生成唯一核销码失败')
 
+        achievement_result = settle_achievements_after_draw(
+            cursor,
+            g.openid,
+            lottery['activity_id'],
+            lottery_id,
+            record_id,
+        )
         conn.commit()
         chances_remaining = int(state['chances_total']) - chance_no
         return jsonify({'code': 200, 'data': {
@@ -837,6 +881,7 @@ def draw_lottery():
             'pickup_location': won_prize['pickup_location'] if won_prize else '',
             'redeem_code': redeem_code,
             'chances_remaining': max(0, chances_remaining),
+            'achievement': achievement_result,
         }})
     except Exception:
         conn.rollback()
@@ -868,6 +913,31 @@ def my_lottery_prizes():
             ORDER BY r.drawn_at DESC, r.id DESC
         """, (g.openid,))
         prizes = cursor.fetchall()
+        for prize in prizes:
+            prize['source_type'] = 'lottery'
+            prize['source_id'] = prize['record_id']
+            prize['prize_key'] = f"lottery-{prize['record_id']}"
+
+        cursor.execute("""
+            SELECT ar.id AS reward_id, ar.created_at AS drawn_at,
+                   NULL AS lottery_id, '成就中心' AS lottery_name,
+                   a.id AS activity_id, COALESCE(a.name, '累计成就') AS activity_name,
+                   ar.prize_name, ar.image_url AS prize_image_url,
+                   ar.claim_instructions, ar.pickup_location,
+                   ar.redeem_code, ar.status AS redemption_status, ar.redeemed_at
+            FROM achievement_rewards ar
+            LEFT JOIN activities a ON a.id = ar.source_activity_id
+            WHERE ar.user_openid = %s
+            ORDER BY ar.created_at DESC, ar.id DESC
+        """, (g.openid,))
+        achievement_prizes = cursor.fetchall()
+        for prize in achievement_prizes:
+            prize['source_type'] = 'achievement'
+            prize['source_id'] = prize['reward_id']
+            prize['record_id'] = None
+            prize['prize_key'] = f"achievement-{prize['reward_id']}"
+        prizes.extend(achievement_prizes)
+        prizes.sort(key=lambda item: item.get('drawn_at') or datetime.min, reverse=True)
         for prize in prizes:
             for field in ('drawn_at', 'redeemed_at'):
                 prize[field] = _format_minute(prize.get(field))

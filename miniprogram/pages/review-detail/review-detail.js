@@ -18,9 +18,7 @@ Page({
     },
     isAdmin: false,
     displayPhotos: [],
-    photoCount: 0,
-    showPhotoPreview: false,
-    currentPhotoIndex: 0
+    photoCount: 0
   },
 
   onLoad(options) {
@@ -134,13 +132,6 @@ Page({
 
 
 
-  onPhotoPreviewClose() {
-    this.setData({ showPhotoPreview: false });
-  },
-
-  onSwiperChange(e) {
-    this.setData({ currentPhotoIndex: e.detail.current });
-  },
 
   onShareAppMessage() {
     const name = this.data.reviewData.name || '活动回顾';

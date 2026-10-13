@@ -1,15 +1,6 @@
 <view class="page">
-  <view wx:if="{{isLoading}}" class="state-panel">
-    <van-loading size="34px" vertical>加载中</van-loading>
-  </view>
-
-  <view wx:elif="{{loadError}}" class="state-panel">
-    <text class="state-title">暂时无法加载</text>
-    <text class="state-copy">{{loadError}}</text>
-    <view class="state-action" bindtap="onRetry">重新加载</view>
-  </view>
-
-  <block wx:else>
+  <ui-state loading="{{isLoading}}" error="{{loadError}}" bind:retry="onRetry" />
+  <block wx:if="{{!isLoading && !loadError}}">
     <view class="progress-card">
       <view class="progress-top">
         <text>我的收集</text>
@@ -19,17 +10,14 @@
       <text class="progress-hint">{{progressHint}}</text>
     </view>
 
-    <view class="filter-row">
-      <view class="filter-item {{filter === 'all' ? 'active' : ''}}" data-filter="all" bindtap="onFilterTap">全部 {{total}}</view>
-      <view class="filter-item {{filter === 'lit' ? 'active' : ''}}" data-filter="lit" bindtap="onFilterTap">已点亮 {{litCount}}</view>
-      <view class="filter-item {{filter === 'unlit' ? 'active' : ''}}" data-filter="unlit" bindtap="onFilterTap">未点亮 {{total - litCount}}</view>
+    <view class="filter-row ui-tabs">
+      <view class="filter-item ui-tab {{filter === 'all' ? 'active' : ''}}" data-filter="all" bindtap="onFilterTap">全部 {{total}}</view>
+      <view class="filter-item ui-tab {{filter === 'lit' ? 'active' : ''}}" data-filter="lit" bindtap="onFilterTap">已点亮 {{litCount}}</view>
+      <view class="filter-item ui-tab {{filter === 'unlit' ? 'active' : ''}}" data-filter="unlit" bindtap="onFilterTap">未点亮 {{total - litCount}}</view>
     </view>
 
-    <view wx:if="{{walls.length === 0}}" class="state-panel compact">
-      <text class="state-title">还没有发布墙面</text>
-    </view>
-
-    <block wx:else>
+    <ui-state empty="{{walls.length === 0}}" empty-text="暂无飘带墙" />
+    <block wx:if="{{walls.length}}">
       <swiper class="wall-swiper" current="{{currentWall}}" bindchange="onSwiperChange" circular="{{false}}">
         <swiper-item wx:for="{{walls}}" wx:key="id" wx:for-item="wall">
           <view class="wall-card">
@@ -69,7 +57,7 @@
   </block>
 </view>
 
-<view wx:if="{{isAdmin && !detailVisible && !successVisible}}" class="admin-gear-fab" bindtap="openWallAdmin" aria-role="button" aria-label="进入飘带墙管理">
+<view wx:if="{{isAdmin && !detailVisible && !successVisible}}" class="admin-gear-fab ui-fab" bindtap="openWallAdmin" aria-role="button" aria-label="进入飘带墙管理">
   <van-icon name="setting-o" size="30px" color="#fff" />
 </view>
 

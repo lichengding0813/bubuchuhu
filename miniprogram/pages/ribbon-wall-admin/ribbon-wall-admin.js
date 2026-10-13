@@ -340,7 +340,7 @@ Page({
   onChooseCharmImage() { this.chooseAssetImage('charm'); },
 
   chooseAssetImage(type) {
-    if (this.data.isUploading) return;
+    if (this.data.isUploading || this.data.isSaving) return;
     wx.chooseImage({
       count: 1,
       sizeType: ['original'],

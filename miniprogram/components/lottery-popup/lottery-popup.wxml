@@ -37,6 +37,10 @@
     <view class="result-icon {{result.prize_id ? 'win' : 'lose'}}">{{result.prize_id ? '🎉' : '🌿'}}</view>
     <text class="result-kicker">{{result.prize_id ? '恭喜中奖' : '这次差一点'}}</text>
     <text class="result-text">{{result.prize_name}}</text>
+    <view class="achievement-result" wx:if="{{result.achievement && (result.achievement.attendance_added || result.achievement.new_achievements.length)}}">
+      <text class="achievement-result-title">已计入成就中心 · 第 {{result.achievement.attendance_count}} 次</text>
+      <text wx:if="{{result.achievement.new_achievements.length}}">新点亮：<text wx:for="{{result.achievement.new_achievements}}" wx:key="id">{{index ? '、' : ''}}{{item.name}}</text></text>
+    </view>
     <view class="claim-card" wx:if="{{result.prize_id}}">
       <view class="claim-header"><text>核销码</text><text class="claim-code">{{result.redeem_code}}</text></view>
       <view class="redemption-qr">

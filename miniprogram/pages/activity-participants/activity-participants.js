@@ -11,6 +11,7 @@ Page({
     canManage: false,
     managingParticipantId: null,
     isLoading: false,
+    loadError: '',
     hasMore: false,
   },
 
@@ -27,7 +28,7 @@ Page({
 
   async fetchParticipants() {
     if (!this.data.activityId) return;
-    this.setData({ isLoading: true });
+    this.setData({ isLoading: true, loadError: '' });
 
     try {
       const userInfo = wx.getStorageSync('userInfo');
@@ -45,7 +46,7 @@ Page({
 
       if (result.data && result.data.code === 200) {
         const { list } = result.data.data;
-        const all = list || [];
+        const all = (list || []).map(item => ({ ...item, status: Number(item.status), companion_count: Number(item.companion_count || 0) }));
         // 用户自主取消与管理取消分开展示；历史 status=0 视为自主取消。
         const activeParticipants = all.filter(p => p.status === 1);
         const cancelledParticipants = all.filter(p => p.status === 0 && p.cancel_source !== 'manager');
@@ -61,11 +62,11 @@ Page({
           canManage: result.data.data.can_manage === true,
         });
       } else {
-        wx.showToast({ title: result.data?.msg || '获取失败', icon: 'none' });
+        this.setData({ loadError: result.data?.msg || '报名人员加载失败' });
       }
     } catch (error) {
       console.error('获取报名人员失败:', error);
-      wx.showToast({ title: '网络错误', icon: 'error' });
+      this.setData({ loadError: '报名人员加载失败' });
     } finally {
       this.setData({ isLoading: false });
     }
@@ -100,6 +101,7 @@ Page({
   },
 
   async updateParticipantStatus(participantId, action) {
+    if (!this.data.canManage || this.data.managingParticipantId) return;
     this.setData({ managingParticipantId: participantId });
     try {
       const userInfo = wx.getStorageSync('userInfo');

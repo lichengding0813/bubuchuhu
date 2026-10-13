@@ -1,10 +1,11 @@
 <!-- pages/review/review.wxml - 列表页增加新建入口 -->
 <view class="review-container">
   <!-- 管理员新建按钮 -->
-  <view class="admin-add-btn" wx:if="{{isAdmin}}" bindtap="onAddReview">
-    <van-icon name="plus" size="48" color="#fff" />
+  <view class="admin-add-btn ui-fab" wx:if="{{isAdmin}}" bindtap="onAddReview">
+    <van-icon name="plus" size="30px" color="#fff" />
   </view>
 
+  <ui-state wx:if="{{reviewList.length === 0}}" loading="{{loading}}" error="{{loadError}}" empty="{{!loading && !loadError}}" empty-text="暂无活动回顾" bind:retry="onRetry" />
   <view 
     wx:for="{{reviewList}}" 
     wx:key="index" 
@@ -25,6 +26,7 @@
       </view>
     </view>
   </view>
+  <ui-state wx:if="{{reviewList.length}}" loading="{{loading}}" error="{{loadError}}" compact bind:retry="onRetry" />
 </view>
 
 <!-- ========== 黑名单全屏遮罩 + 锁定弹窗 ========== -->

@@ -197,35 +197,86 @@ page {
 }
 
 
-/* 徒步统计卡片 */
-.hike-stats-card {
-  background: linear-gradient(135deg, #eaf6fd 0%, #f8fcff 100%);
-  border-radius: 24rpx;
-  padding: 24rpx 16rpx;
-  display: flex;
+/* 飘带墙与成就中心共用的大入口卡片 */
+.collection-card {
+  min-height: 330rpx;
   margin-bottom: 30rpx;
-  box-shadow: 0 8rpx 22rpx rgba(44, 89, 120, 0.075);
-  border: 2rpx solid rgba(157, 191, 214, 0.3);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  overflow: hidden;
+  border: 2rpx solid rgba(150, 200, 255, .4);
+  border-radius: 30rpx;
+  background: #fff;
+  box-shadow: 0 8rpx 24rpx rgba(44, 89, 120, .08);
 }
 
-.hike-stat-item {
-  flex: 1;
-  text-align: center;
+.collection-entry {
+  position: relative;
+  min-width: 0;
+  min-height: 330rpx;
+  padding: 32rpx 24rpx 28rpx;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  justify-content: center;
+  box-sizing: border-box;
 }
 
-.hike-stat-num {
-  display: block;
-  font-size: 36rpx;
-  font-weight: 700;
-  color: #2f80c5;
-  margin-bottom: 4rpx;
-  line-height: 1.2;
+.collection-entry:first-child::after {
+  position: absolute;
+  top: 34rpx;
+  right: 0;
+  bottom: 34rpx;
+  width: 2rpx;
+  background: rgba(136, 184, 211, .28);
+  content: '';
 }
 
-.hike-stat-label {
-  font-size: 22rpx;
-  color: #6e93ad;
+.collection-entry:active { opacity: .78; }
+.ribbon-collection { background: linear-gradient(145deg, rgba(226, 245, 255, .94), rgba(255, 255, 255, .96)); }
+.achievement-collection { background: linear-gradient(145deg, rgba(255, 247, 224, .82), rgba(255, 255, 255, .96)); }
+
+.collection-visual {
+  width: 126rpx;
+  height: 126rpx;
+  margin-bottom: 22rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
+
+.ribbon-visual {
+  position: relative;
+  align-items: flex-start;
+  gap: 10rpx;
+  padding-top: 8rpx;
+  box-sizing: border-box;
+}
+
+.mini-ribbon-strip {
+  position: relative;
+  width: 24rpx;
+  border-radius: 7rpx 7rpx 2rpx 2rpx;
+  box-shadow: 0 7rpx 13rpx rgba(47, 114, 151, .16);
+}
+.mini-ribbon-strip::after { position: absolute; left: 0; right: 0; bottom: -11rpx; width: 0; height: 0; margin: auto; border-top: 12rpx solid currentColor; border-right: 12rpx solid transparent; border-left: 12rpx solid transparent; content: ''; }
+.strip-one { height: 86rpx; color: #50aedd; background: #50aedd; }
+.strip-two { height: 108rpx; color: #ef9e69; background: #ef9e69; }
+.strip-three { height: 76rpx; color: #6fc5a1; background: #6fc5a1; }
+
+.achievement-visual {
+  border: 10rpx solid #f0c673;
+  border-radius: 50%;
+  color: #fff;
+  background: linear-gradient(145deg, #ffd77e, #e8a94d);
+  box-shadow: 0 9rpx 20rpx rgba(191, 128, 43, .22), inset 0 0 0 5rpx rgba(255,255,255,.45);
+  font-size: 54rpx;
+  box-sizing: border-box;
+}
+
+.collection-title { color: #20526f; font-size: 30rpx; font-weight: 750; }
+.collection-count { margin-top: 10rpx; color: #7894a5; font-size: 21rpx; }
+.collection-arrow { position: absolute; right: 20rpx; bottom: 18rpx; color: #85adc3; }
 
 /* 菜单列表 */
 .menu-list {
@@ -247,72 +298,6 @@ page {
   color: #7d9bad;
   font-size: 22rpx;
   white-space: nowrap;
-}
-
-.menu-item.ribbon-wall-entry {
-  position: relative;
-  background: linear-gradient(90deg, rgba(237, 248, 255, .82), #fff 42%);
-}
-
-.ribbon-wall-entry .menu-left > text {
-  color: #205681;
-  font-weight: 700;
-}
-
-.ribbon-entry-icon {
-  position: relative;
-  width: 42rpx;
-  height: 48rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.ribbon-entry-new {
-  position: absolute;
-  left: 24rpx;
-  top: -13rpx;
-  padding: 1rpx 7rpx;
-  border-radius: 8rpx;
-  background: #ff8265;
-  color: #fff !important;
-  font-size: 12rpx !important;
-  font-weight: 800 !important;
-  line-height: 20rpx;
-}
-
-.ribbon-entry-body {
-  position: relative;
-  width: 26rpx;
-  height: 38rpx;
-  border: 4rpx solid #5eb3e7;
-  border-radius: 5rpx 5rpx 3rpx 3rpx;
-  box-sizing: border-box;
-}
-
-.ribbon-entry-body::after {
-  content: '';
-  position: absolute;
-  left: 50%;
-  bottom: -6rpx;
-  width: 14rpx;
-  height: 14rpx;
-  border-right: 4rpx solid #5eb3e7;
-  border-bottom: 4rpx solid #5eb3e7;
-  background: #fff;
-  transform: translateX(-50%) rotate(45deg);
-}
-
-.ribbon-entry-mark {
-  position: absolute;
-  z-index: 2;
-  left: 50%;
-  top: 8rpx;
-  width: 7rpx;
-  height: 7rpx;
-  border-radius: 50%;
-  background: #5eb3e7;
-  transform: translateX(-50%);
 }
 
 .version-section {

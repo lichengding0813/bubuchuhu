@@ -45,19 +45,23 @@
     </view>
   </view>
 
-  <!-- 徒步统计 -->
-  <view class="hike-stats-card">
-    <view class="hike-stat-item">
-      <text class="hike-stat-num">{{hikeStats.total_activities || 0}}</text>
-      <text class="hike-stat-label">累计活动</text>
+  <!-- 收藏中心：飘带墙与成就中心并列，各占一半 -->
+  <view class="collection-card">
+    <view class="collection-entry ribbon-collection" data-url="/pages/ribbon-wall/ribbon-wall" bindtap="onCollectionEntryTap">
+      <view class="collection-visual ribbon-visual">
+        <view class="mini-ribbon-strip strip-one"></view>
+        <view class="mini-ribbon-strip strip-two"></view>
+        <view class="mini-ribbon-strip strip-three"></view>
+      </view>
+      <text class="collection-title">我的飘带墙</text>
+      <text class="collection-count">{{ribbonLitCount}} / {{ribbonTotal || 0}} 已点亮</text>
+      <view class="collection-arrow"><van-icon name="arrow" size="14px" /></view>
     </view>
-    <view class="hike-stat-item">
-      <text class="hike-stat-num">{{hikeStats.total_distance || 0}}</text>
-      <text class="hike-stat-label">累计里程(km)</text>
-    </view>
-    <view class="hike-stat-item">
-      <text class="hike-stat-num">{{hikeStats.total_climb || 0}}</text>
-      <text class="hike-stat-label">累计爬升(m)</text>
+    <view class="collection-entry achievement-collection" data-url="/pages/achievement-center/achievement-center" bindtap="onCollectionEntryTap">
+      <view class="collection-visual achievement-visual"><text>★</text></view>
+      <text class="collection-title">成就中心</text>
+      <text class="collection-count">{{achievementUnlocked}} / {{achievementTotal || 6}} 已获得</text>
+      <view class="collection-arrow"><van-icon name="arrow" size="14px" /></view>
     </view>
   </view>
 
@@ -65,13 +69,9 @@
   <view class="menu-list">
     <block wx:for="{{menuList}}" wx:key="index">
       <view wx:if="{{item.isDivider}}" class="menu-divider"></view>
-      <view wx:else class="menu-item {{item.isRibbonWall ? 'ribbon-wall-entry' : ''}}" data-index="{{index}}" bindtap="onMenuClick">
+      <view wx:else class="menu-item" data-index="{{index}}" bindtap="onMenuClick">
         <view class="menu-left">
-          <view wx:if="{{item.isRibbonWall}}" class="menu-icon ribbon-entry-icon">
-            <view class="ribbon-entry-body"><view class="ribbon-entry-mark"></view></view>
-            <text class="ribbon-entry-new">NEW</text>
-          </view>
-          <van-icon wx:else name="{{item.icon}}" class="menu-icon" />
+          <van-icon name="{{item.icon}}" class="menu-icon" />
           <text>{{item.text}}</text>
         </view>
         <view class="menu-right">
@@ -86,28 +86,14 @@
   <!-- 底部版本号 -->
   <view class="version-section">
     <view class="version-toggle" bindtap="goToUpdateLog">
-      <text class="version-text">当前版本 v1.3</text>
+      <text class="version-text">当前版本 v{{appVersion}}</text>
       <van-icon name="arrow" size="14" color="#999" />
     </view>
   </view>
 </view>
 
-<!-- ========== 自定义验证弹窗 ========== -->
-<view class="custom-dialog" wx:if="{{showVerifyDialog}}">
-  <view class="dialog-mask" catchtouchmove="preventTouchMove"></view>
-  <view class="dialog-container">
-    <view class="dialog-title">验证问题</view>
-    <image class="dialog-image" src="cloud://prod-3gktwx67d1dd1e76.7072-prod-3gktwx67d1dd1e76-1392222183/verify.png" mode="widthFix" />
-    <view class="dialog-content">
-      <view class="question">{{verifyQuestion || '兽妈准备宵夜是？'}}</view>
-      <input class="dialog-input" type="text" placeholder="请输入答案" value="{{verifyAnswer}}" bindinput="onAnswerInput" focus="{{autoFocus}}" confirm-type="done" bindconfirm="onVerifyConfirm" />
-      <view class="error-tip" wx:if="{{verifyError}}">{{verifyError}}</view>
-    </view>
-    <view class="dialog-buttons">
-      <view class="dialog-btn dialog-btn-confirm" bindtap="onVerifyConfirm">确认</view>
-    </view>
-  </view>
-</view>
+<!-- ========== 验证题与提交确认 ========== -->
+<verify-dialog show="{{showVerifyDialog}}" question="{{verifyQuestion}}" question-idx="{{verifyQuestionIdx}}" question-image="{{verifyQuestionImage}}" user-openid="{{userInfo.openId}}" bind:result="onVerificationResult" />
 
 <!-- ========== 黑名单全屏遮罩 + 锁定弹窗 ========== -->
 <view class="blacklist-mask" wx:if="{{isBlacklisted}}" catchtouchmove="preventTouchMove" bindtap="onMaskTap"></view>

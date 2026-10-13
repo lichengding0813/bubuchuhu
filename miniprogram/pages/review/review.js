@@ -6,6 +6,7 @@ Page({
     page: 1,
     size: 10,
     loading: false,
+    loadError: '',
     hasMore: true,
     isBlacklisted: false,
     showLockedDialog: false
@@ -14,16 +15,13 @@ Page({
   onLoad() {
     this.checkBlacklistStatus();
     this.checkAdminStatus();
-    this.loadReviewList();
   },
 
   onShow() {
     // 每次显示页面时重新检查状态，并刷新列表
     this.checkBlacklistStatus();
     this.checkAdminStatus();
-    if (this.data.reviewList.length > 0) {
-      this.loadReviewList(true); // 刷新
-    }
+    this.loadReviewList(true);
   },
 
   // 检查黑名单状态
@@ -56,7 +54,7 @@ Page({
     if (this.data.loading) return;
     if (!refresh && !this.data.hasMore) return;
 
-    this.setData({ loading: true });
+    this.setData({ loading: true, loadError: '' });
     const page = refresh ? 1 : this.data.page;
 
     try {
@@ -84,9 +82,14 @@ Page({
       }
     } catch (error) {
       console.error('加载活动回顾列表失败:', error);
-      wx.showToast({ title: '加载失败', icon: 'none' });
-      this.setData({ loading: false });
+      this.setData({ loading: false, loadError: '活动回顾加载失败' });
     }
+  },
+
+  onRetry() { return this.loadReviewList(this.data.reviewList.length === 0); },
+
+  async onPullDownRefresh() {
+    try { await this.loadReviewList(true); } finally { wx.stopPullDownRefresh(); }
   },
 
   // 上拉加载更多

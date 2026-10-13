@@ -31,6 +31,9 @@
 .result-icon { font-size: 49px; }
 .result-kicker { margin-top: 7px; color: #879cab; font-size: 11px; }
 .result-text { margin-top: 4px; color: #e2774f; font-size: 23px; font-weight: 900; }
+.achievement-result { padding: 10px 12px; margin-top: 12px; border: 1px solid #d9ecf7; border-radius: 14px; color: #64849a; background: #edf8fe; font-size: 10px; line-height: 1.6; text-align: left; }
+.achievement-result > text { display: block; }
+.achievement-result-title { color: #317ca9; font-size: 11px; font-weight: 800; }
 .claim-card { padding: 12px; margin: 15px 0 10px; border: 1px solid #dceaf3; border-radius: 15px; color: #6f899b; background: #fff; font-size: 10px; line-height: 1.6; text-align: left; }
 .claim-header { display: flex; align-items: center; justify-content: space-between; padding-bottom: 7px; margin-bottom: 7px; border-bottom: 1px solid #edf2f6; }
 .claim-code { color: #327fb2; font-size: 14px; font-weight: 900; letter-spacing: .7px; }

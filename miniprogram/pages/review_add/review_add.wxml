@@ -5,30 +5,8 @@
       <text class="required-tag">必选</text>
     </view>
 
-    <view class="selected-source" wx:if="{{selectedActivity}}" bindtap="openActivityPicker">
-      <image class="selected-source-cover" wx:if="{{selectedActivity.cover_url}}" src="{{selectedActivity.cover_url}}" mode="aspectFill" />
-      <view class="selected-source-placeholder" wx:else>
-        <van-icon name="flag-o" size="24px" color="#5faee3" />
-      </view>
-      <view class="selected-source-info">
-        <view class="selected-source-title">
-          <text>{{selectedActivity.name}}</text>
-        </view>
-        <text class="selected-source-meta">{{selectedActivity.time}} · {{selectedActivity.location}}</text>
-        <text class="selected-source-hint">已带入活动信息，点击可更换</text>
-      </view>
-      <van-icon name="arrow" color="#8aa7ba" />
-    </view>
-
-    <view class="source-trigger" wx:else bindtap="openActivityPicker">
-      <view class="source-trigger-icon">
-        <van-icon name="records" size="24px" color="#4d9fd7" />
-      </view>
-      <view class="source-trigger-copy">
-        <text class="source-trigger-title">选择已有官方活动</text>
-        <text class="source-trigger-desc">自动带入名称、日期、地点、难度、里程、爬升和报名人数</text>
-      </view>
-      <van-icon name="arrow" color="#8aa7ba" />
+    <view class="ui-select-trigger" bindtap="openActivityPicker">
+      <text>{{selectedActivity ? selectedActivity.name : '请选择官方活动'}}</text><van-icon name="arrow-down" size="14px" />
     </view>
   </view>
 
@@ -104,14 +82,12 @@
     <view class="card-title">活动总结</view>
     <!-- 富文本工具栏 -->
     <view class="editor-toolbar">
-      <view class="tool-btn {{formatStatus.bold ? 'active' : ''}}" catchtap="onFormat" data-name="bold"><text class="tool-icon-bold">B</text></view>
-      <picker class="tool-picker" mode="selector" range="{{fontSizeLabels}}" bindchange="onFontSizeChange">
-        <view class="tool-btn">字号 {{currentFontSize || '16'}}</view>
-      </picker>
-      <view class="tool-btn" catchtap="onInsertDivider">分割线</view>
+      <view class="tool-btn {{formatStatus.bold ? 'active' : ''}}" catchtouchstart="onFormat" data-name="bold"><text class="tool-icon-bold">B</text></view>
+      <view wx:for="{{fontSizeOptions}}" wx:key="value" class="tool-btn {{currentFontSize === item.value ? 'active' : ''}}" catchtouchstart="onSetFontSize" data-size="{{item.value}}">{{item.label}}</view>
+      <view class="tool-btn" catchtouchstart="onInsertDivider">分割线</view>
     </view>
     <view class="editor-toolbar">
-      <view wx:for="{{colorList}}" wx:key="*this" class="color-swatch-btn {{currentTextColor === item ? 'selected' : ''}}" style="background:{{item}}" catchtap="onSetColor" data-color="{{item}}"></view>
+      <view wx:for="{{colorList}}" wx:key="*this" class="color-swatch-btn {{currentTextColor === item ? 'selected' : ''}}" style="background:{{item}}" catchtouchstart="onSetColor" data-color="{{item}}"></view>
     </view>
 
     <!-- 编辑器 -->
@@ -129,48 +105,7 @@
     </view>
   </view>
 
-  <van-button type="info" block round bindtap="onSubmit" custom-class="submit-btn">{{mode === 'edit' ? '保存修改' : '立即创建'}}</van-button>
+  <van-button type="info" block round loading="{{submitting}}" disabled="{{submitting}}" bindtap="onSubmit" custom-class="submit-btn">{{mode === 'edit' ? '保存修改' : '立即创建'}}</van-button>
 </view>
 
-<van-popup show="{{showActivityPicker}}" position="bottom" round closeable custom-style="height: 74vh;" bind:close="closeActivityPicker">
-  <view class="source-picker">
-    <view class="source-picker-header">
-      <text class="source-picker-title">选择官方活动</text>
-    </view>
-
-    <view class="source-search">
-      <van-icon name="search" size="17px" color="#7f9db2" />
-      <input class="source-search-input" placeholder="搜索活动名称、地点或时间" placeholder-style="color: #a1b3c0;" value="{{activityKeyword}}" bindinput="onActivityKeywordInput" />
-    </view>
-
-    <view class="source-picker-loading" wx:if="{{loadingActivities}}">
-      <van-loading size="32px" vertical>正在加载官方活动...</van-loading>
-    </view>
-
-    <view class="source-picker-empty" wx:elif="{{filteredOfficialActivities.length === 0}}">
-      <van-icon name="todo-list-o" size="48px" color="#adc3d3" />
-      <text>{{activityKeyword ? '没有匹配的官方活动' : '暂无可创建回顾的官方活动'}}</text>
-      <text class="source-picker-empty-hint" wx:if="{{!activityKeyword}}">已创建回顾的活动不会重复显示</text>
-    </view>
-
-    <scroll-view class="source-list" scroll-y wx:else>
-      <view class="source-list-item" wx:for="{{filteredOfficialActivities}}" wx:key="id" data-id="{{item.id}}" bindtap="onSelectOfficialActivity">
-        <image class="source-list-cover" wx:if="{{item.cover_url}}" src="{{item.cover_url}}" mode="aspectFill" />
-        <view class="source-list-placeholder" wx:else>
-          <van-icon name="photo-o" size="24px" color="#7faac7" />
-        </view>
-        <view class="source-list-info">
-          <view class="source-list-title-row">
-            <view class="source-list-title activity-title-with-brand">
-              <text class="activity-title-text">{{item.name}}</text>
-            </view>
-            <text class="source-status">{{item.status_text}}</text>
-          </view>
-          <text class="source-list-meta">{{item.time}} · {{item.location}}</text>
-          <text class="source-list-stats">{{item.difficulty_text}} · {{item.distance || 0}}km · {{item.participant_count}}人参与</text>
-        </view>
-        <van-icon name="arrow" color="#a1b3c0" />
-      </view>
-    </scroll-view>
-  </view>
-</van-popup>
+<official-activity-picker show="{{showActivityPicker}}" options="{{officialActivities}}" selected-id="{{sourceActivityId || 0}}" loading="{{loadingActivities}}" error="{{activitiesError}}" empty-text="暂无可创建回顾的官方活动" bind:select="onSelectOfficialActivity" bind:close="closeActivityPicker" bind:retry="loadOfficialActivities" />

@@ -238,3 +238,5 @@ page {
   color: inherit;
   font-size: inherit;
 }
+
+.section-header { flex-direction: column; align-items: stretch; gap: 22rpx; }

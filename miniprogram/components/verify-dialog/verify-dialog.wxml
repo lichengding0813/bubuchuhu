@@ -1,27 +1,23 @@
 <view class="custom-dialog" wx:if="{{show}}" catchtouchmove="preventTouchMove">
   <view class="dialog-mask"></view>
   <view class="dialog-container">
-    <view class="dialog-title">验证问题</view>
-    <image class="dialog-image" src="cloud://prod-3gktwx67d1dd1e76.7072-prod-3gktwx67d1dd1e76-1392222183/verify.png" mode="widthFix" />
+    <view class="dialog-title">{{confirming ? '确认验证答案' : '验证问题'}}</view>
+    <image class="dialog-image" src="{{(confirming ? snapshot.image : currentImage) || defaultImage}}" mode="aspectFit" binderror="onImageError" />
     <view class="dialog-content">
-      <view class="question">{{question || '兽妈准备宵夜是？'}}</view>
-      <input 
-        class="dialog-input" 
-        type="text" 
-        placeholder="请输入答案" 
-        value="{{answer}}" 
-        bindinput="onInput" 
-        focus="{{autoFocus}}" 
-        confirm-type="done" 
-        bindconfirm="onConfirm"
-        disabled="{{loading}}"
-      />
+      <view class="question">{{confirming ? snapshot.question : currentQuestion || '题目加载中'}}</view>
+      <view wx:if="{{confirming}}" class="answer-review">
+        <text class="answer-label">你的答案</text>
+        <text class="answer-text" selectable>{{snapshot.answer}}</text>
+      </view>
+      <input wx:else class="dialog-input" type="text" maxlength="100" placeholder="请输入答案" value="{{answer}}" bindinput="onInput" focus="{{autoFocus}}" confirm-type="done" bindconfirm="onConfirm" disabled="{{loading}}" />
       <view class="error-tip" wx:if="{{error}}">{{error}}</view>
     </view>
     <view class="dialog-buttons">
-      <view class="dialog-btn dialog-btn-confirm" bindtap="onConfirm">
-        {{loading ? '验证中...' : '确认'}}
-      </view>
+      <block wx:if="{{confirming}}">
+        <button class="dialog-btn dialog-btn-cancel" bindtap="onBack" disabled="{{loading}}">返回修改</button>
+        <button class="dialog-btn dialog-btn-confirm" bindtap="onSubmit" disabled="{{loading}}" loading="{{loading}}">{{loading ? '验证中' : '确认提交'}}</button>
+      </block>
+      <button wx:else class="dialog-btn dialog-btn-confirm" bindtap="onConfirm" disabled="{{loading || !currentQuestion}}">提交答案</button>
     </view>
   </view>
 </view>

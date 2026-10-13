@@ -1,0 +1,82 @@
+<view class="admin-page">
+  <ui-state loading="{{loading}}" error="{{loadError}}" bind:retry="onRetry" />
+  <block wx:if="{{!loading && !loadError}}">
+    <view class="header">
+      <text class="title">彩蛋徽章</text>
+      <view class="primary-pill" bindtap="openNewBadge">新增</view>
+    </view>
+    <view wx:if="{{eventBadges.length === 0}}" class="empty-card">暂无彩蛋徽章</view>
+    <view wx:for="{{eventBadges}}" wx:key="id" class="event-card">
+      <view class="card-header">
+        <image class="event-image" src="{{item.image_url}}" mode="aspectFit" />
+        <view class="card-copy">
+          <text class="card-title">{{item.name}}</text>
+          <text class="activity-name">{{item.activityNames || '未关联活动'}}</text>
+        </view>
+        <view class="status-badge {{item.is_active ? 'enabled' : 'disabled'}}">{{item.is_active ? '已启用' : '已停用'}}</view>
+      </view>
+      <view class="card-footer">
+        <text class="card-meta">{{item.activity_ids.length}} 场活动 · {{item.unlocked_count}} 人点亮</text>
+        <view class="card-action" data-id="{{item.id}}" bindtap="openBadge">编辑</view>
+      </view>
+    </view>
+
+    <view class="section-head"><text>累计徽章</text><text>固定规则</text></view>
+    <view class="milestone-grid">
+      <view wx:for="{{milestones}}" wx:key="id" class="milestone-card">
+        <image src="{{item.image_url}}" mode="aspectFit" />
+        <view><text>{{item.name}}</text><text>{{item.threshold_count}} 次 · {{item.unlocked_count}} 人点亮</text></view>
+      </view>
+    </view>
+  </block>
+</view>
+
+<van-popup show="{{editorOpen}}" position="bottom" close-on-click-overlay="{{!saving && !uploading}}" custom-style="border-radius:22px 22px 0 0;height:92vh;" bind:close="closeEditor">
+  <scroll-view class="form-scroll" scroll-y enhanced show-scrollbar="{{false}}">
+    <view class="form-container">
+      <view class="sheet-header">
+        <text class="form-title">{{form.id ? '编辑彩蛋徽章' : '新增彩蛋徽章'}}</text>
+        <van-icon name="cross" size="20px" color="#8299aa" bindtap="closeEditor" />
+      </view>
+
+      <view class="form-card">
+        <text class="form-label">官方活动</text>
+        <view class="ui-select-trigger {{saving || uploading ? 'disabled' : ''}}" bindtap="openActivityPicker">
+          <text>选择官方活动</text><van-icon name="arrow-down" size="14px" color="#8299aa" />
+        </view>
+        <view class="linked-activities" wx:if="{{linkedActivities.length}}">
+          <view wx:for="{{linkedActivities}}" wx:key="id" class="activity-row">
+            <view class="activity-copy"><text>{{item.name}}</text><text wx:if="{{item.activity_time}}">{{item.activity_time}}</text></view>
+            <view class="remove-activity" data-id="{{item.id}}" bindtap="removeActivity" aria-role="button" aria-label="取消关联{{item.name}}"><van-icon name="cross" size="16px" color="#8299aa" /></view>
+          </view>
+        </view>
+      </view>
+
+      <view class="form-card">
+        <view class="badge-basic">
+          <view class="upload-box" bindtap="chooseImage">
+            <image wx:if="{{form.image_url}}" src="{{form.image_url}}" mode="aspectFit" />
+            <view wx:else class="upload-empty"><van-icon name="photograph" size="22px" /><text>徽章图</text></view>
+            <view wx:if="{{uploading}}" class="uploading"><van-loading size="20px" /></view>
+          </view>
+          <view class="badge-name-field">
+            <text class="form-label">徽章名称</text>
+            <input disabled="{{saving || uploading}}" class="form-input" maxlength="100" adjust-position="{{false}}" cursor-spacing="20" value="{{form.name}}" bindinput="onNameInput" placeholder="填写徽章名称" />
+          </view>
+        </view>
+        <view class="form-item">
+          <text class="form-label">徽章文案</text>
+          <textarea disabled="{{saving || uploading}}" class="form-textarea" maxlength="500" adjust-position="{{false}}" cursor-spacing="20" value="{{form.description}}" bindinput="onDescriptionInput"></textarea>
+        </view>
+        <view class="form-item">
+          <text class="form-label">排序</text>
+          <input disabled="{{saving || uploading}}" class="form-input" type="number" adjust-position="{{false}}" cursor-spacing="20" value="{{form.sort_order}}" bindinput="onSortInput" />
+        </view>
+        <view class="switch-row"><text>启用徽章</text><switch checked="{{form.is_active === 1}}" disabled="{{saving || uploading}}" color="#4d9fd7" bindchange="onActiveChange" /></view>
+      </view>
+      <button class="submit-button" loading="{{saving}}" disabled="{{saving || uploading}}" bindtap="saveBadge">保存徽章</button>
+    </view>
+  </scroll-view>
+</van-popup>
+
+<official-activity-picker show="{{showActivityPicker}}" options="{{activityOptions}}" empty-text="{{activities.length ? '全部活动已关联' : '暂无可关联活动'}}" bind:select="onActivityChange" bind:close="closeActivityPicker" />

@@ -7,6 +7,7 @@ const {
 Page({
   data: {
     loading: true,
+    loadError: '',
     prizes: [],
     visiblePrizes: [],
     currentFilter: 'all',
@@ -32,7 +33,7 @@ Page({
   },
 
   async loadPrizes() {
-    this.setData({ loading: true });
+    this.setData({ loading: true, loadError: '' });
     try {
       const result = await get('/api/lottery/my-prizes', {}, { silent: true });
       const prizes = result.data || [];
@@ -46,7 +47,7 @@ Page({
       }, () => this.applyFilter());
     } catch (error) {
       console.error('加载我的奖品失败:', error);
-      wx.showToast({ title: error.response?.msg || '奖品加载失败', icon: 'none' });
+      this.setData({ loadError: error.response?.msg || '奖品加载失败' });
     } finally {
       this.setData({ loading: false });
     }
@@ -72,13 +73,15 @@ Page({
   },
 
   showQrCode(e) {
-    const recordId = Number(e.currentTarget.dataset.recordId || 0);
-    if (!recordId) return;
+    const sourceId = Number(e.currentTarget.dataset.sourceId || 0);
+    const sourceType = e.currentTarget.dataset.sourceType || 'lottery';
+    if (!sourceId) return;
     this.stopQrTimer();
     this.setData({
       showQr: true,
       qrPrize: {
-        record_id: recordId,
+        source_id: sourceId,
+        source_type: sourceType,
         prize_name: e.currentTarget.dataset.prizeName || '中奖奖品'
       },
       qrLoading: false,
@@ -89,6 +92,7 @@ Page({
   },
 
   closeQrCode() {
+    this.qrRequestSequence = (this.qrRequestSequence || 0) + 1;
     this.stopQrTimer();
     this.setData({
       showQr: false,
@@ -124,14 +128,18 @@ Page({
   },
 
   async refreshQrCode() {
-    const recordId = Number(this.data.qrPrize.record_id || 0);
-    if (!recordId || this.data.qrLoading) return;
+    const sourceId = Number(this.data.qrPrize.source_id || 0);
+    const sourceType = this.data.qrPrize.source_type || 'lottery';
+    if (!this.data.showQr || !sourceId || this.data.qrLoading) return;
+    const requestSequence = (this.qrRequestSequence || 0) + 1;
+    this.qrRequestSequence = requestSequence;
     this.setData({ qrLoading: true, qrReady: false, qrError: '' });
     try {
-      const result = await post('/api/lottery/redemption-qr', {
-        record_id: recordId
-      }, { silent: true });
-      if (Number(this.data.qrPrize.record_id || 0) !== recordId) return;
+      const payload = sourceType === 'achievement'
+        ? { source_type: sourceType, reward_id: sourceId }
+        : { source_type: sourceType, record_id: sourceId };
+      const result = await post('/api/lottery/redemption-qr', payload, { silent: true });
+      if (this.qrRequestSequence !== requestSequence || !this.data.showQr) return;
       const matrix = result.data?.matrix || [];
       const expiresIn = Number(result.data?.expires_in) || REDEMPTION_QR_REFRESH_SECONDS;
       this.setData({
@@ -140,6 +148,7 @@ Page({
         qrError: '',
         qrCountdown: expiresIn
       }, () => {
+        if (this.qrRequestSequence !== requestSequence || !this.data.showQr) return;
         try {
           drawQrMatrix('myPrizeRedemptionQr', matrix, 200);
           this.startQrTimer(expiresIn);
@@ -148,6 +157,7 @@ Page({
         }
       });
     } catch (error) {
+      if (this.qrRequestSequence !== requestSequence || !this.data.showQr) return;
       this.stopQrTimer();
       this.setData({
         qrLoading: false,
@@ -158,6 +168,7 @@ Page({
   },
 
   goToActivity(e) {
-    wx.navigateTo({ url: `/pages/details/details?id=${e.currentTarget.dataset.id}` });
+    const activityId = Number(e.currentTarget.dataset.id || 0);
+    if (activityId) wx.navigateTo({ url: `/pages/details/details?id=${activityId}` });
   }
 });

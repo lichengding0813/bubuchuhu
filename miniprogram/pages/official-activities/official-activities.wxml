@@ -9,16 +9,9 @@
     <text class="section-count">{{total}} 个</text>
   </view>
 
-  <view class="loading-container" wx:if="{{isLoading && activityList.length === 0}}">
-    <van-loading size="40px" vertical>加载中...</van-loading>
-  </view>
-
-  <view class="empty-container" wx:elif="{{activityList.length === 0}}">
-    <van-icon name="flag-o" size="72" color="#bfd1e1" />
-    <text>暂无官方活动</text>
-  </view>
-
-  <view class="activity-card" wx:for="{{activityList}}" wx:key="id">
+  <ui-state loading="{{isLoading}}" error="{{loadError}}" empty="{{activityList.length === 0}}" empty-text="暂无官方活动" icon="flag-o" bind:retry="loadActivities" />
+  <block wx:if="{{!isLoading && !loadError}}">
+  <view class="activity-card" bindtap="onDetail" data-id="{{item.id}}" wx:for="{{activityList}}" wx:key="id">
     <view class="card-header">
       <view class="activity-name activity-title-with-brand">
         <text class="activity-title-text">{{item.name}}</text>
@@ -57,9 +50,11 @@
     </view>
 
     <view class="card-actions">
-      <button class="action-btn secondary" data-id="{{item.id}}" catchtap="onDetail">查看详情</button>
+      <button wx:if="{{item.status === 1 || item.status === 3}}" class="action-btn danger" data-id="{{item.id}}" catchtap="onCancelActivity" disabled="{{cancellingActivityId !== null}}" loading="{{cancellingActivityId === item.id}}">取消活动</button>
+      <button wx:else class="action-btn secondary" data-id="{{item.id}}" catchtap="onDetail">查看详情</button>
       <button class="action-btn secondary" data-id="{{item.id}}" catchtap="onParticipants">报名人员</button>
-      <button class="action-btn primary" data-id="{{item.id}}" catchtap="onEdit">编辑活动</button>
+      <button wx:if="{{item.status !== 5}}" class="action-btn primary" data-id="{{item.id}}" catchtap="onEdit">编辑活动</button>
     </view>
   </view>
+  </block>
 </view>

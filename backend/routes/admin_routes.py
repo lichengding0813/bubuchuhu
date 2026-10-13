@@ -10,6 +10,7 @@ from middleware import (
     _clear_user_cache,
 )
 from notification_service import queue_blacklist_notice
+from verification_domain import normalize_question_image
 
 admin_bp = Blueprint('admin', __name__)
 
@@ -458,7 +459,7 @@ def get_verify_questions():
         conn = get_db()
         cursor = conn.cursor()
         cursor.execute(
-            "SELECT id, question, answers, sort_order, is_active, created_at, updated_at FROM verify_questions ORDER BY sort_order ASC"
+            "SELECT id, question, answers, image_url, sort_order, is_active, created_at, updated_at FROM verify_questions ORDER BY sort_order ASC"
         )
         rows = cursor.fetchall()
         questions = []
@@ -466,6 +467,7 @@ def get_verify_questions():
             questions.append({
                 'id': row['id'],
                 'question': row['question'],
+                'image_url': row.get('image_url') or '',
                 'answers': [a.strip() for a in row['answers'].split(',')],
                 'sort_order': row['sort_order'],
                 'is_active': row['is_active'],
@@ -488,6 +490,10 @@ def add_verify_question():
     data = request.get_json(silent=True) or {}
     question = (data.get('question') or '').strip()
     answers = (data.get('answers') or '').strip()
+    try:
+        image_url = normalize_question_image(data.get('image_url', ''))
+    except ValueError as exc:
+        return jsonify({'code': 400, 'msg': str(exc)})
 
     if not question or not answers:
         return jsonify({'code': 400, 'msg': '问题和答案都不能为空'})
@@ -501,8 +507,8 @@ def add_verify_question():
         max_order = cursor.fetchone()['max_order']
 
         cursor.execute(
-            "INSERT INTO verify_questions (question, answers, sort_order, is_active) VALUES (%s, %s, %s, 1)",
-            (question, answers, max_order + 1)
+            "INSERT INTO verify_questions (question, answers, image_url, sort_order, is_active) VALUES (%s, %s, %s, %s, 1)",
+            (question, answers, image_url, max_order + 1)
         )
         conn.commit()
         new_id = cursor.lastrowid
@@ -526,6 +532,12 @@ def update_verify_question(qid):
     question = (data.get('question') or '').strip()
     answers = (data.get('answers') or '').strip()
     is_active = data.get('is_active')
+    try:
+        image_url = normalize_question_image(data['image_url']) if 'image_url' in data else None
+        if is_active is not None and int(is_active) not in (0, 1):
+            raise ValueError('启用状态无效')
+    except (TypeError, ValueError) as exc:
+        return jsonify({'code': 400, 'msg': str(exc)})
 
     if not question or not answers:
         return jsonify({'code': 400, 'msg': '问题和答案都不能为空'})
@@ -536,19 +548,19 @@ def update_verify_question(qid):
         conn = get_db()
         cursor = conn.cursor()
 
-        if is_active is not None:
-            cursor.execute(
-                "UPDATE verify_questions SET question = %s, answers = %s, is_active = %s WHERE id = %s",
-                (question, answers, int(is_active), qid)
-            )
-        else:
-            cursor.execute(
-                "UPDATE verify_questions SET question = %s, answers = %s WHERE id = %s",
-                (question, answers, qid)
-            )
-
-        if cursor.rowcount == 0:
+        cursor.execute('SELECT id FROM verify_questions WHERE id = %s FOR UPDATE', (qid,))
+        if not cursor.fetchone():
             return jsonify({'code': 404, 'msg': '问题不存在'})
+        assignments = ['question = %s', 'answers = %s']
+        values = [question, answers]
+        if is_active is not None:
+            assignments.append('is_active = %s')
+            values.append(int(is_active))
+        if image_url is not None:
+            assignments.append('image_url = %s')
+            values.append(image_url)
+        values.append(qid)
+        cursor.execute(f"UPDATE verify_questions SET {', '.join(assignments)} WHERE id = %s", tuple(values))
 
         conn.commit()
         return jsonify({'code': 200, 'msg': '更新成功'})

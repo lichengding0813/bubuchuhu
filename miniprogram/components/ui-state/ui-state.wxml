@@ -1,0 +1,12 @@
+<view wx:if="{{loading || error || empty}}" class="state {{compact ? 'compact' : ''}}">
+  <van-loading wx:if="{{loading}}" size="28px" vertical>加载中</van-loading>
+  <block wx:elif="{{error}}">
+    <van-icon name="warning-o" size="38px" />
+    <text class="message">{{error}}</text>
+    <button class="retry" bindtap="onRetry">重试</button>
+  </block>
+  <block wx:else>
+    <van-icon name="{{icon}}" size="48px" />
+    <text class="message">{{emptyText}}</text>
+  </block>
+</view>

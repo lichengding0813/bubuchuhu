@@ -1,10 +1,12 @@
-const { get } = require('../../utils/api');
+const { get, post } = require('../../utils/api');
 
 Page({
   data: {
     activityList: [],
     total: 0,
-    isLoading: false
+    isLoading: false,
+    loadError: '',
+    cancellingActivityId: null
   },
 
   onShow() {
@@ -22,7 +24,8 @@ Page({
   },
 
   async loadActivities() {
-    this.setData({ isLoading: true });
+    if (this.data.isLoading) return;
+    this.setData({ isLoading: true, loadError: '' });
     try {
       const result = await get(
         '/api/activity/official-activities',
@@ -31,6 +34,7 @@ Page({
       );
       const list = (result.data?.list || []).map(item => ({
         ...item,
+        status: Number(item.status),
         activity_time_formatted: this.formatDateTime(item.activity_time),
         participant_count: Number(item.participant_count) || 0,
         is_force_insurance: Number(item.is_force_insurance) === 1 ? 1 : 0,
@@ -40,7 +44,7 @@ Page({
       this.setData({ activityList: list, total: result.data?.total || list.length });
     } catch (error) {
       console.error('加载官方活动失败', error);
-      wx.showToast({ title: error.response?.msg || '加载失败', icon: 'none' });
+      this.setData({ loadError: error.response?.msg || '官方活动加载失败' });
     } finally {
       this.setData({ isLoading: false });
     }
@@ -73,6 +77,8 @@ Page({
   },
 
   onEdit(e) {
+    const activity = this.data.activityList.find(item => String(item.id) === String(e.currentTarget.dataset.id));
+    if (activity?.status === 5) return;
     wx.navigateTo({
       url: `/pages/publish/publish?official=1&id=${e.currentTarget.dataset.id}`
     });
@@ -87,6 +93,33 @@ Page({
   onParticipants(e) {
     wx.navigateTo({
       url: `/pages/activity-participants/activity-participants?activity_id=${e.currentTarget.dataset.id}`
+    });
+  },
+
+  onCancelActivity(e) {
+    const id = e.currentTarget.dataset.id;
+    const activity = this.data.activityList.find(item => String(item.id) === String(id));
+    if (this.data.cancellingActivityId !== null || !activity || ![1, 3].includes(activity.status)) return;
+    this.setData({ cancellingActivityId: id });
+    wx.showModal({
+      title: '确认取消活动',
+      content: '取消后无法恢复，活动将停止报名和抽奖，不再计入成就。',
+      confirmText: '取消活动',
+      cancelText: '保留活动',
+      confirmColor: '#d95f5f',
+      success: async ({ confirm }) => {
+        if (!confirm) { this.setData({ cancellingActivityId: null }); return; }
+        try {
+          await post('/api/activity/cancel', { activity_id: id }, { silent: true, showLoading: true, loadingTitle: '取消中' });
+          wx.showToast({ title: '活动已取消', icon: 'success' });
+          await this.loadActivities();
+        } catch (error) {
+          wx.showToast({ title: error.response?.msg || '取消失败，请重试', icon: 'none' });
+        } finally {
+          this.setData({ cancellingActivityId: null });
+        }
+      },
+      fail: () => this.setData({ cancellingActivityId: null })
     });
   }
 });

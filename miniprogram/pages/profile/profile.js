@@ -1,8 +1,10 @@
+const { APP_VERSION } = require('../../utils/config');
 const { subscribeAdminReminders } = require('../../utils/notifications');
 const { get } = require('../../utils/api');
 
 Page({
   data: {
+    appVersion: APP_VERSION,
     userInfo: {
       nickName: '点击登录',
       avatarUrl: '',
@@ -23,16 +25,12 @@ Page({
       joined: 0
     },
     showUpdateLog: false,
-    hikeStats: {
-      total_activities: 0,
-      total_distance: 0,
-      total_climb: 0
-    },
     showVerifyDialog: false,
     verifyAnswer: '',
     verifyError: '',
     verifyQuestion: '',
     verifyQuestionIdx: 0,
+    verifyQuestionImage: '',
     showLockedDialog: false,
     isBlacklisted: false,
     lockedMessage: '由于多次验证失败，您的账户已被锁定。',
@@ -42,7 +40,10 @@ Page({
     pendingCount: 0,
     ribbonLitCount: 0,
     ribbonTotal: 0,
-    menuList: [{
+    achievementUnlocked: 0,
+    achievementTotal: 6,
+    menuList: [
+      {
         icon: 'setting',
         text: '个人信息设置',
         url: '/pages/settings/settings'
@@ -63,7 +64,7 @@ Page({
   onLoad() {
     this.initUserData();
     this.loadUserStats();
-    this.loadHikeStats();
+    this.loadAchievementSummary();
     this.loadRibbonSummary();
   },
 
@@ -71,7 +72,7 @@ Page({
     this.initUserData();
     if (this.data.userInfo.isLogin) {
       this.loadUserStats();
-      this.loadHikeStats();
+      this.loadAchievementSummary();
       this.loadPendingCount();
       this.loadRibbonSummary();
     }
@@ -162,16 +163,6 @@ Page({
       url: '/pages/my-prizes/my-prizes'
     });
 
-    menuList.push({
-      icon: 'bookmark-o',
-      text: '我的飘带墙',
-      url: '/pages/ribbon-wall/ribbon-wall',
-      isRibbonWall: true,
-      rightText: this.data.ribbonTotal
-        ? `${this.data.ribbonLitCount}/${this.data.ribbonTotal} 已点亮`
-        : ''
-    });
-
     if (isStaff) {
       menuList.push({ isDivider: true });
       menuList.push({
@@ -240,6 +231,15 @@ Page({
     } catch (error) {
       console.error('加载飘带收藏数量失败', error);
     }
+  },
+
+  onCollectionEntryTap(e) {
+    if (!this.data.userInfo.isLogin) {
+      wx.showToast({ title: '请先登录', icon: 'none' });
+      return;
+    }
+    const url = e.currentTarget.dataset.url;
+    if (url) wx.navigateTo({ url });
   },
 
   // 加载待审核活动数量（管理员）
@@ -317,6 +317,10 @@ Page({
 
   // 获取我报名的活动数量（进行中+已结束）
   async fetchJoinedCount(openId) {
+    const requestId = (this._joinedRequestId || 0) + 1;
+    this._joinedRequestId = requestId;
+    const isCurrentRequest = () => this._joinedRequestId === requestId
+      && this.data.userInfo.openId === openId && this.data.userInfo.isLogin;
     try {
       const result = await wx.cloud.callContainer({
         config: { env: "prod-3gktwx67d1dd1e76" },
@@ -329,10 +333,11 @@ Page({
         method: "GET"
       });
       
+      if (!isCurrentRequest()) return;
       if (result.data && result.data.code === 200) {
-        let { ongoing = [], ended = [] } = result.data.data;
+        let { ongoing = [], ended = [] } = result.data.data || {};
         // 前端过滤：排除已取消的报名记录（activity_participants.status=0 表示已取消）
-        const filterCancelled = (list) => list.filter(item => item.status !== 0);
+        const filterCancelled = (list) => list.filter(item => Number(item.status) !== 0);
         ongoing = filterCancelled(ongoing);
         ended = filterCancelled(ended);
         const total = ongoing.length + ended.length;
@@ -344,12 +349,13 @@ Page({
         this.setData({ 'stats.joined': 0 });
       }
     } catch (error) {
+      if (!isCurrentRequest()) return;
       console.error('获取报名活动异常:', error);
       this.setData({ 'stats.joined': 0 });
     }
   },
 
-  async loadHikeStats() {
+  async loadAchievementSummary() {
     try {
       const userInfo = wx.getStorageSync('userInfo');
       if (!userInfo?.openId) return;
@@ -364,10 +370,13 @@ Page({
         method: "GET"
       });
       if (result.data && result.data.code === 200) {
-        this.setData({ hikeStats: result.data.data });
+        this.setData({
+          achievementUnlocked: Number(result.data.data?.achievement_unlocked_count || 0),
+          achievementTotal: Number(result.data.data?.achievement_total || 6)
+        });
       }
     } catch (error) {
-      console.error('加载徒步统计失败:', error);
+      console.error('加载成就数量失败:', error);
     }
   },
 
@@ -414,6 +423,7 @@ Page({
             showVerifyDialog: true,
             verifyQuestion: this.data.userInfo.verifyQuestion || '',
             verifyQuestionIdx: this.data.userInfo.verifyQuestionIdx || 0,
+            verifyQuestionImage: this.data.userInfo.verifyQuestionImage || '',
             verifyAnswer: '',
             verifyError: ''
           });
@@ -471,6 +481,7 @@ Page({
         if (result.data.verifyQuestion) {
           userData.verifyQuestion = result.data.verifyQuestion;
           userData.verifyQuestionIdx = result.data.verifyQuestionIdx;
+          userData.verifyQuestionImage = result.data.verifyQuestionImage || '';
         }
         console.log('登录成功，用户信息:', userData);
         
@@ -489,6 +500,8 @@ Page({
         
         // 登录成功后加载统计数据
         this.loadUserStats();
+        this.loadAchievementSummary();
+        this.loadRibbonSummary();
         
         if (userData.needVerify === 1 && userData.isBlacklist === 0) {
           // 存储验证问题
@@ -496,6 +509,7 @@ Page({
           if (result.data.verifyQuestion) {
             updateData.verifyQuestion = result.data.verifyQuestion;
             updateData.verifyQuestionIdx = result.data.verifyQuestionIdx;
+            updateData.verifyQuestionImage = result.data.verifyQuestionImage || '';
           }
           this.setData(updateData);
         } else if (userData.isBlacklist === 1) {
@@ -526,6 +540,7 @@ Page({
       verifyError: '',
       verifyQuestion: userInfo.verifyQuestion || '',
       verifyQuestionIdx: userInfo.verifyQuestionIdx || 0,
+      verifyQuestionImage: userInfo.verifyQuestionImage || '',
       autoFocus: true
     }, () => {
       setTimeout(() => this.setData({ autoFocus: false }), 500);
@@ -536,74 +551,30 @@ Page({
     this.setData({ verifyAnswer: e.detail.value });
   },
 
-  async onVerifyConfirm() {
-    const answer = this.data.verifyAnswer.trim();
-    if (!answer) {
-      this.setData({ verifyError: '请输入答案' });
-      return;
+  onVerificationResult(e) {
+    const result = e.detail.response;
+    const userData = { ...result.data };
+    if (result.verifyQuestion) {
+      userData.verifyQuestion = result.verifyQuestion;
+      userData.verifyQuestionIdx = result.verifyQuestionIdx;
+      userData.verifyQuestionImage = result.verifyQuestionImage || '';
     }
-
-    wx.showLoading({ title: '验证中...' });
-
-    try {
-      const result = await wx.cloud.callContainer({
-        config: { env: "prod-3gktwx67d1dd1e76" },
-        path: "/verify",
-        header: {
-          "X-WX-SERVICE": "flask-mysql-login",
-          "X-Wx-OpenId": this.data.userInfo?.openId,
-          "content-type": "application/json"
-        },
-        method: "POST",
-        data: { answer, question_idx: this.data.verifyQuestionIdx }
+    getApp().globalData.userInfo = userData;
+    wx.setStorageSync('userInfo', userData);
+    this.setData({ userInfo: { ...userData, isLogin: true } });
+    this.buildMenuList();
+    if (userData.isBlacklist === 1) {
+      this.setData({ showVerifyDialog: false, showLockedDialog: true, isBlacklisted: true, lockedMessage: this.getLockedMessage(userData) });
+    } else if (userData.needVerify === 0) {
+      this.setData({ showVerifyDialog: false });
+      wx.showToast({ title: '验证通过', icon: 'success' });
+      this.loadUserStats();
+    } else if (result.verifyQuestion) {
+      this.setData({
+        verifyQuestion: result.verifyQuestion,
+        verifyQuestionIdx: result.verifyQuestionIdx,
+        verifyQuestionImage: result.verifyQuestionImage || ''
       });
-
-      wx.hideLoading();
-
-      if (result.data && result.data.code === 200) {
-        const userData = result.data.data;
-        // 更新验证问题信息到 userData
-        if (result.data.verifyQuestion) {
-          userData.verifyQuestion = result.data.verifyQuestion;
-          userData.verifyQuestionIdx = result.data.verifyQuestionIdx;
-        }
-        this.setData({ userInfo: { ...userData, isLogin: true } });
-        getApp().globalData.userInfo = userData;
-        wx.setStorageSync('userInfo', userData);
-        
-        this.buildMenuList();
-
-        if (userData.isBlacklist === 1) {
-          this.setData({
-            showVerifyDialog: false,
-            showLockedDialog: true,
-            isBlacklisted: true,
-            lockedMessage: this.getLockedMessage(userData)
-          });
-        } else if (userData.needVerify === 0) {
-          this.setData({ showVerifyDialog: false });
-          wx.showToast({ title: '验证通过', icon: 'success' });
-          // 验证通过后刷新统计数据
-          this.loadUserStats();
-        } else {
-          // 验证失败，更新验证问题（后端可能返回新题）
-          const updateData = {
-            verifyError: `答案错误，还剩 ${3 - (userData.verifyAttempts || 0)} 次机会`,
-            verifyAnswer: '',
-            autoFocus: true
-          };
-          if (result.data.verifyQuestion) {
-            updateData.verifyQuestion = result.data.verifyQuestion;
-            updateData.verifyQuestionIdx = result.data.verifyQuestionIdx;
-          }
-          this.setData(updateData);
-        }
-      } else {
-        wx.showToast({ title: result.data?.msg || '验证失败', icon: 'none' });
-      }
-    } catch (error) {
-      wx.hideLoading();
-      wx.showToast({ title: '网络错误', icon: 'none' });
     }
   },
 

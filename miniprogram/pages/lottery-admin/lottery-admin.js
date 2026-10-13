@@ -21,10 +21,15 @@ function defaultPrizes() {
 Page({
   data: {
     lotteryList: [],
+    loading: false,
+    loadError: '',
+    activitiesLoading: false,
+    activitiesError: '',
+    showActivityPicker: false,
     showForm: false,
     submitting: false,
     activityOptions: [],
-    activityIndex: 0,
+    activityIndex: -1,
     formLotteryName: '活动幸运转盘',
     formPassword: '',
     formStartDate: '',
@@ -37,6 +42,7 @@ Page({
 
     showRecords: false,
     recordsLoading: false,
+    recordsError: '',
     currentLotteryId: 0,
     recordKeyword: '',
     recordResultFilter: 'all',
@@ -45,6 +51,7 @@ Page({
 
     showParticipants: false,
     participantsLoading: false,
+    participantsError: '',
     participantKeyword: '',
     participantList: [],
 
@@ -58,48 +65,45 @@ Page({
     passwordSaving: false
   },
 
-  onLoad() {
-    this.loadLotteries();
-  },
-
   onShow() {
     this.loadLotteries();
   },
 
   async loadLotteries() {
+    if (this.data.loading) return;
+    this.setData({ loading: true, loadError: '' });
     try {
       const result = await get('/api/admin/lottery/list', {}, { silent: true });
       this.setData({ lotteryList: result.data || [] });
     } catch (error) {
       console.error('加载抽奖列表失败:', error);
-      wx.showToast({ title: '抽奖列表加载失败', icon: 'none' });
-    }
+      this.setData({ loadError: '抽奖列表加载失败' });
+    } finally { this.setData({ loading: false }); }
   },
 
   async loadActivities() {
+    if (this.data.activitiesLoading) return;
+    this.setData({ activitiesLoading: true, activitiesError: '' });
     try {
       const result = await get('/api/admin/lottery/official-activities', {}, { silent: true });
       const list = (result.data || []).filter(item => Number(item.is_official) === 1);
-      this.setData({ activityOptions: list, activityIndex: 0 });
+      this.setData({ activityOptions: list.map(item => ({ ...item, id: Number(item.id) })) });
       return list.length > 0;
     } catch (error) {
       console.error('加载官方活动失败:', error);
-      wx.showToast({ title: '官方活动加载失败', icon: 'none' });
+      this.setData({ activitiesError: '官方活动加载失败' });
       return false;
-    }
+    } finally { this.setData({ activitiesLoading: false }); }
   },
 
   async showCreateForm() {
-    if (!(await this.loadActivities())) {
-      wx.showToast({ title: '暂无可创建抽奖的官方活动', icon: 'none' });
-      return;
-    }
     const start = new Date(Date.now() + 5 * 60 * 1000);
     start.setSeconds(0, 0);
     const end = new Date(start.getTime() + 60 * 60 * 1000);
     const prizeList = defaultPrizes();
     this.setData({
       showForm: true,
+      activityIndex: -1,
       formLotteryName: '活动幸运转盘',
       formPassword: '',
       formStartDate: formatDate(start),
@@ -109,13 +113,22 @@ Page({
       prizeList,
       probabilityTotal: this.sumProbability(prizeList)
     });
+    this.loadActivities();
   },
 
   hideCreateForm() {
-    if (!this.data.submitting) this.setData({ showForm: false });
+    if (!this.data.submitting && this.data.uploadingPrizeIndex < 0) this.setData({ showForm: false, showActivityPicker: false });
   },
 
-  onActivityChange(e) { this.setData({ activityIndex: Number(e.detail.value) }); },
+  openActivityPicker() {
+    if (this.data.submitting || this.data.uploadingPrizeIndex >= 0) return;
+    this.setData({ showActivityPicker: true });
+  },
+  closeActivityPicker() { this.setData({ showActivityPicker: false }); },
+  onActivityChange(e) {
+    const activityIndex = this.data.activityOptions.findIndex(item => Number(item.id) === Number(e.detail.id));
+    if (activityIndex >= 0) this.setData({ activityIndex, showActivityPicker: false });
+  },
   onLotteryNameInput(e) { this.setData({ formLotteryName: e.detail.value }); },
   onPasswordInput(e) { this.setData({ formPassword: e.detail.value }); },
   onStartDateChange(e) { this.setData({ formStartDate: e.detail.value }); },
@@ -240,6 +253,7 @@ Page({
   },
 
   onCreateLottery() {
+    if (this.data.submitting || this.data.uploadingPrizeIndex >= 0) return;
     let payload;
     try {
       payload = this.buildPayload();
@@ -259,7 +273,7 @@ Page({
   },
 
   async submitLottery(payload) {
-    if (this.data.submitting) return;
+    if (this.data.submitting || this.data.uploadingPrizeIndex >= 0) return;
     this.setData({ submitting: true });
     try {
       await post('/api/admin/lottery/create', payload, { silent: true });
@@ -325,7 +339,9 @@ Page({
 
   async loadRecords() {
     if (!this.data.currentLotteryId) return;
-    this.setData({ recordsLoading: true });
+    const requestId = (this.recordsRequestId || 0) + 1;
+    this.recordsRequestId = requestId;
+    this.setData({ recordsLoading: true, recordsError: '' });
     try {
       const result = await get('/api/admin/lottery/records', {
         lottery_id: this.data.currentLotteryId,
@@ -333,41 +349,43 @@ Page({
         result: this.data.recordResultFilter,
         redemption_status: this.data.recordRedeemFilter
       }, { silent: true });
-      this.setData({ recordInfo: result.data });
+      if (requestId === this.recordsRequestId) this.setData({ recordInfo: result.data });
     } catch (error) {
-      wx.showToast({ title: error.response?.msg || '记录加载失败', icon: 'none' });
+      if (requestId === this.recordsRequestId) this.setData({ recordsError: '记录加载失败' });
     } finally {
-      this.setData({ recordsLoading: false });
+      if (requestId === this.recordsRequestId) this.setData({ recordsLoading: false });
     }
   },
 
-  hideRecords() { this.setData({ showRecords: false }); },
+  hideRecords() { this.recordsRequestId = (this.recordsRequestId || 0) + 1; this.setData({ showRecords: false, recordsLoading: false }); },
   onRecordKeywordInput(e) { this.setData({ recordKeyword: e.detail.value }); },
   onRecordSearch() { this.loadRecords(); },
   onRecordResultFilter(e) { this.setData({ recordResultFilter: e.currentTarget.dataset.value }, () => this.loadRecords()); },
   onRecordRedeemFilter(e) { this.setData({ recordRedeemFilter: e.currentTarget.dataset.value }, () => this.loadRecords()); },
 
   async onManageChances(e) {
-    this.setData({ showParticipants: true, currentLotteryId: Number(e.currentTarget.dataset.id), participantKeyword: '' });
+    this.setData({ showParticipants: true, currentLotteryId: Number(e.currentTarget.dataset.id), participantKeyword: '', participantList: [] });
     await this.loadParticipants();
   },
 
   async loadParticipants() {
-    this.setData({ participantsLoading: true });
+    const requestId = (this.participantsRequestId || 0) + 1;
+    this.participantsRequestId = requestId;
+    this.setData({ participantsLoading: true, participantsError: '' });
     try {
       const result = await get('/api/admin/lottery/participants', {
         lottery_id: this.data.currentLotteryId,
         keyword: this.data.participantKeyword
       }, { silent: true });
-      this.setData({ participantList: result.data || [] });
+      if (requestId === this.participantsRequestId) this.setData({ participantList: result.data || [] });
     } catch (error) {
-      wx.showToast({ title: error.response?.msg || '用户加载失败', icon: 'none' });
+      if (requestId === this.participantsRequestId) this.setData({ participantsError: '用户加载失败' });
     } finally {
-      this.setData({ participantsLoading: false });
+      if (requestId === this.participantsRequestId) this.setData({ participantsLoading: false });
     }
   },
 
-  hideParticipants() { this.setData({ showParticipants: false }); },
+  hideParticipants() { this.participantsRequestId = (this.participantsRequestId || 0) + 1; this.setData({ showParticipants: false, participantsLoading: false }); },
   onParticipantKeywordInput(e) { this.setData({ participantKeyword: e.detail.value }); },
   onParticipantSearch() { this.loadParticipants(); },
 

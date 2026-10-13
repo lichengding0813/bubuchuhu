@@ -9,7 +9,7 @@
     </view>
 
     <view class="candidate-section" wx:if="{{hasSearched}}">
-      <view class="empty-inline" wx:if="{{!isSearching && candidateList.length === 0}}">没有可添加的用户</view>
+      <ui-state loading="{{isSearching}}" error="{{searchError}}" empty="{{candidateList.length === 0}}" empty-text="没有可添加的用户" compact bind:retry="onSearch" />
       <view class="candidate-card" wx:for="{{candidateList}}" wx:key="openId">
         <image class="user-avatar" src="{{item.avatarUrl}}" mode="aspectFill" wx:if="{{item.avatarUrl}}" />
         <view class="user-avatar avatar-placeholder" wx:else><van-icon name="user-o" /></view>
@@ -27,12 +27,8 @@
 
   <view class="list-section">
     <view class="section-header"><text class="section-title">黑名单用户（{{total}}人）</text></view>
-    <view wx:if="{{isLoading}}" class="loading-container"><van-loading size="40px" vertical>加载中...</van-loading></view>
-    <view wx:elif="{{userList.length === 0}}" class="empty-container">
-      <van-icon name="passed" size="72" color="#c4d3e0" />
-      <text class="empty-text">暂无黑名单用户</text>
-    </view>
-    <view wx:else>
+    <ui-state loading="{{isLoading}}" error="{{loadError}}" empty="{{userList.length === 0}}" empty-text="暂无黑名单用户" icon="passed" bind:retry="loadBlacklist" />
+    <view wx:if="{{!isLoading && !loadError}}">
       <view wx:for="{{userList}}" wx:key="openId" class="user-card">
         <view class="card-main">
           <image class="user-avatar" src="{{item.avatarUrl}}" mode="aspectFill" wx:if="{{item.avatarUrl}}" />
@@ -57,8 +53,8 @@
   </view>
 </view>
 
-<view class="record-mask" wx:if="{{recordPopupVisible}}" bindtap="closeRecordPopup"></view>
-<view class="record-popup" wx:if="{{recordPopupVisible}}" catchtap="stopPropagation">
+<van-popup show="{{recordPopupVisible}}" position="bottom" round custom-style="height:78vh;" bind:close="closeRecordPopup">
+<view class="record-popup">
   <view class="record-header">
     <view>
       <text class="record-title">答题记录</text>
@@ -66,9 +62,8 @@
     </view>
     <van-icon name="cross" size="20px" color="#8095a8" bindtap="closeRecordPopup" />
   </view>
-  <view class="record-loading" wx:if="{{recordsLoading}}"><van-loading size="30px">加载中...</van-loading></view>
-  <view class="record-empty" wx:elif="{{attemptRecords.length === 0}}">暂无历史记录；日志功能上线后的答题会显示在这里</view>
-  <scroll-view class="record-list" scroll-y wx:else>
+  <ui-state loading="{{recordsLoading}}" error="{{recordsError}}" empty="{{attemptRecords.length === 0}}" empty-text="暂无答题记录" bind:retry="retryRecords" />
+  <scroll-view class="record-list" scroll-y wx:if="{{!recordsLoading && !recordsError}}">
     <view class="attempt-card" wx:for="{{attemptRecords}}" wx:key="id">
       <view class="attempt-head">
         <text class="attempt-result {{item.isCorrect ? 'correct' : 'wrong'}}">{{item.isCorrect ? '回答正确' : '回答错误'}}</text>
@@ -81,3 +76,4 @@
     </view>
   </scroll-view>
 </view>
+</van-popup>

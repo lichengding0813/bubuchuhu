@@ -8,6 +8,8 @@
     "pages/profile/profile",
     "pages/ribbon-wall/ribbon-wall",
     "pages/ribbon-wall-admin/ribbon-wall-admin",
+    "pages/achievement-center/achievement-center",
+    "pages/achievement-admin/achievement-admin",
     "pages/publish/publish",
     "pages/details/details",
     "pages/about/about",
@@ -70,6 +72,9 @@
   "sitemapLocation": "sitemap.json",
   "lazyCodeLoading": "requiredComponents",
   "usingComponents": {
+    "verify-dialog": "/components/verify-dialog/verify-dialog",
+    "ui-state": "/components/ui-state/ui-state",
+    "official-activity-picker": "/components/official-activity-picker/official-activity-picker",
     "van-button": "/miniprogram_npm/@vant/weapp/button/index",
     "van-icon": "/miniprogram_npm/@vant/weapp/icon/index",
     "van-field": "/miniprogram_npm/@vant/weapp/field/index",

@@ -6,6 +6,7 @@ import os
 import time
 import requests
 from db_utils import get_db
+from activity_service import ActivityCancellationError, cancel_activity
 from domain import (
     activity_times,
     can_manage_activity_participants,
@@ -460,12 +461,14 @@ def update_official_activity():
         if _get_official_flag(cursor, openid) != 1:
             return jsonify({'code': 403, 'msg': '仅官方账号可修改官方活动'})
         cursor.execute(
-            "SELECT id, is_official FROM activities WHERE id = %s FOR UPDATE",
+            "SELECT id, is_official, status FROM activities WHERE id = %s FOR UPDATE",
             (activity_id,)
         )
         activity = cursor.fetchone()
         if not activity or activity.get('is_official') != 1:
             return jsonify({'code': 404, 'msg': '官方活动不存在'})
+        if int(activity.get('status') or 0) == 5:
+            return jsonify({'code': 400, 'msg': '已取消活动不能修改或重新发布'})
 
         status = published_activity_status(start_time, end_time)
         cursor.execute("""
@@ -963,12 +966,14 @@ def cancel_participation():
         cursor = conn.cursor()
 
         # 检查活动是否存在且未结束
-        cursor.execute("SELECT id, status, activity_time, end_time FROM activities WHERE id = %s", (activity_id,))
+        cursor.execute("SELECT id, status, activity_time, end_time FROM activities WHERE id = %s FOR UPDATE", (activity_id,))
         activity = cursor.fetchone()
 
         if not activity:
             return jsonify({'code': 404, 'msg': '活动不存在'})
 
+        if int(activity.get('status') or 0) == 5:
+            return jsonify({'code': 400, 'msg': '活动已取消'})
         now = datetime.now()
         if activity['status'] == 4 or (
             activity.get('end_time') and now >= activity['end_time']
@@ -1252,6 +1257,8 @@ def get_my_activities_with_audit():
     try:
         conn = get_db()
         cursor = conn.cursor()
+        _refresh_activity_statuses(cursor)
+        conn.commit()
 
         # SELECT a.* 会自动包含 is_force_insurance 字段
         cursor.execute("""
@@ -1411,7 +1418,7 @@ def get_activity_participants():
         cursor = conn.cursor()
 
         cursor.execute(
-            "SELECT id, created_by, is_official FROM activities WHERE id = %s",
+            "SELECT id, created_by, is_official, status FROM activities WHERE id = %s",
             (activity_id,)
         )
         activity = cursor.fetchone()
@@ -1471,7 +1478,7 @@ def get_activity_participants():
             'code': 200,
             'data': {
                 'total': len(participants),
-                'can_manage': can_manage,
+                'can_manage': can_manage and int(activity.get('status') or 0) != 5,
                 'list': participants
             }
         })
@@ -1505,7 +1512,7 @@ def manage_activity_participant_status():
         conn = get_db()
         cursor = conn.cursor()
         cursor.execute(
-            "SELECT id, created_by, is_official, max_participants FROM activities WHERE id = %s FOR UPDATE",
+            "SELECT id, created_by, is_official, max_participants, status FROM activities WHERE id = %s FOR UPDATE",
             (activity_id,)
         )
         activity = cursor.fetchone()
@@ -1516,6 +1523,8 @@ def manage_activity_participant_status():
         viewer = cursor.fetchone()
         if not can_manage_activity_participants(activity, openid, viewer):
             return jsonify({'code': 403, 'msg': '无权管理该活动报名'})
+        if int(activity.get('status') or 0) == 5:
+            return jsonify({'code': 400, 'msg': '已取消活动不能调整报名'})
 
         cursor.execute(
             """
@@ -1890,6 +1899,36 @@ def publish_draft():
             conn.rollback()
         logging.exception("发布草稿失败")
         return jsonify({'code': 500, 'msg': '服务器内部错误，请稍后重试'})
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+
+@activity_bp.route('/cancel', methods=['POST'])
+@check_verified_and_blacklist
+def cancel_published_activity():
+    activity_id = (request.get_json(silent=True) or {}).get('activity_id')
+    if not activity_id:
+        return jsonify({'code': 400, 'msg': '缺少活动ID'})
+    conn = None
+    cursor = None
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        result = cancel_activity(cursor, activity_id, g.openid)
+        conn.commit()
+        return jsonify({'code': 200, 'msg': '活动已取消', 'data': result})
+    except ActivityCancellationError as exc:
+        if conn:
+            conn.rollback()
+        return jsonify({'code': exc.code, 'msg': str(exc)})
+    except Exception:
+        if conn:
+            conn.rollback()
+        logging.exception('取消活动失败')
+        return jsonify({'code': 500, 'msg': '取消失败，请稍后重试'})
     finally:
         if cursor:
             cursor.close()

@@ -66,6 +66,10 @@
         required 
       />
     </view>
+    <view class="privacy-notice">
+      联系方式仅用于活动报名联系，不作其他用途。
+      如需删除或注销账号，请联系管理员微信号：Galaxy79215
+    </view>
   </view>
 
   <!-- 保存按钮 -->
@@ -73,6 +77,7 @@
     <van-button 
       type="info" 
       block 
+      loading="{{saving}}" disabled="{{!canSave || isUploading || saving}}"
       bindtap="onSave"
     >
       保存修改

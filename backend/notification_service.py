@@ -341,6 +341,7 @@ def _discover_lottery_reminders(cursor):
         LEFT JOIN lottery_user_states state
           ON state.lottery_id = l.id AND state.user_openid = p.user_openid
         WHERE l.status <> 2
+          AND a.is_official = 1 AND a.status IN (1, 3, 4)
           AND l.start_time > NOW()
           AND l.start_time <= DATE_ADD(NOW(), INTERVAL 5 MINUTE)
           AND l.end_time > NOW()
@@ -417,6 +418,19 @@ def process_notification_jobs(batch_size=50):
                 conn.commit()
                 continue
             conn.commit()
+
+            if job['event_type'] in ('activity_reminder', 'lottery_start'):
+                cursor.execute('SELECT status FROM activities WHERE id = %s', (job['activity_id'],))
+                activity = cursor.fetchone()
+                allowed_statuses = (1, 3) if job['event_type'] == 'activity_reminder' else (1, 3, 4)
+                if not activity or int(activity['status']) not in allowed_statuses:
+                    cursor.execute("""
+                        UPDATE notification_jobs SET status = 'skipped', last_error = '活动状态不允许提醒'
+                        WHERE id = %s
+                    """, (job['id'],))
+                    conn.commit()
+                    summary['skipped'] += 1
+                    continue
 
             cursor.execute("""
                 SELECT available_count FROM notification_subscriptions

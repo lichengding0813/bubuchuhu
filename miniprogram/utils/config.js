@@ -4,13 +4,15 @@
  */
 const CLOUD_ENV_ID = 'prod-3gktwx67d1dd1e76';
 const CONTAINER_SERVICE = 'flask-mysql-login';
-const APP_VERSION = '1.3';
+const APP_VERSION = '1.4.1';
 const CLOUD_ASSET_PREFIX =
   'cloud://prod-3gktwx67d1dd1e76.7072-prod-3gktwx67d1dd1e76-1392222183';
+const DEFAULT_VERIFY_IMAGE = `${CLOUD_ASSET_PREFIX}/verify.png`;
 
 module.exports = {
   CLOUD_ENV_ID,
   CONTAINER_SERVICE,
   APP_VERSION,
-  CLOUD_ASSET_PREFIX
+  CLOUD_ASSET_PREFIX,
+  DEFAULT_VERIFY_IMAGE
 };

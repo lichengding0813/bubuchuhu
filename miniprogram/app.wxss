@@ -162,3 +162,11 @@ page {
 .activity-title-row > .activity-title-with-brand {
   flex: 1;
 }
+/* 相同逻辑共用控件；具体业务内容由页面保留。 */
+.ui-tabs { display: flex !important; gap: 8rpx !important; padding: 8rpx !important; border-radius: 22rpx !important; background: #e5f1f7 !important; box-sizing: border-box; }
+.ui-tabs .ui-tab { flex: 1; min-width: 0; padding: 18rpx 12rpx !important; margin: 0 !important; border: 0 !important; border-radius: 16rpx !important; color: #7596aa !important; background: transparent !important; font-size: 26rpx !important; line-height: 1.4 !important; text-align: center; box-shadow: none !important; }
+.ui-tabs .ui-tab.active { color: #286889 !important; background: #fff !important; font-weight: 650; box-shadow: 0 4rpx 12rpx rgba(50,100,130,.06) !important; }
+.ui-fab { position: fixed !important; z-index: 80 !important; right: 44rpx !important; bottom: calc(44rpx + env(safe-area-inset-bottom)) !important; width: 108rpx !important; height: 108rpx !important; display: flex; align-items: center; justify-content: center; border-radius: 50% !important; background: linear-gradient(135deg, #65b9ec, #3e8dcc) !important; box-shadow: 0 16rpx 38rpx rgba(44,91,124,.26) !important; }
+.ui-select-trigger { min-height: 88rpx; padding: 22rpx 24rpx; display: flex; align-items: center; justify-content: space-between; gap: 16rpx; box-sizing: border-box; border-radius: 16rpx; background: #f2f8fc; color: #2e5d79; font-size: 28rpx; }
+.ui-select-trigger text { flex: 1; min-width: 0; line-height: 1.5; overflow-wrap: anywhere; }
+.ui-select-trigger.disabled { opacity: .5; }

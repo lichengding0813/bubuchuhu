@@ -1,0 +1,13 @@
+<van-popup show="{{show}}" position="bottom" round z-index="1600" custom-style="height:74vh;" bind:close="onClose">
+  <view class="picker-sheet">
+    <view class="sheet-header"><text>选择官方活动</text><view class="close" bindtap="onClose" aria-role="button" aria-label="关闭活动选择"><van-icon name="cross" size="20px" /></view></view>
+    <view class="search"><van-icon name="search" size="17px" /><input class="search-input" placeholder="搜索名称、地点或时间" value="{{keyword}}" bindinput="onInput" /></view>
+    <ui-state loading="{{loading}}" error="{{error}}" empty="{{filteredOptions.length === 0}}" empty-text="{{keyword ? '没有匹配的官方活动' : emptyText}}" icon="todo-list-o" bind:retry="onRetry" />
+    <scroll-view wx:if="{{!loading && !error && filteredOptions.length}}" class="options" scroll-y enhanced show-scrollbar="{{false}}">
+      <view wx:for="{{filteredOptions}}" wx:key="id" class="option {{selectedId === item.id ? 'selected' : ''}}" bindtap="onSelect" data-id="{{item.id}}">
+        <view class="copy"><text class="name">{{item.name}}</text><text class="meta" wx:if="{{item.time || item.activity_time || item.location}}">{{item.time || item.activity_time}}{{item.location ? ' · ' + item.location : ''}}</text></view>
+        <van-icon name="{{selectedId === item.id ? 'checked' : 'arrow'}}" size="18px" />
+      </view>
+    </scroll-view>
+  </view>
+</van-popup>

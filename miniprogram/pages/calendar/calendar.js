@@ -16,6 +16,10 @@ Page({
     selectedDateLabel: '',
     dayActivities: [],
     activityMap: {},
+    calendarLoading: false,
+    calendarError: '',
+    dayLoading: false,
+    dayError: '',
     selectedWeather: null,
     weatherLoading: false,
     weatherMessage: ''
@@ -28,18 +32,27 @@ Page({
   },
 
   async loadCalendar() {
+    const requestId = (this.calendarRequestId || 0) + 1;
+    this.calendarRequestId = requestId;
+    this.setData({ calendarLoading: true, calendarError: '', activityMap: {} });
+    this.buildDays();
     try {
       const { year, month } = this.data;
       const result = await get('/api/activity/calendar', { year, month }, { silent: true });
-      if (result.code === 200) {
-        const activityMap = result.data || {};
-        this.setData({ activityMap });
-        this.buildDays();
-      }
-    } catch (err) {
-      console.error('日历加载失败:', err);
+      if (requestId !== this.calendarRequestId) return;
+      if (result.code !== 200) throw new Error(result.msg || '日历加载失败');
+      this.setData({ activityMap: result.data || {} });
       this.buildDays();
+    } catch (err) {
+      if (requestId !== this.calendarRequestId) return;
+      this.setData({ calendarError: '日历加载失败' });
+    } finally {
+      if (requestId === this.calendarRequestId) this.setData({ calendarLoading: false });
     }
+  },
+
+  retryDay() {
+    return this.onDateTap({ currentTarget: { dataset: { date: this.data.selectedDate } } });
   },
 
   buildDays() {
@@ -99,9 +112,14 @@ Page({
   async onDateTap(e) {
     const dateStr = e.currentTarget.dataset.date;
     if (!dateStr) return;
+    const requestId = (this.dayRequestId || 0) + 1;
+    this.dayRequestId = requestId;
     const dateParts = dateStr.split('-').map(Number);
     this.setData({
       selectedDate: dateStr,
+      dayLoading: true,
+      dayError: '',
+      weatherLoading: false,
       selectedDateLabel: `${dateParts[0]}年${dateParts[1]}月${dateParts[2]}日`,
       dayActivities: [],
       selectedWeather: null,
@@ -110,6 +128,8 @@ Page({
     try {
       const { year, month } = this.data;
       const result = await get('/api/activity/calendar', { year, month, date: dateStr }, { silent: true });
+      if (requestId !== this.dayRequestId || this.data.selectedDate !== dateStr) return;
+      if (result.code !== 200) throw new Error(result.msg || '活动加载失败');
       if (result.code === 200) {
         const dayActivities = (result.data.list || []).map(item => {
           const participantCount = Number(item.participant_count) || 0;
@@ -141,7 +161,11 @@ Page({
         this.loadSelectedDateWeather(dateStr, dayActivities);
       }
     } catch (err) {
+      if (requestId !== this.dayRequestId || this.data.selectedDate !== dateStr) return;
       console.error('加载当日活动失败:', err);
+      this.setData({ dayError: '当日活动加载失败' });
+    } finally {
+      if (requestId === this.dayRequestId && this.data.selectedDate === dateStr) this.setData({ dayLoading: false });
     }
   },
 

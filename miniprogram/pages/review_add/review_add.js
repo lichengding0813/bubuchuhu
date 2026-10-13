@@ -8,10 +8,9 @@ Page({
     sourceActivityId: null,
     selectedActivity: null,
     officialActivities: [],
-    filteredOfficialActivities: [],
     loadingActivities: false,
     showActivityPicker: false,
-    activityKeyword: '',
+    activitiesError: '',
     form: {
       name: '',
       time: '',
@@ -31,9 +30,8 @@ Page({
     formatStatus: {},
     currentTextColor: '#333333',
     colorList: ['#333333', '#ff4444', '#1989fa', '#ff8800', '#4caf50'],
-    fontSizeList: [12, 14, 16, 18, 24, 36],
-    fontSizeLabels: ['12px', '14px', '16px', '18px', '24px', '36px'],
-    currentFontSize: '16'
+    fontSizeOptions: [{ label: '小', value: 14 }, { label: '标准', value: 16 }, { label: '大', value: 24 }],
+    currentFontSize: 16
   },
 
   onLoad(options) {
@@ -97,7 +95,7 @@ Page({
 
   async loadOfficialActivities() {
     if (this.data.loadingActivities) return;
-    this.setData({ loadingActivities: true });
+    this.setData({ loadingActivities: true, activitiesError: '' });
     try {
       const result = await get('/api/reviews/official-activities', {}, { silent: true });
       const list = (result.data?.list || []).map(item => ({
@@ -108,12 +106,11 @@ Page({
         status_text: this.getActivityStatusText(item.status)
       }));
       this.setData({
-        officialActivities: list,
-        filteredOfficialActivities: list
+        officialActivities: list
       });
     } catch (error) {
       console.error('加载官方活动失败:', error);
-      wx.showToast({ title: error.response?.msg || '官方活动加载失败', icon: 'none' });
+      this.setData({ activitiesError: error.response?.msg || '官方活动加载失败' });
     } finally {
       this.setData({ loadingActivities: false });
     }
@@ -140,20 +137,8 @@ Page({
     this.setData({ showActivityPicker: false });
   },
 
-  onActivityKeywordInput(e) {
-    const keyword = String(e.detail.value || '').trim().toLowerCase();
-    const filtered = this.data.officialActivities.filter(item => {
-      const content = `${item.name || ''} ${item.location || ''} ${item.time || ''}`.toLowerCase();
-      return !keyword || content.includes(keyword);
-    });
-    this.setData({
-      activityKeyword: e.detail.value,
-      filteredOfficialActivities: filtered
-    });
-  },
-
   onSelectOfficialActivity(e) {
-    const activityId = Number(e.currentTarget.dataset.id);
+    const activityId = Number(e.detail.id);
     const activity = this.data.officialActivities.find(item => item.id === activityId);
     if (!activity) return;
 
@@ -221,7 +206,10 @@ Page({
   },
 
   onEditorStatusChange(e) {
-    this.setData({ formatStatus: e.detail });
+    const updates = { formatStatus: e.detail, currentTextColor: e.detail.color || '#333333' };
+    const size = parseInt(e.detail.fontSize, 10);
+    updates.currentFontSize = Number.isNaN(size) ? 16 : size;
+    this.setData(updates);
   },
 
   onFormat(e) {
@@ -234,10 +222,9 @@ Page({
     }
   },
 
-  onFontSizeChange(e) {
+  onSetFontSize(e) {
     if (!this.editorCtx) return;
-    const idx = e.detail.value;
-    const size = this.data.fontSizeList[idx];
+    const size = Number(e.currentTarget.dataset.size);
     this.editorCtx.format('fontSize', size + 'px');
     this.setData({ currentFontSize: size });
   },

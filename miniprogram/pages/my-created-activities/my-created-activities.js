@@ -1,20 +1,4 @@
-// 示例数据：后端加载失败时兜底展示草稿箱效果
-const SAMPLE_DRAFTS = [
-  {
-    id: 'sample-draft-1',
-    name: '示例草稿：松江森林公园徒步',
-    activity_time: '2026-07-20T09:00',
-    location: '松江森林公园',
-    updated_at: '2026-07-14T10:30'
-  },
-  {
-    id: 'sample-draft-2',
-    name: '示例草稿：辰山植物园半日游',
-    activity_time: '2026-07-22T08:00',
-    location: '辰山植物园',
-    updated_at: '2026-07-13T16:00'
-  }
-];
+const { post } = require('../../utils/api');
 
 Page({
   data: {
@@ -25,22 +9,18 @@ Page({
     activityList: [],
     draftList: [],
     isLoading: false,
-    isSampleData: false
+    loadError: '',
+    draftLoading: false,
+    draftError: '',
+    cancellingActivityId: null
   },
 
-  onLoad() {
+  onShow() {
     this.loadData();
     this.loadDrafts();
   },
 
-  onShow() {
-    if (this.data.currentTab === 'draft') {
-      this.loadDrafts();
-    } else {
-      this.loadData();
-    }
-    this.loadDrafts();
-  },
+  onRetry() { return this.data.currentTab === 'draft' ? this.loadDrafts() : this.loadData(); },
 
   switchTab(e) {
     const tab = e.currentTarget.dataset.tab;
@@ -54,13 +34,14 @@ Page({
   },
 
   async loadData() {
+    if (this.data.isLoading) return;
     const userInfo = wx.getStorageSync('userInfo');
     if (!userInfo?.openId) {
-      wx.showToast({ title: '请先登录', icon: 'none' });
+      this.setData({ loadError: '请先登录' });
       return;
     }
 
-    this.setData({ isLoading: true });
+    this.setData({ isLoading: true, loadError: '' });
 
     try {
       const result = await wx.cloud.callContainer({
@@ -79,7 +60,7 @@ Page({
         const formatted = activities.map(item => ({
           ...item,
           activity_time_formatted: this.formatDateTime(item.activity_time),
-          status: item.status,
+          status: Number(item.status),
           participant_count: item.participant_count || 0,
           is_force_insurance: Number(item.is_force_insurance) === 1 ? 1 : 0
         }));
@@ -101,19 +82,21 @@ Page({
           activityList: displayList
         });
       } else {
-        wx.showToast({ title: result.data?.msg || '加载失败', icon: 'none' });
+        this.setData({ loadError: result.data?.msg || '活动加载失败' });
       }
     } catch (error) {
       console.error('加载活动失败:', error);
-      wx.showToast({ title: '网络错误', icon: 'error' });
+      this.setData({ loadError: '活动加载失败' });
     } finally {
       this.setData({ isLoading: false });
     }
   },
 
   async loadDrafts() {
+    if (this.data.draftLoading) return;
     const userInfo = wx.getStorageSync('userInfo');
-    if (!userInfo?.openId) return;
+    if (!userInfo?.openId) { this.setData({ draftError: '请先登录' }); return; }
+    this.setData({ draftLoading: true, draftError: '' });
 
     try {
       const result = await wx.cloud.callContainer({
@@ -137,17 +120,15 @@ Page({
         }));
         this.setData({
           draftList: formattedDrafts,
-          draftCount: formattedDrafts.length,
-          isSampleData: false
+          draftCount: formattedDrafts.length
         });
       } else {
-        // 加载失败：兜底展示示例数据
-        this.applySampleDrafts();
+        this.setData({ draftError: result.data?.msg || '草稿加载失败' });
       }
     } catch (error) {
       console.error('加载草稿失败:', error);
-      this.applySampleDrafts();
-    }
+      this.setData({ draftError: '草稿加载失败' });
+    } finally { this.setData({ draftLoading: false }); }
   },
 
   formatDateTime(timeStr) {
@@ -214,6 +195,7 @@ Page({
   onEditActivity(e) {
     const id = e.currentTarget.dataset.id;
     const activity = this.data.activityList.find(item => item.id === id);
+    if (activity?.status === 5) return;
     if (activity && activity.status === 2) {
       wx.navigateTo({
         url: `/pages/publish/publish?edit=rejected&id=${id}`
@@ -228,10 +210,6 @@ Page({
   // 编辑草稿
   onEditDraft(e) {
     const id = e.currentTarget.dataset.id;
-    if (this.data.isSampleData) {
-      wx.showToast({ title: '示例数据不可编辑', icon: 'none' });
-      return;
-    }
     wx.navigateTo({
       url: `/pages/publish/publish?draft=1&id=${id}`
     });
@@ -240,10 +218,6 @@ Page({
   // 删除草稿
   onDeleteDraft(e) {
     const id = e.currentTarget.dataset.id;
-    if (this.data.isSampleData) {
-      wx.showToast({ title: '示例数据不可删除', icon: 'none' });
-      return;
-    }
     wx.showModal({
       title: '确认删除',
       content: '删除后无法恢复，确定要删除这个草稿吗？',
@@ -282,25 +256,38 @@ Page({
     });
   },
 
+  onCancelActivity(e) {
+    const id = e.currentTarget.dataset.id;
+    const activity = this.data.activityList.find(item => String(item.id) === String(id));
+    if (this.data.cancellingActivityId !== null || !activity || ![1, 3].includes(activity.status)) return;
+    this.setData({ cancellingActivityId: id });
+    wx.showModal({
+      title: '确认取消活动',
+      content: '取消后无法恢复，活动将停止报名和抽奖，不再计入成就。',
+      confirmText: '取消活动',
+      cancelText: '保留活动',
+      confirmColor: '#d95f5f',
+      success: async ({ confirm }) => {
+        if (!confirm) { this.setData({ cancellingActivityId: null }); return; }
+        try {
+          await post('/api/activity/cancel', { activity_id: id }, { silent: true, showLoading: true, loadingTitle: '取消中' });
+          wx.showToast({ title: '活动已取消', icon: 'success' });
+          await this.loadData();
+        } catch (error) {
+          wx.showToast({ title: error.response?.msg || '取消失败，请重试', icon: 'none' });
+        } finally {
+          this.setData({ cancellingActivityId: null });
+        }
+      },
+      fail: () => this.setData({ cancellingActivityId: null })
+    });
+  },
+
   // 查看报名人员列表
   onViewParticipants(e) {
     const id = e.currentTarget.dataset.id;
     wx.navigateTo({
       url: `/pages/activity-participants/activity-participants?activity_id=${id}`
-    });
-  },
-
-  // 兜底展示示例草稿数据
-  applySampleDrafts() {
-    const formatted = SAMPLE_DRAFTS.map(item => ({
-      ...item,
-      activity_time_formatted: this.formatDateTime(item.activity_time),
-      updated_at_formatted: this.formatDateTime(item.updated_at)
-    }));
-    this.setData({
-      draftList: formatted,
-      draftCount: formatted.length,
-      isSampleData: true
     });
   }
 });

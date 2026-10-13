@@ -11,7 +11,7 @@
 
     <view class="candidate-section" wx:if="{{hasSearched}}">
       <view class="sub-title">搜索结果</view>
-      <view class="empty-inline" wx:if="{{!isSearching && candidateList.length === 0}}">没有可加入的用户</view>
+      <ui-state loading="{{isSearching}}" error="{{searchError}}" empty="{{candidateList.length === 0}}" empty-text="没有可加入的用户" compact bind:retry="onSearch" />
       <view class="user-card compact" wx:for="{{candidateList}}" wx:key="openId">
         <view class="user-main">
           <image class="user-avatar" src="{{item.avatarUrl}}" mode="aspectFill" wx:if="{{item.avatarUrl}}" />
@@ -33,16 +33,11 @@
     <text class="section-title">官方账号（{{total}}人）</text>
   </view>
 
-  <view class="loading-container" wx:if="{{isLoading && accountList.length === 0}}">
-    <van-loading size="40px" vertical>加载中...</van-loading>
-  </view>
-  <view class="empty-container" wx:elif="{{accountList.length === 0}}">
-    <van-icon name="friends-o" size="72" color="#c4d3e0" />
-    <text class="empty-text">暂无官方账号</text>
-    <text class="empty-hint">白名单需要由管理员主动初始化</text>
+  <ui-state loading="{{isLoading}}" error="{{loadError}}" empty="{{accountList.length === 0}}" empty-text="暂无官方账号" icon="friends-o" bind:retry="loadAccounts" />
+  <view wx:if="{{!isLoading && !loadError && accountList.length === 0}}" class="empty-container">
     <view class="bootstrap-btn" bindtap="onBootstrapCurrentAdmin">将我设为首个官方账号</view>
   </view>
-  <view wx:else>
+  <view wx:if="{{!isLoading && !loadError}}">
     <view class="user-card" wx:for="{{accountList}}" wx:key="openId">
       <view class="user-main">
         <view class="avatar-wrap">

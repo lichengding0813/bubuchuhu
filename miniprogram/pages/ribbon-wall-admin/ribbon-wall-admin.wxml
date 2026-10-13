@@ -1,15 +1,7 @@
 <view class="admin-page">
-  <view wx:if="{{isLoading}}" class="state-panel">
-    <van-loading size="34px" vertical>加载中</van-loading>
-  </view>
-
-  <view wx:elif="{{loadError}}" class="state-panel">
-    <text class="state-title">暂时无法加载配置</text>
-    <text class="state-copy">{{loadError}}</text>
-    <view class="primary compact" bindtap="onRetry">重新加载</view>
-  </view>
-
-  <block wx:elif="{{editorMode === 'wall'}}">
+  <ui-state loading="{{isLoading}}" error="{{loadError}}" bind:retry="onRetry" />
+  <block wx:if="{{!isLoading && !loadError}}">
+  <block wx:if="{{editorMode === 'wall'}}">
     <view class="editor-header">
       <view class="back-link" bindtap="onCloseEditor">取消</view>
       <text>{{wallForm.id ? '编辑墙面' : '新建墙面'}}</text>
@@ -140,5 +132,6 @@
     <view wx:for="{{charms}}" wx:key="id" class="library-row {{item.is_active ? '' : 'inactive'}}" data-id="{{item.id}}" bindtap="onEditCharm">
       <image class="library-charm" src="{{item.image_url}}" mode="aspectFit" /><view class="library-copy"><text>{{item.name}}</text><text>{{item.is_active ? '已启用' : '已停用'}}</text></view><van-icon name="arrow" color="#87a2b2" />
     </view>
+  </block>
   </block>
 </view>

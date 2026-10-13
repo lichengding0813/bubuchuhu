@@ -1,0 +1,11 @@
+.picker-sheet { height: 100%; padding: 30rpx 28rpx calc(24rpx + env(safe-area-inset-bottom)); box-sizing: border-box; display: flex; flex-direction: column; background: #f6fafc; color: #7897aa; }
+.sheet-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24rpx; color: #244f69; font-size: 34rpx; font-weight: 700; }
+.close { width: 64rpx; height: 64rpx; display: flex; align-items: center; justify-content: center; color: #829baa; }
+.search { display: flex; align-items: center; gap: 16rpx; padding: 18rpx 24rpx; border-radius: 18rpx; background: #eaf3f8; }
+.search-input { flex: 1; min-width: 0; height: 52rpx; font-size: 26rpx; color: #2e5d79; }
+.options { flex: 1; min-height: 0; margin-top: 22rpx; }
+.option { margin-bottom: 16rpx; padding: 24rpx; border: 2rpx solid #dfeaf1; border-radius: 22rpx; background: #fff; display: flex; align-items: center; gap: 20rpx; }
+.option.selected { border-color: #66b6e4; background: #ecf8ff; color: #3998c8; }
+.copy { flex: 1; min-width: 0; }
+.name { display: block; color: #28546e; font-size: 28rpx; line-height: 1.5; }
+.meta { display: block; margin-top: 8rpx; font-size: 22rpx; line-height: 1.5; }

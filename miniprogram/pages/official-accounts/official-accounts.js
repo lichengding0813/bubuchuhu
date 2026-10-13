@@ -7,6 +7,8 @@ Page({
     total: 0,
     keyword: '',
     isLoading: false,
+    loadError: '',
+    searchError: '',
     isSearching: false,
     hasSearched: false,
     addingOpenId: '',
@@ -33,18 +35,18 @@ Page({
   },
 
   async loadAccounts() {
-    this.setData({ isLoading: true });
+    this.setData({ isLoading: true, loadError: '' });
     try {
       const result = await this.request('/api/admin/official-accounts');
       if (result.code === 200) {
         const list = (result.data?.list || []).map(item => this.formatUser(item));
         this.setData({ accountList: list, total: result.data?.total || list.length });
       } else {
-        wx.showToast({ title: result.msg || '加载失败', icon: 'none' });
+        this.setData({ loadError: result.msg || '列表加载失败' });
       }
     } catch (error) {
       console.error('加载官方账号失败', error);
-      wx.showToast({ title: '网络错误', icon: 'error' });
+      this.setData({ loadError: '官方账号加载失败' });
     } finally {
       this.setData({ isLoading: false });
     }
@@ -55,7 +57,8 @@ Page({
   },
 
   onClearSearch() {
-    this.setData({ keyword: '', candidateList: [], hasSearched: false });
+    this.searchRequestId = (this.searchRequestId || 0) + 1;
+    this.setData({ keyword: '', candidateList: [], hasSearched: false, isSearching: false, searchError: '' });
   },
 
   async onSearch() {
@@ -66,24 +69,28 @@ Page({
       return;
     }
 
-    this.setData({ isSearching: true, hasSearched: true });
+    const requestId = (this.searchRequestId || 0) + 1;
+    this.searchRequestId = requestId;
+    this.setData({ isSearching: true, hasSearched: true, searchError: '', candidateList: [] });
     try {
       const result = await this.request('/api/admin/official-account-candidates', 'GET', { keyword });
+      if (requestId !== this.searchRequestId) return;
       if (result.code === 200) {
         const list = (result.data?.list || []).map(item => this.formatUser(item));
         this.setData({ candidateList: list });
       } else {
-        wx.showToast({ title: result.msg || '搜索失败', icon: 'none' });
+        this.setData({ searchError: result.msg || '搜索失败' });
       }
     } catch (error) {
-      console.error('搜索用户失败', error);
-      wx.showToast({ title: '网络错误', icon: 'error' });
+      if (requestId !== this.searchRequestId) return;
+      this.setData({ searchError: '搜索失败' });
     } finally {
-      this.setData({ isSearching: false });
+      if (requestId === this.searchRequestId) this.setData({ isSearching: false });
     }
   },
 
   onAdd(e) {
+    if (this.data.addingOpenId) return;
     const { openid, nickname } = e.currentTarget.dataset;
     wx.showModal({
       title: '加入官方账号',
@@ -92,6 +99,7 @@ Page({
       confirmColor: '#2f80c5',
       success: async (modalResult) => {
         if (!modalResult.confirm) return;
+        if (this.data.addingOpenId) return;
         this.setData({ addingOpenId: openid });
         try {
           const result = await this.request('/api/admin/official-accounts', 'POST', { openid });
@@ -114,6 +122,7 @@ Page({
   },
 
   onRemove(e) {
+    if (this.data.removingOpenId) return;
     const { openid, nickname } = e.currentTarget.dataset;
     wx.showModal({
       title: '移出官方账号',
@@ -122,6 +131,7 @@ Page({
       confirmColor: '#ee6666',
       success: async (modalResult) => {
         if (!modalResult.confirm) return;
+        if (this.data.removingOpenId) return;
         this.setData({ removingOpenId: openid });
         try {
           const result = await this.request('/api/admin/official-accounts/remove', 'POST', { openid });

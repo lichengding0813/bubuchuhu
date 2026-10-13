@@ -11,7 +11,8 @@ Page({
     },
     originalUserInfo: {},
     canSave: false,
-    isUploading: false
+    isUploading: false,
+    saving: false
   },
 
   onLoad() {
@@ -49,6 +50,7 @@ Page({
 
   // 表单字段变更
   onFieldChange(e) {
+    if (this.data.saving) return;
     const { field } = e.currentTarget.dataset;
     const value = e.detail;
 
@@ -81,6 +83,7 @@ Page({
 
   // 点击头像
   onAvatarClick() {
+    if (this.data.saving) return;
     if (this.data.isUploading) {
       wx.showToast({ title: '上传中，请稍后', icon: 'none' });
       return;
@@ -200,7 +203,7 @@ Page({
 
   // 保存表单
   async onSave() {
-    if (!this.data.canSave || this.data.isUploading) return;
+    if (!this.data.canSave || this.data.isUploading || this.data.saving) return;
 
     const { nickName, phoneNumber, wechatId, avatarUrl, openId } = this.data.userInfo;
 
@@ -218,6 +221,7 @@ Page({
       return;
     }
 
+    this.setData({ saving: true });
     wx.showLoading({ title: '保存中...', mask: true });
 
     try {
@@ -278,6 +282,6 @@ Page({
       console.error('保存失败', error);
       wx.hideLoading();
       wx.showToast({ title: error.message || '保存失败', icon: 'error' });
-    }
+    } finally { this.setData({ saving: false }); }
   }
 });

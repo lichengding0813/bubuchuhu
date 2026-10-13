@@ -9,19 +9,12 @@
       </view>
     </view>
 
-    <view wx:if="{{isLoading}}" class="loading-container">
-      <van-loading size="40px" vertical>加载中...</van-loading>
-    </view>
-
-    <view wx:elif="{{questionList.length === 0}}" class="empty-container">
-      <van-icon name="question-o" size="80" color="#ccc" />
-      <text class="empty-text">暂无验证问题</text>
-    </view>
-
-    <view wx:else>
+    <ui-state loading="{{isLoading}}" error="{{loadError}}" empty="{{questionList.length === 0}}" empty-text="暂无验证问题" icon="question-o" bind:retry="loadQuestions" />
+    <view wx:if="{{!isLoading && !loadError}}">
       <view wx:for="{{questionList}}" wx:key="id" class="question-card {{item.is_active ? '' : 'disabled'}}">
         <view class="card-top">
           <view class="question-order">{{index + 1}}</view>
+          <image class="question-thumbnail" src="{{item.image_url || defaultImage}}" mode="aspectFit" />
           <view class="question-content">
             <text class="question-text">{{item.question}}</text>
             <view class="answers-row">
@@ -32,11 +25,9 @@
         </view>
 
         <view class="card-bottom">
-          <view class="switch-row" bindtap="onToggleActive" data-id="{{item.id}}" data-active="{{item.is_active}}">
+          <view class="switch-row">
             <text class="switch-label {{item.is_active ? 'on' : 'off'}}">{{item.is_active ? '已启用' : '已禁用'}}</text>
-            <view class="switch-toggle {{item.is_active ? 'on' : ''}}">
-              <view class="switch-thumb"></view>
-            </view>
+            <switch checked="{{item.is_active === 1}}" disabled="{{saving || uploading || togglingId !== null}}" color="#4d9fd7" bindchange="onToggleActive" data-id="{{item.id}}" />
           </view>
           <view class="action-btns">
             <view class="action-btn edit" data-id="{{item.id}}" data-question="{{item.question}}" data-answers="{{item.answers_text}}" bindtap="onEditQuestion">编辑</view>
@@ -55,7 +46,7 @@
   </view>
 
   <!-- 新增/编辑弹窗 -->
-  <van-popup show="{{showEditPopup}}" bindclose="onEditPopupClose" round custom-style="width: 82%; max-width: 320px;">
+  <van-popup show="{{showEditPopup}}" position="bottom" close-on-click-overlay="{{!saving && !uploading}}" bind:close="onEditPopupClose" round custom-style="max-height:85vh;overflow-y:auto;">
     <view class="edit-popup">
       <view class="popup-header">
         <text class="popup-title">{{editingId ? '编辑问题' : '新增问题'}}</text>
@@ -65,8 +56,21 @@
       </view>
 
       <view class="form-item">
+        <text class="form-label">题目配图</text>
+        <image class="question-image-preview" src="{{editImage || defaultImage}}" mode="aspectFit" />
+        <view class="image-actions">
+          <view class="image-action">
+            <van-button type="info" plain block custom-style="width:100%;height:36px;border-radius:18px;margin:0;" loading="{{uploading}}" disabled="{{saving || uploading}}" bindtap="onChooseImage">{{uploading ? '上传中' : '上传替换'}}</van-button>
+          </view>
+          <view wx:if="{{editImage !== defaultImage}}" class="image-action">
+            <van-button plain block custom-style="width:100%;height:36px;border-radius:18px;margin:0;" disabled="{{saving || uploading}}" bindtap="onResetImage">恢复默认</van-button>
+          </view>
+        </view>
+      </view>
+
+      <view class="form-item">
         <text class="form-label">问题文本</text>
-        <van-field class="custom-field" value="{{editQuestion}}" bind:input="onQuestionInput" type="textarea" placeholder="请输入验证问题" autosize border="{{false}}" label-width="0" />
+        <van-field disabled="{{saving}}" class="custom-field" value="{{editQuestion}}" bind:input="onQuestionInput" type="textarea" placeholder="请输入验证问题" autosize border="{{false}}" label-width="0" />
       </view>
 
       <view class="form-item">
@@ -80,7 +84,7 @@
           </view>
         </view>
         <view class="answer-input-row">
-          <van-field class="custom-field answer-input" value="{{answerInput}}" bind:input="onAnswerInput" placeholder="添加一个答案" border="{{false}}" label-width="0" confirm-type="done" bind:confirm="onAddAnswer" />
+          <van-field disabled="{{saving}}" class="custom-field answer-input" value="{{answerInput}}" bind:input="onAnswerInput" placeholder="添加一个答案" border="{{false}}" label-width="0" confirm-type="done" bind:confirm="onAddAnswer" />
           <view class="add-answer-btn" bindtap="onAddAnswer">
             <van-icon name="plus" size="14px" color="#5faee3" /> 添加
           </view>
@@ -88,7 +92,7 @@
       </view>
 
       <view class="popup-btns">
-        <van-button class="popup-btn" type="info" block bindtap="onSaveQuestion">保存</van-button>
+        <van-button class="popup-btn" type="info" block loading="{{saving}}" disabled="{{saving || uploading}}" bindtap="onSaveQuestion">保存</van-button>
       </view>
     </view>
   </van-popup>

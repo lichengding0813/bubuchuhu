@@ -232,3 +232,8 @@ page {
   color: #8ca5bb;
   font-size: 25rpx;
 }
+.action-btn.danger {
+  color: #d95f5f;
+  background: #fff;
+  border: 1rpx solid #efd7d7;
+}

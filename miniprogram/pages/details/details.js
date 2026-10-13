@@ -46,6 +46,7 @@ Page({
       isOfficial: false,
       registrationClosed: false,
       activityStarted: false,
+      activityCancelled: false,
       activityEnded: false
     },
     agreeNotice: false,
@@ -116,6 +117,7 @@ Page({
         if (result.verifyQuestion) {
           userData.verifyQuestion = result.verifyQuestion;
           userData.verifyQuestionIdx = result.verifyQuestionIdx;
+          userData.verifyQuestionImage = result.verifyQuestionImage || '';
         }
         getApp().globalData.userInfo = userData;
         wx.setStorageSync('userInfo', userData);
@@ -189,10 +191,11 @@ Page({
     const deadlineTimestamp = toTimestamp(activity.deadline);
     const startTimestamp = toTimestamp(activity.activity_time);
     const endTimestamp = toTimestamp(activity.end_time);
-    const activityEnded = Number(activity.status) === 4 || (endTimestamp > 0 && now >= endTimestamp);
+    const activityCancelled = Number(activity.status) === 5;
+    const activityEnded = !activityCancelled && (Number(activity.status) === 4 || (endTimestamp > 0 && now >= endTimestamp));
     const activityStarted = activityEnded || Number(activity.status) === 3 || (startTimestamp > 0 && now >= startTimestamp);
-    const registrationClosed = activityEnded || Boolean(activity.registration_closed) || (deadlineTimestamp > 0 && now >= deadlineTimestamp);
-    const displayStatus = activityEnded
+    const registrationClosed = activityCancelled || activityEnded || Boolean(activity.registration_closed) || (deadlineTimestamp > 0 && now >= deadlineTimestamp);
+    const displayStatus = activityCancelled ? '已取消' : activityEnded
       ? '已结束'
       : registrationClosed && Number(activity.status) === 1
         ? '报名已截止'
@@ -223,13 +226,14 @@ Page({
       'activityDetail.deadline': this.formatDate(activity.deadline),
       'activityDetail.status': displayStatus,
       'activityDetail.travel': travelOptions,
-      'activityDetail.rawStatus': activity.status,
+      'activityDetail.rawStatus': Number(activity.status),
       'activityDetail.creatorAvatar': activity.creator_avatar || '',
       'activityDetail.is_force_insurance': isForceInsurance,   // 新增
       'activityDetail.isOfficial': Number(activity.is_official) === 1,
       'activityDetail.registrationClosed': registrationClosed,
       'activityDetail.activityStarted': activityStarted,
       'activityDetail.activityEnded': activityEnded,
+      'activityDetail.activityCancelled': activityCancelled,
     });
 
     // 获取当前用户是否已报名
@@ -529,8 +533,7 @@ Page({
 
   checkSignUpStatus() {
     const { activityDetail, agreeNotice, agreeBus, agreeSelf } = this.data;
-    // 后端允许 status=1(报名中) 或 status=3(进行中) 报名
-    const isActive = activityDetail.rawStatus === 1 || activityDetail.rawStatus === 3;
+    const isActive = activityDetail.rawStatus === 1;
     const hasRemain = activityDetail.remainCount > 0;
 
     // 截止时间对比：用 parseTimeStr 统一解析
@@ -549,7 +552,7 @@ Page({
     if (activityDetail.travel.includes('train') || activityDetail.travel.includes('self')) {
       agreed = agreed && agreeSelf;
     }
-    const registrationClosed = !notExpired || activityDetail.activityStarted;
+    const registrationClosed = activityDetail.activityCancelled || !notExpired || activityDetail.activityStarted;
     const canSignUp = isActive && hasRemain && !registrationClosed && agreed;
     this.setData({
       canSignUp,
@@ -623,6 +626,10 @@ Page({
   },
 
   onSignUpClick() {
+    if (this.data.activityDetail.activityCancelled) {
+      wx.showToast({ title: '活动已取消', icon: 'none' });
+      return;
+    }
     // 校验用户资料完整性：手机号或微信号至少填一项（优先检查，先于canSignUp）
     const userInfo = this.data.userInfo || wx.getStorageSync('userInfo');
     if (!userInfo.phoneNumber && !userInfo.wechatId) {
@@ -669,6 +676,10 @@ Page({
   },
 
   onCancelSignUpClick() {
+    if (this.data.activityDetail.activityCancelled) {
+      wx.showToast({ title: '活动已取消', icon: 'none' });
+      return;
+    }
     if (this.data.activityDetail.activityEnded) {
       wx.showToast({ title: '活动已结束', icon: 'none' });
       return;

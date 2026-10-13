@@ -1,5 +1,7 @@
 from flask import Flask, request, jsonify, g
 from flask.json.provider import DefaultJSONProvider
+from achievement_service import count_valid_attendance
+from verification_domain import question_metadata, question_submission_changed
 import requests
 from datetime import datetime
 import os
@@ -43,9 +45,17 @@ def get_verify_questions():
     try:
         conn = get_db()
         cursor = conn.cursor()
-        cursor.execute(
-            "SELECT id, question, answers FROM verify_questions WHERE is_active = 1 ORDER BY sort_order ASC"
-        )
+        try:
+            cursor.execute(
+                "SELECT id, question, answers, image_url FROM verify_questions WHERE is_active = 1 ORDER BY sort_order ASC"
+            )
+        except Exception as exc:
+            if not exc.args or exc.args[0] != 1054:
+                raise
+            # 升级前的表仍读取原题，避免缺少图片字段时换成内置题。
+            cursor.execute(
+                "SELECT id, question, answers FROM verify_questions WHERE is_active = 1 ORDER BY sort_order ASC"
+            )
         rows = cursor.fetchall()
         if not rows:
             # 数据库无数据时回退到内置问题（防止表未初始化导致登录失败）
@@ -56,6 +66,7 @@ def get_verify_questions():
         return [{
             'id': row['id'],
             'question': row['question'],
+            'image_url': row.get('image_url') or '',
             'answers': [a.strip() for a in row['answers'].split(',')]
         } for row in rows]
     except Exception:
@@ -77,6 +88,7 @@ from routes.review_bp import review_bp
 from routes.lottery_routes import lottery_bp
 from routes.notification_routes import notification_bp
 from routes.ribbon_routes import ribbon_bp
+from routes.achievement_routes import achievement_bp
 from db_utils import init_db_config, close_db, get_db
 from domain import weather_location_candidates
 from middleware import check_verified_and_blacklist, _invalidate_user_cache
@@ -379,6 +391,7 @@ app.register_blueprint(review_bp)
 app.register_blueprint(lottery_bp, url_prefix='/api')
 app.register_blueprint(notification_bp, url_prefix='/api')
 app.register_blueprint(ribbon_bp, url_prefix='/api/ribbon-wall')
+app.register_blueprint(achievement_bp, url_prefix='/api/achievement-center')
 
 # 容器保持运行时每分钟检查一次到期提醒；数据库全局锁避免多 worker 重复发送。
 start_notification_worker(app)
@@ -452,8 +465,7 @@ def login():
             if user.get('needVerify') == 1 and user.get('isBlacklist') == 0:
                 questions = get_verify_questions()
                 q = random.choice(questions)
-                response_data['verifyQuestion'] = q['question']
-                response_data['verifyQuestionIdx'] = q['id']
+                response_data.update(question_metadata(q))
 
             return jsonify(response_data)
         else:
@@ -474,8 +486,7 @@ def login():
             if user.get('needVerify') == 1 and user.get('isBlacklist') == 0:
                 questions = get_verify_questions()
                 q = random.choice(questions)
-                response_data['verifyQuestion'] = q['question']
-                response_data['verifyQuestionIdx'] = q['id']
+                response_data.update(question_metadata(q))
 
             return jsonify(response_data)
 
@@ -533,6 +544,13 @@ def verify_answer():
         if user['isBlacklist'] == 1:
             return jsonify({'code': 403, 'msg': '账户已被锁定', 'data': user})
 
+        if question_submission_changed(data, current_question):
+            refreshed_question = current_question or random.choice(questions)
+            return jsonify({
+                'code': 409, 'msg': '题目已更新，请重新查看后提交，本次不计答错次数',
+                'data': user, **question_metadata(refreshed_question),
+            })
+
         cursor.execute("""
             INSERT INTO verification_attempt_logs
                 (user_openid, question_id, question_text, submitted_answer, is_correct, created_at)
@@ -586,8 +604,7 @@ def verify_answer():
             # 答错后重新随机出一道题
             new_q = random.choice(questions) if questions else None
             if new_q:
-                response_data['verifyQuestion'] = new_q['question']
-                response_data['verifyQuestionIdx'] = new_q['id']
+                response_data.update(question_metadata(new_q))
         return jsonify(response_data)
 
     except Exception:
@@ -628,12 +645,30 @@ def user_stats():
               )
         """, (openid,))
         stats = cursor.fetchone()
+        attendance_count = count_valid_attendance(cursor, openid)
+        cursor.execute("""
+            SELECT
+                (SELECT COUNT(*)
+                 FROM user_achievements ua
+                 JOIN achievement_definitions d ON d.id = ua.achievement_id
+                 WHERE ua.user_openid = %s AND d.achievement_type = 1 AND d.is_active = 1
+                   AND d.threshold_count <= %s
+                ) AS achievement_unlocked_count,
+                (SELECT COUNT(*)
+                 FROM achievement_definitions d
+                 WHERE d.achievement_type = 1 AND d.is_active = 1
+                ) AS achievement_total
+        """, (openid, attendance_count))
+        achievement_stats = cursor.fetchone() or {}
         return jsonify({
             'code': 200,
             'data': {
                 'total_activities': stats['total_activities'] or 0,
                 'total_distance': int(stats['total_distance'] or 0),
-                'total_climb': int(stats['total_climb'] or 0)
+                'total_climb': int(stats['total_climb'] or 0),
+                'official_attendance_count': attendance_count,
+                'achievement_unlocked_count': int(achievement_stats.get('achievement_unlocked_count') or 0),
+                'achievement_total': int(achievement_stats.get('achievement_total') or 0)
             }
         })
     except Exception:
